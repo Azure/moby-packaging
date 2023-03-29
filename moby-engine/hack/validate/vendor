@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+
+set -e
+
+SCRIPTDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPTDIR}/.validate"
+
+tidy_files=('vendor.mod' 'vendor.sum')
+vendor_files=("${tidy_files[@]}" 'vendor/')
+
+validate_vendor_tidy() {
+	# run mod tidy
+	./hack/vendor.sh tidy
+	# check if any files have changed
+	git diff --quiet HEAD -- "${tidy_files[@]}"
+}
+
+validate_vendor_diff() {
+	mapfile -t changed_files < <(validate_diff --diff-filter=ACMR --name-only -- "${vendor_files[@]}")
+
+	if [ -n "${TEST_FORCE_VALIDATE:-}" ] || [ "${#changed_files[@]}" -gt 0 ]; then
+		# recreate vendor/
+		./hack/vendor.sh vendor
+		# check if any files have changed
+		git diff --quiet HEAD -- "${vendor_files[@]}"
+	else
+		echo >&2 'INFO: no vendor changes in diff; skipping vendor check.'
+	fi
+}
+
+validate_vendor_license() {
+	while IFS= read -r module; do
+		test -d "vendor/$module" || continue
+		if ! compgen -G "vendor/$module/*" | grep -qEi '/(LICENSE|COPYING)[^/]*$'; then
+			echo >&2 "WARNING: could not find copyright information for $module"
+		fi
+	done < <(awk '/^# /{ print $2 }' vendor/modules.txt)
+}
+
+if validate_vendor_tidy && validate_vendor_diff && validate_vendor_license; then
+	echo >&2 'PASS: Vendoring has been performed correctly!'
+else
+	{
+		echo 'FAIL: Vendoring was not performed correctly!'
+		echo
+		echo 'The following files changed during re-vendor:'
+		echo
+		git diff --name-status HEAD -- "${vendor_files[@]}"
+		echo
+		echo 'Please revendor with hack/vendor.sh'
+		echo
+		git diff --diff-filter=M -- "${vendor_files[@]}"
+	} >&2
+	exit 1
+fi

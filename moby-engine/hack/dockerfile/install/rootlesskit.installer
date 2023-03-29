@@ -1,0 +1,34 @@
+#!/bin/sh
+
+# When updating, also update rootlesskit commit in vendor.mod accordingly
+# v1.1.0
+: "${ROOTLESSKIT_VERSION:=6222b477d4c3ce6eea2bcff0586e43c95d1c0bb7}"
+
+install_rootlesskit() {
+	case "$1" in
+		"dynamic")
+			install_rootlesskit_dynamic
+			return
+			;;
+		"")
+			export CGO_ENABLED=0
+			_install_rootlesskit
+			;;
+		*)
+			echo 'Usage: $0 [dynamic]'
+			;;
+	esac
+}
+
+install_rootlesskit_dynamic() {
+	export ROOTLESSKIT_LDFLAGS="-linkmode=external" install_rootlesskit
+	export BUILD_MODE=${GO_BUILDMODE}
+	_install_rootlesskit
+}
+
+_install_rootlesskit() (
+	echo "Install rootlesskit version ${ROOTLESSKIT_VERSION}"
+	for f in rootlesskit rootlesskit-docker-proxy; do
+		GOBIN="${PREFIX}" GO111MODULE=on go install ${BUILD_MODE} -ldflags="$ROOTLESSKIT_LDFLAGS" "github.com/rootless-containers/rootlesskit/cmd/${f}@${ROOTLESSKIT_VERSION}"
+	done
+)
