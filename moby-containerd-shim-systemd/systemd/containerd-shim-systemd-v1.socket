@@ -1,0 +1,11 @@
+[Unit]
+Description=containerd shim socket for containerd-shim-systemd-v1
+
+[Install]
+WantedBy=sockets.target
+
+[Socket]
+ListenStream=/run/containerd/s/containerd-shim-systemd-v1.sock
+SocketMode=0700
+PassCredentials=yes
+PassSecurity=yes

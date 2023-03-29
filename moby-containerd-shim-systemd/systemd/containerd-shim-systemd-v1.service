@@ -1,0 +1,12 @@
+[Unit]
+Description=containerd shim service that uses systemd to monitor containers
+Requires=containerd.service %N.socket
+
+[Service]
+Type=notify
+Environment=UNIT_NAME=%n
+ExecStart=/usr/bin/containerd-shim-systemd-v1 --address=/run/containerd/containerd.sock serve --ttrpc-address=/run/containerd/containerd.sock.ttrpc --debug=false --root=/run/containerd/io.containerd.systemd.v1 --log-mode=stdio --trace-endpoint= --trace-sample-rate=1.000000 --trace-insecure=false --no-new-namespace=false
+ExecReload=/bin/kill -HUP $MAINPID
+
+[Install]
+WantedBy=multi-user.target
