@@ -1,0 +1,5 @@
+
+if [ -x "/usr/lib/systemd/systemd-update-helper" ]; then
+    /usr/lib/systemd/systemd-update-helper remove-system-units docker.service || :
+fi
+                    

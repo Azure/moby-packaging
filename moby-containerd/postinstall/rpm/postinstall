@@ -1,0 +1,8 @@
+
+if [ -x "/usr/lib/systemd/systemd-update-helper" ]; then
+    /usr/lib/systemd/systemd-update-helper install-system-units containerd.service || : 
+fi
+
+systemctl enable containerd.service > /dev/null 2>&1 || :
+systemctl start containerd.service > /dev/null 2>&1 || :
+                    

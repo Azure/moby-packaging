@@ -1,0 +1,59 @@
+
+if ! grep -q "^docker:" /etc/group; then
+	groupadd --system docker
+fi
+
+APP_PROFILE="/etc/apparmor.d/moby-engine"
+if [ -f "$APP_PROFILE" ]; then
+    # Add the local/ include
+    LOCAL_APP_PROFILE="/etc/apparmor.d/local/moby-engine"
+
+    test -e "$LOCAL_APP_PROFILE" || {
+        mkdir -p "$(dirname "$LOCAL_APP_PROFILE")"
+        install --mode 644 /dev/null "$LOCAL_APP_PROFILE"
+    }
+
+    # Reload the profile, including any abstraction updates
+    if aa-enabled --quiet 2>/dev/null; then
+        apparmor_parser -r -T -W "$APP_PROFILE" || true
+    fi
+fi
+
+# This will only remove masks created by d-s-h on package removal.
+deb-systemd-helper unmask 'docker.service' >/dev/null || true
+
+# was-enabled defaults to true, so new installations run enable.
+if deb-systemd-helper --quiet was-enabled 'docker.service'; then
+    # Enables the unit on first installation, creates new
+    # symlinks on upgrades if the unit file has changed.
+    deb-systemd-helper enable 'docker.service' >/dev/null || true
+else
+    # Update the statefile to add new symlinks (if any), which need to be
+    # cleaned up on purge. Also remove old symlinks.
+    deb-systemd-helper update-state 'docker.service' >/dev/null || true
+fi
+
+# This will only remove masks created by d-s-h on package removal.
+deb-systemd-helper unmask 'docker.socket' >/dev/null || true
+
+# was-enabled defaults to true, so new installations run enable.
+if deb-systemd-helper --quiet was-enabled 'docker.socket'; then
+    # Enables the unit on first installation, creates new
+    # symlinks on upgrades if the unit file has changed.
+    deb-systemd-helper enable 'docker.socket' >/dev/null || true
+else
+    # Update the statefile to add new symlinks (if any), which need to be
+    # cleaned up on purge. Also remove old symlinks.
+    deb-systemd-helper update-state 'docker.socket' >/dev/null || true
+fi
+
+if [ -d /run/systemd/system ]; then
+    systemctl --system daemon-reload >/dev/null || true
+    if [ -n "$2" ]; then
+        _dh_action=restart
+    else
+        _dh_action=start
+    fi
+    deb-systemd-invoke $_dh_action 'docker.service' 'docker.socket' >/dev/null || true
+fi
+                    

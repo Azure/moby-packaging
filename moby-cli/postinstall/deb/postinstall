@@ -1,0 +1,9 @@
+
+#!/bin/sh
+set -e
+
+if ! grep -q "^docker:" /etc/group
+then
+  addgroup --system docker
+fi
+                    

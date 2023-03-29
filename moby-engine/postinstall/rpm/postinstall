@@ -1,0 +1,10 @@
+if ! grep -q "^docker:" /etc/group; then
+	groupadd --system docker
+fi
+
+if [ -x "/usr/lib/systemd/systemd-update-helper" ]; then
+    /usr/lib/systemd/systemd-update-helper install-system-units docker.service || :
+fi
+systemctl enable docker.service > /dev/null 2>&1 || :
+systemctl start docker.service > /dev/null 2>&1 || :
+
