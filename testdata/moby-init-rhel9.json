@@ -1,0 +1,10 @@
+{
+  "arch": "amd64",
+  "commit": "de40ad007797e0dcd8b7126f27bb87401d224240",
+  "repo": "https://github.com/krallin/tini.git",
+  "package": "moby-init",
+  "distro": "rhel9",
+  "tag": "0.19.0",
+  "os": "linux",
+  "revision": "1"
+}

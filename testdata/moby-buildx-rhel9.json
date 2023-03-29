@@ -1,0 +1,10 @@
+{
+  "arch": "amd64",
+  "commit": "00ed17df6d20f3ca4553d45789264cdb78506e5f",
+  "repo": "https://github.com/docker/buildx.git",
+  "package": "moby-buildx",
+  "distro": "rhel9",
+  "tag": "0.10.3",
+  "os": "linux",
+  "revision": "9"
+}
