@@ -66,8 +66,8 @@ func GetTarget(distro string) func(context.Context, *dagger.Client, dagger.Platf
 		return Centos7
 	case "windows":
 		return Windows
-		// case "mariner2":
-		//     return Mariner2Ref
+	case "mariner2":
+		return Mariner2
 	default:
 		panic("unknown distro: " + distro)
 	}
@@ -99,6 +99,36 @@ var (
 		"libltdl-dev",
 		"libseccomp-dev",
 		"quilt",
+	}
+
+	BaseMarinerPackages = []string{
+		"bash",
+		"binutils",
+		"build-essential",
+		"ca-certificates",
+		"cmake",
+		"device-mapper-devel",
+		"diffutils",
+		"dnf-utils",
+		"file",
+		"gcc",
+		"git",
+		"glibc-static",
+		"libffi-devel",
+		"libseccomp-devel",
+		"libtool",
+		"libtool-ltdl-devel",
+		"make",
+		"patch",
+		"pkgconfig",
+		"pkgconfig(systemd)",
+		"rpm-build",
+		"rpmdevtools",
+		"selinux-policy-devel",
+		"systemd-devel",
+		"tar",
+		"which",
+		"yum-utils",
 	}
 
 	BaseRPMPackages = []string{
@@ -151,6 +181,12 @@ func (t *Target) installDepsCmd() []string {
 			yum-config-manager --enable crb || true
             `,
 		}
+	case "mariner2-rpm":
+		return []string{"/bin/sh", "-ec",
+			`
+			yum-config-manager --enable crb || true
+            `,
+		}
 	default:
 		panic("unknown pkgKind: " + t.pkgKind)
 	}
@@ -200,7 +236,7 @@ func (t *Target) Packager(projectName string) archive.Interface {
 	switch t.PkgKind() {
 	case "deb":
 		return archive.NewDebArchive(&a, MirrorPrefix())
-	case "rpm":
+	case "rpm", "mariner2-rpm":
 		return archive.NewRPMArchive(&a, MirrorPrefix())
 	case "win":
 		return archive.NewWinArchive(&a, MirrorPrefix())

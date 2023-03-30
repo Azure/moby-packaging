@@ -1,0 +1,10 @@
+{
+  "arch": "amd64",
+  "commit": "5fd4c4d144137e991c4acebb2146ab1483a97925",
+  "repo": "https://github.com/opencontainers/runc.git",
+  "package": "moby-runc",
+  "distro": "mariner2",
+  "tag": "1.1.4",
+  "os": "linux",
+  "revision": "4"
+}
