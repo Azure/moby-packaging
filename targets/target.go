@@ -182,11 +182,7 @@ func (t *Target) installDepsCmd() []string {
             `,
 		}
 	case "mariner2-rpm":
-		return []string{"/bin/sh", "-ec",
-			`
-			yum-config-manager --enable crb || true
-            `,
-		}
+		return []string{}
 	default:
 		panic("unknown pkgKind: " + t.pkgKind)
 	}
