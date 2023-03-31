@@ -1,6 +1,8 @@
 #!/usr/bin/make -f
+
+BUILDTIME = $(shell TZ=UTC date -u --date="@$(SOURCE_DATE_EPOCH)")
+export BUILDTIME
 export CROSS := true
-include base.mk
 
 export GOPATH := $(CURDIR)/.gopath
 export GOCACHE := $(GOPATH)/.cache
