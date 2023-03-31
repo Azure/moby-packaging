@@ -1,6 +1,5 @@
 #!/usr/bin/make -f
 export CROSS := true
-include base.mk
 
 export GOPATH := $(CURDIR)/.gopath
 export GOCACHE := $(GOPATH)/.cache
