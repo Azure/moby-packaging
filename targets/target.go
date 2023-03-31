@@ -213,7 +213,7 @@ func (t *Target) getCommitTime(projectName string, sourceDir *dagger.Directory) 
 	commitTime, err := t.c.Pipeline(projectName+"/commit-time").
 		WithMountedDirectory("/build/src", sourceDir).
 		WithWorkdir("/build/src").
-		WithExec([]string{"bash", "-ec", `git show -s --format=%cI HEAD > /tmp/COMMITTIME`}).
+		WithExec([]string{"bash", "-ec", `date -u --date=$(git show -s --format=%cI HEAD) +%s > /tmp/COMMITTIME`}).
 		File("/tmp/COMMITTIME").
 		Contents(context.TODO())
 
@@ -230,7 +230,7 @@ func (t *Target) Make(project *build.Spec) *dagger.Directory {
 	md2man := t.goMD2Man()
 
 	source := t.getSource(project)
-	// commitTime := t.getCommitTime(project.Pkg, source)
+	commitTime := t.getCommitTime(project.Pkg, source)
 
 	build := t.c.Pipeline(project.Pkg).
 		WithDirectory("/build", projectDir).
@@ -242,7 +242,7 @@ func (t *Target) Make(project *build.Spec) *dagger.Directory {
 		WithMountedFile("/usr/bin/go-md2man", md2man).
 		WithEnvVariable("VERSION", project.Tag).
 		WithEnvVariable("COMMIT", project.Commit).
-		// WithEnvVariable("SOURCE_DATE_EPOCH", commitTime).
+		WithEnvVariable("SOURCE_DATE_EPOCH", commitTime).
 		WithExec(t.applyPatchesCommand()).
 		WithExec([]string{"/usr/bin/make", t.PkgKind()})
 		// WithExec([]string{"mkdir", "/out"}).
