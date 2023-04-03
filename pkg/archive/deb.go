@@ -83,7 +83,7 @@ func (d *debArchive) Package(client *dagger.Client, c *dagger.Container, project
 	dir := client.Directory()
 	rootDir := "/package"
 
-	version := fmt.Sprintf("%s+azure-%su%d", project.Tag, debDistroMap[project.Distro], 1)
+	version := fmt.Sprintf("%s+azure-%su%s", project.Tag, debDistroMap[project.Distro], project.Revision)
 	c = c.WithDirectory(rootDir, dir)
 	c = d.moveStaticFiles(c, rootDir)
 	c = d.withControlFile(c, version, project)

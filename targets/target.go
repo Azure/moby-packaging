@@ -240,6 +240,7 @@ func (t *Target) Make(project *build.Spec) *dagger.Directory {
 		WithWorkdir("/build").
 		WithExec(t.installDepsCmd()).
 		WithMountedFile("/usr/bin/go-md2man", md2man).
+		WithEnvVariable("REVISION", project.Revision).
 		WithEnvVariable("VERSION", project.Tag).
 		WithEnvVariable("COMMIT", project.Commit).
 		WithEnvVariable("SOURCE_DATE_EPOCH", commitTime).
