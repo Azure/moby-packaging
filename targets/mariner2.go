@@ -14,7 +14,6 @@ func Mariner2(ctx context.Context, client *dagger.Client, platform dagger.Platfo
 	c := client.Container(dagger.ContainerOpts{Platform: platform}).From(Mariner2Ref).
 		WithExec([]string{"bash", "-c", `
         yum -y install dnf-plugins-core || true
-        # yum config-manager --set-enabled powertools || true
         `})
 	c = tdnf.Install(c, BaseMarinerPackages...)
 

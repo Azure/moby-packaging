@@ -168,26 +168,6 @@ func (t *Target) PkgKind() string {
 	return t.pkgKind
 }
 
-func (t *Target) installDepsCmd() []string {
-	switch t.pkgKind {
-	case "deb":
-		return []string{}
-	case "win":
-		return []string{}
-	case "rpm":
-		return []string{"/bin/sh", "-ec",
-			`
-            yum-config-manager --enable powertools || yum-config-manager --enable resilientstorage
-			yum-config-manager --enable crb || true
-            `,
-		}
-	case "mariner2-rpm":
-		return []string{}
-	default:
-		panic("unknown pkgKind: " + t.pkgKind)
-	}
-}
-
 func (t *Target) applyPatchesCommand() []string {
 	return []string{
 		"bash", "-exc", `
@@ -270,7 +250,6 @@ func (t *Target) Make(project *build.Spec) *dagger.Directory {
 		WithDirectory("/build/hack/cross", hackDir).
 		WithDirectory("/build/src", source).
 		WithWorkdir("/build").
-		WithExec(t.installDepsCmd()).
 		WithMountedFile("/usr/bin/go-md2man", md2man).
 		WithEnvVariable("REVISION", project.Revision).
 		WithEnvVariable("VERSION", project.Tag).
