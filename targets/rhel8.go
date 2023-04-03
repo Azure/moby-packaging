@@ -17,8 +17,11 @@ func Rhel8(ctx context.Context, client *dagger.Client, platform dagger.Platform)
 		WithExec([]string{"bash", "-c", `
         yum -y install dnf-plugins-core || true
         yum config-manager --set-enabled powertools || true
+        yum install -y gcc-toolset-12-binutils
         `})
 	c = YumInstall(c, BaseRPMPackages...)
+	c = c.WithEnvVariable("GCC_VERSION", "12").
+		WithEnvVariable("GCC_ENV_VILE", "/opt/rh/gcc-toolset-12/enable")
 
 	buildPlatform, err := client.DefaultPlatform(ctx)
 	if err != nil {
