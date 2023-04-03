@@ -1,6 +1,4 @@
-.PHONY: mariner2-rpm rpm deb rpm/% deb/% win win/%
-
-mariner2-rpm: rpm
+.PHONY: rpm deb rpm/% deb/% win win/%
 
 rpm deb win:
 	$(MAKE) -f $(@).mk $@
