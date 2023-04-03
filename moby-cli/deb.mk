@@ -1,5 +1,8 @@
 deb: _binary _man
 
+BUILDTIME = $(shell TZ=UTC date -u --date="@$(SOURCE_DATE_EPOCH)")
+export BUILDTIME
+
 $(GOPATH)/src/github.com/docker/cli:
 	mkdir -p $(@D)
 	ln -s $(CURDIR)/src $(@)

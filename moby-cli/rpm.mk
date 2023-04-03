@@ -1,4 +1,7 @@
 rpm: _binary _man
+
+BUILDTIME = $(shell TZ=UTC date -u --date="@$(SOURCE_DATE_EPOCH)")
+export BUILDTIME
 .PHONY: rpm
 
 $(GOPATH)/src/github.com/docker/cli:
