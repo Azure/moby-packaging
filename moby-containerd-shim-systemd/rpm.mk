@@ -3,4 +3,8 @@
 export GOGC=off
 
 rpm:
-	cd src && make build
+	if [ -n "$$GCC_VERSION" ] && [ -n "$$GCC_ENV_VILE" ]; then\
+		source "$$GCC_ENV_VILE"; \
+		fi; \
+		cd src && make build
+
