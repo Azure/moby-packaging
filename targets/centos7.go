@@ -13,11 +13,7 @@ var (
 
 func Centos7(ctx context.Context, client *dagger.Client, platform dagger.Platform) (*Target, error) {
 	client = client.Pipeline("centos7/" + string(platform))
-	c := client.Container(dagger.ContainerOpts{Platform: platform}).From(Centos7Ref).
-		WithExec([]string{"bash", "-c", `
-        yum -y install dnf-plugins-core || true
-        yum config-manager --set-enabled powertools || true
-        `})
+	c := client.Container(dagger.ContainerOpts{Platform: platform}).From(Centos7Ref)
 	c = YumInstall(c, BaseRPMPackages...)
 
 	buildPlatform, err := client.DefaultPlatform(ctx)

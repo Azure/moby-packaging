@@ -11,10 +11,7 @@ const Mariner2Ref = "mcr.microsoft.com/cbl-mariner/base/core:2.0"
 
 func Mariner2(ctx context.Context, client *dagger.Client, platform dagger.Platform) (*Target, error) {
 	client = client.Pipeline("mariner2/" + string(platform))
-	c := client.Container(dagger.ContainerOpts{Platform: platform}).From(Mariner2Ref).
-		WithExec([]string{"bash", "-c", `
-        yum -y install dnf-plugins-core || true
-        `})
+	c := client.Container(dagger.ContainerOpts{Platform: platform}).From(Mariner2Ref)
 	c = tdnf.Install(c, BaseMarinerPackages...)
 
 	buildPlatform, err := client.DefaultPlatform(ctx)

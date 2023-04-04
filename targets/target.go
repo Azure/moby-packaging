@@ -212,7 +212,7 @@ func (t *Target) Packager(projectName string) archive.Interface {
 	switch t.PkgKind() {
 	case "deb":
 		return archive.NewDebArchive(&a, MirrorPrefix())
-	case "rpm", "mariner2-rpm":
+	case "rpm":
 		return archive.NewRPMArchive(&a, MirrorPrefix())
 	case "win":
 		return archive.NewWinArchive(&a, MirrorPrefix())

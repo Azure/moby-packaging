@@ -14,11 +14,9 @@ var (
 func Rhel9(ctx context.Context, client *dagger.Client, platform dagger.Platform) (*Target, error) {
 	client = client.Pipeline("rhel9/" + string(platform))
 	c := client.Container(dagger.ContainerOpts{Platform: platform}).From(Rhel9Ref).
-		WithExec([]string{"bash", "-c", `
-        yum -y install dnf-plugins-core || true
-        yum config-manager --set-enabled powertools || true
-        yum config-manager --enable powertools || yum config-manager --enable resilientstorage
-        yum config-manager --enable crb || true
+		WithExec([]string{"bash", "-ec", `
+        yum -y install dnf-plugins-core
+        yum config-manager --enable crb
         `})
 	c = YumInstall(c, BaseRPMPackages...)
 
