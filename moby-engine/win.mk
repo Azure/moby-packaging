@@ -1,7 +1,5 @@
 #!/usr/bin/make -f
 
-include base.mk
-
 export GOPATH := $(CURDIR)/.gopath
 export GOCACHE := $(GOPATH)/.cache
 export GOPROXY := off
