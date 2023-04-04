@@ -1,0 +1,17 @@
+Description: Packages aren't supposed to install binaries into /usr/local, and so we don't. Our containerd is in /usr/bin.
+Author: Brian Goff (brgoff@microsoft.com)
+Last-Update: 2021-04-27
+Forwarded: not-needed
+diff --git a/containerd.service b/containerd.service
+index cae30ec7..3230d759 100644
+--- a/containerd.service
++++ b/containerd.service
+@@ -5,7 +5,7 @@ After=network.target local-fs.target
+
+ [Service]
+ ExecStartPre=-/sbin/modprobe overlay
+-ExecStart=/usr/local/bin/containerd
++ExecStart=/usr/bin/containerd
+
+ Type=notify
+ Delegate=yes

@@ -66,8 +66,8 @@ func GetTarget(distro string) func(context.Context, *dagger.Client, dagger.Platf
 		return Centos7
 	case "windows":
 		return Windows
-		// case "mariner2":
-		//     return Mariner2Ref
+	case "mariner2":
+		return Mariner2
 	default:
 		panic("unknown distro: " + distro)
 	}
@@ -99,6 +99,36 @@ var (
 		"libltdl-dev",
 		"libseccomp-dev",
 		"quilt",
+	}
+
+	BaseMarinerPackages = []string{
+		"bash",
+		"binutils",
+		"build-essential",
+		"ca-certificates",
+		"cmake",
+		"device-mapper-devel",
+		"diffutils",
+		"dnf-utils",
+		"file",
+		"gcc",
+		"git",
+		"glibc-static",
+		"libffi-devel",
+		"libseccomp-devel",
+		"libtool",
+		"libtool-ltdl-devel",
+		"make",
+		"patch",
+		"pkgconfig",
+		"pkgconfig(systemd)",
+		"rpm-build",
+		"rpmdevtools",
+		"selinux-policy-devel",
+		"systemd-devel",
+		"tar",
+		"which",
+		"yum-utils",
 	}
 
 	BaseRPMPackages = []string{
@@ -136,24 +166,6 @@ func (t *Target) WithExec(args []string, opts ...dagger.ContainerWithExecOpts) *
 
 func (t *Target) PkgKind() string {
 	return t.pkgKind
-}
-
-func (t *Target) installDepsCmd() []string {
-	switch t.pkgKind {
-	case "deb":
-		return []string{}
-	case "win":
-		return []string{}
-	case "rpm":
-		return []string{"/bin/sh", "-ec",
-			`
-            yum-config-manager --enable powertools || yum-config-manager --enable resilientstorage
-			yum-config-manager --enable crb || true
-            `,
-		}
-	default:
-		panic("unknown pkgKind: " + t.pkgKind)
-	}
 }
 
 func (t *Target) applyPatchesCommand() []string {
@@ -238,7 +250,6 @@ func (t *Target) Make(project *build.Spec) *dagger.Directory {
 		WithDirectory("/build/hack/cross", hackDir).
 		WithDirectory("/build/src", source).
 		WithWorkdir("/build").
-		WithExec(t.installDepsCmd()).
 		WithMountedFile("/usr/bin/go-md2man", md2man).
 		WithEnvVariable("REVISION", project.Revision).
 		WithEnvVariable("VERSION", project.Tag).
