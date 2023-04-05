@@ -82,7 +82,7 @@ func (r *rpmArchive) Package(client *dagger.Client, c *dagger.Container, project
 		"--version", project.Tag + "+azure",
 		"--iteration", project.Revision,
 		"--rpm-dist", rpmDistroMap[project.Distro],
-		"--architecture", project.Arch,
+		"--architecture", strings.Replace(project.Arch, "/", "", -1),
 		"--description", r.a.Description,
 		"--url", r.a.Webpage,
 	}

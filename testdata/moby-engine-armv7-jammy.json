@@ -1,0 +1,10 @@
+{
+  "arch": "arm/v7",
+  "commit": "d7573ab8672555762688f4c7ab8cc69ae8ec1a47",
+  "repo": "https://github.com/moby/moby.git",
+  "package": "moby-engine",
+  "distro": "jammy",
+  "tag": "23.0.0",
+  "os": "linux",
+  "revision": "0"
+}

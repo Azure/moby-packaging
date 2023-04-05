@@ -2,6 +2,7 @@ package targets
 
 import (
 	"context"
+	"fmt"
 	"os"
 	buildx "packaging/moby-buildx"
 	cli "packaging/moby-cli"
@@ -181,13 +182,19 @@ func (t *Target) applyPatchesCommand() []string {
 	}
 }
 
-func (t *Target) goMD2Man() *dagger.File {
+func (t *Target) goMD2Man(os, arch string) *dagger.File {
 	repo := "https://github.com/cpuguy83/go-md2man.git"
 	ref := "v2.0.2"
 	outfile := "/build/bin/go-md2man"
-	d := t.client.Git(repo, dagger.GitOpts{KeepGitDir: true}).Commit(ref).Tree()
-	c := t.client.Container().From(GoRef).
-		WithDirectory("/build", d).
+	srcDir := t.client.Git(repo, dagger.GitOpts{KeepGitDir: true}).Commit(ref).Tree()
+
+	targetPlatformOpt := dagger.ContainerOpts{
+		Platform: dagger.Platform(fmt.Sprintf("%s/%s", os, arch)),
+	}
+
+	c := t.client.Container(targetPlatformOpt).
+		From(GoRef).
+		WithDirectory("/build", srcDir).
 		WithWorkdir("/build").
 		WithEnvVariable("CGO_ENABLED", "0").
 		WithExec([]string{"go", "build", "-o", outfile})
@@ -239,7 +246,7 @@ func (t *Target) getCommitTime(projectName string, sourceDir *dagger.Directory) 
 func (t *Target) Make(project *build.Spec) *dagger.Directory {
 	projectDir := t.client.Host().Directory(project.Pkg)
 	hackDir := t.client.Host().Directory("hack/cross")
-	md2man := t.goMD2Man()
+	md2man := t.goMD2Man(project.OS, project.Arch)
 
 	source := t.getSource(project)
 	commitTime := t.getCommitTime(project.Pkg, source)

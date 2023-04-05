@@ -95,7 +95,7 @@ func (d *debArchive) Package(client *dagger.Client, c *dagger.Container, project
 		"-t", "deb",
 		"-n", project.Pkg,
 		"--version", version,
-		"--architecture", project.Arch,
+		"--architecture", strings.Replace(project.Arch, "/", "", -1),
 		"--deb-custom-control", "/build/control",
 	}
 
