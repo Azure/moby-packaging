@@ -1,0 +1,70 @@
+parameters:
+  - name: os
+    displayName: os
+    type: string
+    default: linux
+  - name: arch
+    displayName: arch
+    type: string
+    default: amd64
+  - name: commit
+    displayName: commit
+    type: string
+    default: ""
+  - name: distro
+    displayName: distro
+    type: string
+    default: ""
+  - name: github_repo
+    displayName: github_repo
+    type: string
+    default: ""
+  - name: package_name
+    displayName: package_name
+    type: string
+    default: "moby-containerd"
+  - name: pmc_repo
+    displayName: pmc_repo
+    type: string
+    default: ""
+  - name: release_main
+    displayName: release_main
+    type: boolean
+    default: False
+  - name: release_testing
+    displayName: release_testing
+    type: boolean
+    default: False
+  - name: tag
+    displayName: tag
+    type: string
+    default: ""
+
+stages:
+  - stage: Build
+    jobs:
+      - job: Build_${{ replace(parameters.package_name, '-', '_') }}_${{ parameters.distro }}_${{ replace(parameters.arch, '/', '') }}
+        pool: $(build.pool)
+        timeoutInMinutes: 240
+        steps:
+          - checkout: packaging
+            path: packaging
+          - bash: |
+              go install golang.org/dl/go1.20.3@latest
+              export PATH="${HOME}/go/bin:$PATH"
+              go1.20.3 download
+
+              cd $(Pipeline.Workspace)/packaging
+              set -x
+              printf '
+                {
+                  "arch": "${{ parameters.arch }}",
+                  "commit": "${{ parameters.commit }}",
+                  "repo": "https://github.com/${{ parameters.github_repo }}.git",
+                  "package": "${{ parameters.package_name }}",
+                  "distro": "${{ parameters.distro }}",
+                  "tag": "${{ parameters.tag }}",
+                  "os": "${{ parameters.os }}",
+                  "revision": "${{ coalesce(parameters.revision, '1') }}"
+                }
+              ' | go1.20.3 run packaging --build-spec=/dev/stdin
