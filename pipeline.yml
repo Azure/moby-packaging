@@ -42,7 +42,13 @@ parameters:
   - name: revision
     displayName: revision
     type: string
-    default: ""
+    default: "1"
+
+variables:
+  ${{ if contains(parameters.arch, 'arm') }}:
+    build.pool: staging-pool-arm64
+  ${{ else }}:
+    build.pool: staging-pool
 
 stages:
   - stage: Build
