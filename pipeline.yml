@@ -51,8 +51,6 @@ stages:
         pool: $(build.pool)
         timeoutInMinutes: 240
         steps:
-          - checkout: packaging
-            path: packaging
           - bash: |
               go install golang.org/dl/go1.20.3@latest
               export PATH="${HOME}/go/bin:$PATH"
