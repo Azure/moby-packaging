@@ -22,7 +22,7 @@ parameters:
   - name: package_name
     displayName: package_name
     type: string
-    default: "moby-containerd"
+    default: ""
   - name: pmc_repo
     displayName: pmc_repo
     type: string
@@ -39,6 +39,16 @@ parameters:
     displayName: tag
     type: string
     default: ""
+  - name: revision
+    displayName: revision
+    type: string
+    default: "1"
+
+variables:
+  ${{ if contains(parameters.arch, 'arm') }}:
+    build.pool: staging-pool-arm64
+  ${{ else }}:
+    build.pool: staging-pool
 
 stages:
   - stage: Build
@@ -47,8 +57,6 @@ stages:
         pool: $(build.pool)
         timeoutInMinutes: 240
         steps:
-          - checkout: packaging
-            path: packaging
           - bash: |
               go install golang.org/dl/go1.20.3@latest
               export PATH="${HOME}/go/bin:$PATH"
