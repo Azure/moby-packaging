@@ -1,0 +1,10 @@
+{
+  "arch": "arm64",
+  "commit": "1fbd70374134b891f97ce19c70b6e50c7b9f4e0d",
+  "repo": "https://github.com/containerd/containerd.git",
+  "package": "moby-containerd",
+  "distro": "jammy",
+  "tag": "1.7.0",
+  "os": "linux",
+  "revision": "7"
+}
