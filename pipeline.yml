@@ -22,7 +22,7 @@ parameters:
   - name: package_name
     displayName: package_name
     type: string
-    default: "moby-containerd"
+    default: ""
   - name: pmc_repo
     displayName: pmc_repo
     type: string
@@ -37,6 +37,10 @@ parameters:
     default: False
   - name: tag
     displayName: tag
+    type: string
+    default: ""
+  - name: revision
+    displayName: revision
     type: string
     default: ""
 
