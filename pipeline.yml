@@ -58,11 +58,6 @@ stages:
         timeoutInMinutes: 240
         steps:
           - bash: |
-              go install golang.org/dl/go1.20.3@latest
-              export PATH="${HOME}/go/bin:$PATH"
-              go1.20.3 download
-
-              cd $(Pipeline.Workspace)/packaging
               set -x
               printf '
                 {
@@ -75,4 +70,4 @@ stages:
                   "os": "${{ parameters.os }}",
                   "revision": "${{ coalesce(parameters.revision, '1') }}"
                 }
-              ' | go1.20.3 run packaging --build-spec=/dev/stdin
+              ' | go run packaging --build-spec=/dev/stdin
