@@ -84,7 +84,7 @@ stages:
           - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
             displayName: Generate SBOM
             inputs:
-              BuildDropPath: $(Pipeline.Workspace)/bundles/${{ parameters.distro }}/${{replace(parameters.arch, '/', '_')}}
+              BuildDropPath: $(Pipeline.Workspace)/bundles/${{ parameters.distro }}
           - task: PublishBuildArtifacts@1
             inputs:
               pathToPublish: "$(Pipeline.Workspace)/bundles"
