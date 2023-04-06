@@ -79,12 +79,7 @@ stages:
                 }
               ' | go run packaging \
                     --build-spec=/dev/stdin \
-                    --out-dir="{PIPELINE_WORKSPACE}/bundles"
-
-              printf "WORKSPACE/BUNDLES: "
-              ls "${PIPELINE_WORKSPACE}/bundles" -a
-              printf "THIS DIR: "
-              ls -a
+                    --out-dir="${PIPELINE_WORKSPACE}/bundles"
             displayName: Dagger build
           - task: PublishBuildArtifacts@1
             inputs:
