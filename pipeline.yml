@@ -81,6 +81,10 @@ stages:
                     --build-spec=/dev/stdin \
                     --out-dir="{PIPELINE_WORKSPACE}/bundles"
             displayName: Dagger build
+          - task: PublishBuildArtifacts@1
+            inputs:
+              pathToPublish: "$(Pipeline.Workspace)/bundles"
+              artifactName: packages
           - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
             displayName: Generate SBOM
             inputs:
