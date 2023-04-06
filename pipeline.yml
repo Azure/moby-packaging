@@ -46,9 +46,9 @@ parameters:
 
 variables:
   ${{ if contains(parameters.arch, 'arm') }}:
-    build.pool: staging-pool-arm64
+    build.pool: staging-pool-arm64-mariner-2
   ${{ else }}:
-    build.pool: staging-pool
+    build.pool: staging-pool-amd64-mariner-2
 
 stages:
   - stage: Build
