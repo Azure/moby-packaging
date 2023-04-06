@@ -33,6 +33,7 @@ func main() {
 	}()
 
 	buildSpec := flags.String("build-spec", "", "Location of the build spec json file")
+	outDir := flags.String("out-dir", "bundles", "Location of the build spec json file")
 
 	if err := flags.Parse(os.Args[1:]); err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -75,7 +76,7 @@ func main() {
 		spec.Arch = a
 	}
 
-	if err := do(ctx, client, spec); err != nil {
+	if err := do(ctx, client, spec, *outDir); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
@@ -95,7 +96,7 @@ func readBuildSpec(filename string) (*build.Spec, error) {
 	return &spec, nil
 }
 
-func do(ctx context.Context, client *dagger.Client, cfg *build.Spec) error {
+func do(ctx context.Context, client *dagger.Client, cfg *build.Spec, outDir string) error {
 	platform := dagger.Platform(fmt.Sprintf("%s/%s", cfg.OS, cfg.Arch))
 
 	target, err := targets.GetTarget(cfg.Distro)(ctx, client, platform)
@@ -104,6 +105,6 @@ func do(ctx context.Context, client *dagger.Client, cfg *build.Spec) error {
 	}
 	out := target.Make(cfg)
 
-	_, err = out.Export(ctx, filepath.Join("bundles", cfg.Distro))
+	_, err = out.Export(ctx, filepath.Join(outDir, cfg.Distro))
 	return err
 }

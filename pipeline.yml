@@ -57,6 +57,13 @@ stages:
         pool: $(build.pool)
         timeoutInMinutes: 240
         steps:
+          - script: |
+              mkdir -p "${PIPELINE_WORKSPACE}/bundles" && echo "${{ parameters.tag }}" > "${PIPELINE_WORKSPACE}/bundles/VERSION"
+            displayName: Set up output directory
+          - task: PublishBuildArtifacts@1
+            inputs:
+              pathToPublish: "$(Pipeline.Workspace)/bundles"
+              artifactName: packages
           - bash: |
               set -x
               printf '
@@ -70,4 +77,15 @@ stages:
                   "os": "${{ parameters.os }}",
                   "revision": "${{ coalesce(parameters.revision, '1') }}"
                 }
-              ' | go run packaging --build-spec=/dev/stdin
+              ' | go run packaging \
+                    --build-spec=/dev/stdin \
+                    --out-dir="{PIPELINE_WORKSPACE}/bundles"
+            displayName: Dagger build
+          - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
+            displayName: Generate SBOM
+            inputs:
+              BuildDropPath: $(Pipeline.Workspace)/bundles/${{ parameters.distro }}/${{replace(parameters.arch, '/', '_')}}
+          - task: PublishBuildArtifacts@1
+            inputs:
+              pathToPublish: "$(Pipeline.Workspace)/bundles"
+              artifactName: packages
