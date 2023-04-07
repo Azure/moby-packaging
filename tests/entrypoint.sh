@@ -19,6 +19,7 @@ systemctl disable systemd-network-generator.service || true
 systemctl mask systemd-network-generator.service || true
 systemctl disable systemd-networkd-wait-online.service || true
 systemctl mask systemd-networkd-wait-online.service || true
+systemctl enable --now testingapi.service
 
 cat /etc/hostname >/tmp/hostname
 umount /etc/hostname

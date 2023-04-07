@@ -6,3 +6,6 @@ Wants=network-online.target
 
 [Service]
 ExecStart=/usr/local/bin/testingapi
+
+[Install]
+Alias=hello.service
