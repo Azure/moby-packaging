@@ -1,4 +1,4 @@
-package tests
+package main
 
 import (
 	"packaging/pkg/apt"
