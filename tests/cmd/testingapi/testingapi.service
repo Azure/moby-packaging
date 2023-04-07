@@ -1,0 +1,8 @@
+[Unit]
+Description=Testing API for our janky testing setup
+Documentation=So Funny
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/usr/local/bin/testingapi
