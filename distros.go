@@ -55,6 +55,8 @@ func Jammy(client *dagger.Client) *dagger.Container {
 		WithExec([]string{"/usr/bin/dpkg", "-i", "/tmp/packages-microsoft-prod.deb"}).
 		WithMountedFile("/usr/local/bin/aptly", aptly)
 
+	c2 = c2.WithExec([]string{"apt", "update"}).WithExec([]string{"apt", "install", "-y", "systemd", "strace"}).WithExec([]string{"ln", "-s", "/lib/systemd/systemd", "/sbin/init"})
+
 	return c.WithRootfs(c2.Rootfs())
 }
 

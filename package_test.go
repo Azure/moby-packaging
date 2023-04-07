@@ -57,18 +57,18 @@ func TestPackage(t *testing.T) {
 			WithExec([]string{"go", "build", "-o", "/tmp/testingapi", "./cmd/testingapi"}).
 			File("/tmp/testingapi")
 
-			// daemonBin.Export(ctx, "/home/pme/testingapi")
-
 		s, err := getContainer(client).
 			WithFile("/usr/local/bin/testingapi", daemonBin).
+			WithMountedTemp("/tmp").
+			WithMountedTemp("/run").
+			WithMountedTemp("/run/lock").
+			// WithMountedDirectory("/sys/fs/cgroup", cg).
 			WithNewFile("/etc/systemd/system/testingapi.service", dagger.ContainerWithNewFileOpts{
 				Contents:    systemdUnit,
 				Permissions: 0o644,
 			}).
-			WithExec([]string{"bash", "-c", `
-                apt-get update && apt-get install -y systemd curl ca-certificates aptly && c_rehash
-            `}).
-			WithExec([]string{"bash", "-c", systemdScript}).Stdout(ctx)
+			WithNewFile("/entrypoint.sh", dagger.ContainerWithNewFileOpts{Contents: systemdScript, Permissions: 0o755}).
+			WithExec([]string{"/entrypoint.sh"}, dagger.ContainerWithExecOpts{InsecureRootCapabilities: true}).Stdout(ctx)
 
 		fmt.Println(s)
 		if err != nil {
