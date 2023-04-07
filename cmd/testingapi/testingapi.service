@@ -8,4 +8,3 @@ Wants=network-online.target
 ExecStart=/usr/local/bin/testingapi
 
 [Install]
-Alias=hello.service
