@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -e -o xtrace
+set -e
 
 systemctl mask getty
 systemctl mask systemd-networkd || true
@@ -19,7 +19,6 @@ systemctl disable systemd-network-generator.service || true
 systemctl mask systemd-network-generator.service || true
 systemctl disable systemd-networkd-wait-online.service || true
 systemctl mask systemd-networkd-wait-online.service || true
-systemctl enable testingapi.service
 
 cat /etc/hostname >/tmp/hostname
 umount /etc/hostname || true
@@ -33,4 +32,5 @@ cat /etc/resolv.conf >/tmp/resolv.conf
 umount /etc/resolv.conf || true
 mv /tmp/resolv.conf /etc/resolv.conf
 
+echo "executing /sbin/init" >&2
 exec /sbin/init

@@ -2,15 +2,23 @@ package main
 
 import (
 	"context"
-	"embed"
 	_ "embed"
+	"encoding/json"
 	"fmt"
-	gofs "io/fs"
+	"io"
+	"os"
 	"path"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"dagger.io/dagger"
+	"github.com/cpuguy83/go-docker"
+	"github.com/cpuguy83/go-docker/container"
+	"github.com/cpuguy83/go-docker/container/containerapi"
+	"github.com/cpuguy83/go-docker/container/containerapi/mount"
+	"github.com/cpuguy83/go-docker/image"
+	"golang.org/x/sync/errgroup"
 )
 
 var (
@@ -19,12 +27,6 @@ var (
 
 	//go:embed tests/entrypoint.sh
 	systemdScript string
-
-	//go:embed cmd/testingapi/testingapi.service
-	systemdUnit string
-
-	//go:embed go.mod go.sum all:cmd
-	daemonDir embed.FS
 )
 
 func TestPackage(t *testing.T) {
@@ -36,102 +38,139 @@ func TestPackage(t *testing.T) {
 			t.Fatalf("unknown distro: %s", buildSpec.Distro)
 		}
 
-		build := getContainer(client)
-		var err error
-		build, err = installGo(ctx, build)
+		client := getClient(t)
+
+		c := getContainer(client).
+			WithNewFile("/entrypoint.sh", dagger.ContainerWithNewFileOpts{Contents: systemdScript, Permissions: 0o755})
+
+		dir := t.TempDir()
+		imgPath := filepath.Join(dir, "img.tar")
+
+		_, err := c.Export(ctx, imgPath)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		daemonBuildDir := client.Directory()
-		daemonBuildDir, err = GoFSToDagger(daemonDir, daemonBuildDir, func(s string) string {
-			return filepath.Join("build", s)
+		f, err := os.Open(imgPath)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer f.Close()
+
+		docker := docker.NewClient()
+		var loadRef string
+		err = docker.ImageService().Load(ctx, f, func(config *image.LoadConfig) error {
+			config.ConsumeProgress = func(ctx context.Context, rdr io.Reader) error {
+				type progress struct {
+					Stream string
+				}
+				var p progress
+
+				for {
+					if err := json.NewDecoder(rdr).Decode(&p); err != nil {
+						if err == io.EOF {
+							break
+						}
+						return err
+					}
+					if p.Stream == "" {
+						continue
+					}
+
+					_, ref, ok := strings.Cut(p.Stream, ":")
+					if !ok {
+						continue
+					}
+					loadRef = strings.TrimSpace(ref)
+					break
+
+				}
+				io.Copy(io.Discard, rdr)
+				if loadRef == "" {
+					return fmt.Errorf("failed to find load ref")
+				}
+				return nil
+			}
+			return nil
 		})
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		daemonBin := build.
-			WithDirectory("/build", daemonBuildDir).
-			WithWorkdir("/build/build").
-			WithExec([]string{"go", "build", "-o", "/tmp/testingapi", "./cmd/testingapi"}).
-			File("/tmp/testingapi")
+		withHC := container.WithCreateHostConfig(
+			containerapi.HostConfig{
+				Privileged: true,
+				AutoRemove: true,
+				Mounts: []mount.Mount{
+					{
+						Type:     mount.TypeBind,
+						Source:   "/sys/fs/cgroup",
+						Target:   "/sys/fs/cgroup",
+						ReadOnly: true,
+					},
+				},
+			},
+		)
 
-		s, err := getContainer(client).
-			WithFile("/usr/local/bin/testingapi", daemonBin).
-			WithMountedTemp("/tmp").
-			WithMountedTemp("/run").
-			WithMountedTemp("/run/lock").
-			// WithMountedDirectory("/sys/fs/cgroup", cg).
-			WithNewFile("/etc/systemd/system/testingapi.service", dagger.ContainerWithNewFileOpts{
-				Contents:    systemdUnit,
-				Permissions: 0o644,
-			}).
-			WithNewFile("/entrypoint.sh", dagger.ContainerWithNewFileOpts{Contents: systemdScript, Permissions: 0o755}).
-			WithExec([]string{"/entrypoint.sh"}, dagger.ContainerWithExecOpts{InsecureRootCapabilities: true}).Stdout(ctx)
-
-		fmt.Println(s)
+		ctr, err := docker.ContainerService().Create(ctx, loadRef, withHC, container.WithCreateConfig(
+			containerapi.Config{
+				Image:      loadRef,
+				Entrypoint: []string{"/entrypoint.sh"},
+				StopSignal: "SIGRTMIN+3",
+				Env:        []string{"container=docker"},
+			},
+		))
 		if err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
 
+		t.Cleanup(func() {
+			docker.ContainerService().Remove(ctx, ctr.ID(), container.WithRemoveForce)
+		})
+
+		ws, err := ctr.Wait(ctx, container.WithWaitCondition(container.WaitConditionNextExit))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		eg, ctx := errgroup.WithContext(ctx)
+		eg.Go(func() error {
+			code, err := ws.ExitCode()
+			if err != nil {
+				return err
+			}
+			if code != 0 {
+				ctr.Logs(ctx, func(cfg *container.LogReadConfig) {
+					cfg.Stdout = &testWriter{t: t, prefix: "logs-stdout"}
+					cfg.Stderr = &testWriter{t: t, prefix: "logs-stderr"}
+				})
+				return fmt.Errorf("exit code: %d", code)
+			}
+			return nil
+		})
+		defer func() {
+			ctr.Stop(ctx)
+			if err := eg.Wait(); err != nil {
+
+				t.Error(err)
+			}
+		}()
+
+		if err := ctr.Start(ctx); err != nil {
+			t.Fatal(err)
+		}
+
+		ep, err := ctr.Exec(ctx, func(config *container.ExecConfig) {
+			config.Cmd = []string{"/opt/moby/install.sh"}
+			config.Privileged = true
+			config.Stdout = &testWriter{t: t, prefix: "exec-stdout"}
+			config.Stderr = &testWriter{t: t, prefix: "exec-stderr"}
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := ep.Start(ctx); err != nil {
+			t.Fatal(err)
+		}
 	})
-}
-
-// GoFSToDa// RewriteFn is a function that can be used to rewrite the path of a file or directory
-// It is used by GoFSToDagger to allow callers to pass in a function that can rewrite the path.
-type RewriteFn func(string) string
-
-func GoFSToDagger(fs gofs.FS, dir *dagger.Directory, rewrite RewriteFn) (*dagger.Directory, error) {
-	err := gofs.WalkDir(fs, ".", func(path string, d gofs.DirEntry, err error) error {
-		// fmt.Println(path)
-		if err != nil {
-			return err
-		}
-
-		rewritten := rewrite(path)
-		if rewritten == "" {
-			return nil
-		}
-
-		if path == "." {
-			return nil
-		}
-
-		fi, err := d.Info()
-		if err != nil {
-			return err
-		}
-
-		perm := fi.Mode().Perm()
-		if d.IsDir() {
-			dir = dir.WithNewDirectory(rewritten, dagger.DirectoryWithNewDirectoryOpts{Permissions: int(perm)})
-			return nil
-		}
-
-		b, err := gofs.ReadFile(fs, path)
-		if err != nil {
-			return err
-		}
-
-		dir = dir.WithNewFile(rewritten, string(b), dagger.DirectoryWithNewFileOpts{Permissions: int(perm)})
-		return nil
-	})
-	return dir, err
-}
-
-func installGo(ctx context.Context, c *dagger.Container) (*dagger.Container, error) {
-	dir := c.From(GoRef).Directory("/usr/local/go")
-	pathEnv, err := c.EnvVariable(ctx, "PATH")
-	if err != nil {
-		return nil, fmt.Errorf("error getting PATH: %w", err)
-	}
-	if pathEnv == "" {
-		return nil, fmt.Errorf("PATH is empty")
-	}
-
-	return c.WithDirectory("/usr/local/go", dir).
-		WithEnvVariable("PATH", "/go/bin:/usr/local/go/bin:"+pathEnv).
-		WithEnvVariable("GOROOT", "/usr/local/go").
-		WithEnvVariable("GOPATH", "/go"), nil
 }
