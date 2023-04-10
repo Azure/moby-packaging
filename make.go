@@ -5,14 +5,12 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"net/http"
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"packaging/targets"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"packaging/pkg/build"
 
@@ -21,29 +19,10 @@ import (
 )
 
 func main() {
-	flags := flag.NewFlagSet(filepath.Base(os.Args[0]), flag.ExitOnError)
+	outDir := flag.String("output", "bundles", "Output directory for built packages (note the distro name will be appended to this path)")
+	buildSpec := flag.String("build-spec", "", "Location of the build spec json file")
 
-	go func() {
-		server := &http.Server{
-			Addr:              "localhost:6060",
-			ReadHeaderTimeout: 3 * time.Second,
-		}
-		err := server.ListenAndServe()
-		fmt.Fprintln(os.Stderr, err)
-	}()
-
-	buildSpec := flags.String("build-spec", "", "Location of the build spec json file")
-
-	if err := flags.Parse(os.Args[1:]); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
-
-	if *buildSpec == "" {
-		fmt.Fprintln(os.Stderr, "no build spec provided")
-		flag.Usage()
-		os.Exit(1)
-	}
+	flag.Parse()
 
 	spec, err := readBuildSpec(*buildSpec)
 	if err != nil {
@@ -57,31 +36,27 @@ func main() {
 	client, err := dagger.Connect(ctx, dagger.WithLogOutput(os.Stderr))
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		os.Exit(2)
 	}
 	defer client.Close()
 
-	if spec.Arch == "" {
-		p, err := client.DefaultPlatform(ctx)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, "Could not get default platform:", err)
-			os.Exit(1)
-		}
-		_, a, ok := strings.Cut(string(p), "/")
-		if !ok {
-			fmt.Fprintln(os.Stderr, "got unexpected platform:", p)
-			os.Exit(2)
-		}
-		spec.Arch = a
+	out, err := do(ctx, client, spec)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(3)
 	}
 
-	if err := do(ctx, client, spec); err != nil {
+	if _, err := out.Export(ctx, filepath.Join(*outDir, spec.Distro)); err != nil {
 		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		os.Exit(4)
 	}
 }
 
 func readBuildSpec(filename string) (*build.Spec, error) {
+	if filename == "" {
+		return nil, fmt.Errorf("no build spec file specified")
+	}
+
 	b, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
@@ -95,15 +70,26 @@ func readBuildSpec(filename string) (*build.Spec, error) {
 	return &spec, nil
 }
 
-func do(ctx context.Context, client *dagger.Client, cfg *build.Spec) error {
+func do(ctx context.Context, client *dagger.Client, cfg *build.Spec) (*dagger.Directory, error) {
+	if cfg.Arch == "" {
+		p, err := client.DefaultPlatform(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("could not determine default platform: %w", err)
+		}
+
+		_, a, ok := strings.Cut(string(p), "/")
+		if !ok {
+			return nil, fmt.Errorf("unexpected platform format: %q", p)
+		}
+		cfg.Arch = a
+	}
+
 	platform := dagger.Platform(fmt.Sprintf("%s/%s", cfg.OS, cfg.Arch))
 
 	target, err := targets.GetTarget(cfg.Distro)(ctx, client, platform)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	out := target.Make(cfg)
-
-	_, err = out.Export(ctx, filepath.Join("bundles", cfg.Distro))
-	return err
+	return out, nil
 }
