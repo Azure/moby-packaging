@@ -1,14 +1,153 @@
-# Project
+## About
 
-> This repo has been populated by an initial template to help get you started. Please
-> make sure to update the content to build a great experience for community-building.
+This repository holds the logic for building and packaging various moby OSS
+packages, for several different distros. Builds are performed by fetching the
+source from upstream (github) and building it according to the logic specified
+in the Makefiles. Once built, a project is packaged for its target distribution.
 
-As the maintainer of this project, please make a few updates:
+This project uses dagger to manage containerized building and packaging.
 
-- Improving this README.MD file to provide a great experience
-- Updating SUPPORT.MD with content about this project's support experience
-- Understanding the security reporting process in SECURITY.MD
-- Remove this section from the README
+## Quick start
+
+The following example shows how to create a .deb package for containerd v1.7.0,
+specifically for ubuntu jammy.
+
+```bash
+cat > ./moby-containerd.json <<'EOF'
+{
+  "arch": "amd64",
+  "commit": "1fbd70374134b891f97ce19c70b6e50c7b9f4e0d",
+  "repo": "https://github.com/containerd/containerd.git",
+  "package": "moby-containerd",
+  "distro": "jammy",
+  "tag": "1.7.0",
+  "os": "linux",
+  "revision": "7"
+}
+EOF
+
+go run packaging --build-spec=./moby-containerd.json
+```
+
+The `commit` field is the commit hash of the `tag` in question. The `tag` field
+is used when deriving the filename and linker flags, but the `commit` is the
+source of truth for the source code to be built.
+
+This will create a file,
+`bundles/jammy/moby-containerd_1.7.0+azure-ubuntu22.04u7_amd64.deb`, which can
+then be published in a package repository.
+
+
+## Adding new packages
+
+### Overview
+
+Currently, adding a new package involves several steps. We plan to improve the
+user experience around this in the near future.
+
+### Add a new package directory
+
+In the root of this repository, create a new directory for the project you want
+to build.
+
+```bash
+mkdir moby-init
+```
+
+#### [Container filesystem layout](container-filesystem-layout)
+
+moby-packaging will create and manage a pipeline of containers with an
+opinionated filesystem layout. Within the container, anything in the project
+directory (`moby-init` in this example) will be mounted into the `/build`
+directory within the container.
+
+The source for the target package (in this example, `moby-init` which is built
+from the upstream repository [krallin/tini](https://github.com/krallin/tini))
+will be mounted into `/build/src`.
+
+This will be important later, when [specifying](#specify-package-layout) the
+layout of the package.
+
+Any static files that you want to be in the final package should live in
+the target package's directory (again, `moby-init` in this example).
+
+### Add Makefiles to the package directory
+
+Capture the build logic in a Makefile. You will need a Make target for each
+package type you wish to build (currently, `deb`, `rpm`, or `win`).
+
+```bash
+cat > moby-init/Makefile <<'EOF'
+
+.PHONY: rpm deb
+
+rpm deb: tini-static
+
+tini-static:
+	mkdir -vp ./src/build
+	cd ./src/build && \
+		cmake .. && \
+		make tini-static
+EOF
+```
+
+Note that the working directory will be `/build` (see [Container filesystem
+layout](#container-filesystem-layout)). The above reference to `./src/build`
+is at the absolute path `/build/src/build`.
+
+This particular build will output a file, `tini-static` in the absolute path
+`/build/src/build`.
+
+### [Specify the package layout](specify-package-layout)
+
+Packages for distro repositories are essentially archives (tarballs, cpio, zip
+files) containing files at their final destination on the target system. They additionally
+contain additional information, such as post-install scripts (to be run on the target system),
+dependency information, and a description.
+
+To specify where our newly built binary should go, we have to tell
+moby-packaging where to find them in our container, and where they belong on
+the target system. Here is an example for our (admittedly simple) package.
+
+```bash
+cat > moby-init/mapping.go <<'EOF'
+package mobyinit
+
+import "packaging/pkg/archive"
+
+var (
+	Archive = archive.Archive{
+		Name:    "moby-init",
+		Webpage: "https://github.com/krallin/tini",
+		Files: []archive.File{
+			{
+				Source: "/build/src/build/tini-static",
+				Dest:   "/usr/bin/docker-init",
+			},
+		},
+		Binaries: []string{
+			"/build/src/build/tini-static",
+		},
+		Conflicts: archive.PkgKindMap{
+			archive.PkgKindDeb: {
+				"tini",
+			},
+		},
+		Replaces: archive.PkgKindMap{
+			archive.PkgKindDeb: {
+				"tini",
+			},
+		},
+		Description: `tiny but valid init for containers
+ Tini is the simplest init you could think of.
+ .
+ All Tini does is spawn a single child (Tini is meant to be run in a
+ container), and wait for it to exit all the while reaping zombies and
+ performing signal forwarding.`,
+	}
+)
+EOF
+```
 
 ## Contributing
 
@@ -26,8 +165,8 @@ contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additio
 
 ## Trademarks
 
-This project may contain trademarks or logos for projects, products, or services. Authorized use of Microsoft 
-trademarks or logos is subject to and must follow 
+This project may contain trademarks or logos for projects, products, or services. Authorized use of Microsoft
+trademarks or logos is subject to and must follow
 [Microsoft's Trademark & Brand Guidelines](https://www.microsoft.com/en-us/legal/intellectualproperty/trademarks/usage/general).
 Use of Microsoft trademarks or logos in modified versions of this project must not cause confusion or imply Microsoft sponsorship.
 Any use of third-party trademarks or logos are subject to those third-party's policies.
