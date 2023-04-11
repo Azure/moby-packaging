@@ -51,7 +51,9 @@ In the root of this repository, create a new directory for the project you want
 to build.
 
 ```bash
-mkdir moby-init
+mkdir -p moby-init
+mkdir -p moby-init/legal
+touch moby-init/legal/{LICENSE,NOTICE}
 ```
 
 #### [Container filesystem layout](container-filesystem-layout)
@@ -221,7 +223,7 @@ As with the [quick start](#quick-start), we need to supply moby-packaging with
 some information about what to build.
 
 ```bash
-cat > ./moby-containerd.json <<'EOF'
+cat > ./moby-init.json <<'EOF'
 {
   "arch": "amd64",
   "commit": "de40ad007797e0dcd8b7126f27bb87401d224240",
@@ -234,7 +236,7 @@ cat > ./moby-containerd.json <<'EOF'
 }
 EOF
 
-go run packaging --build-spec=./moby-containerd.json
+go run packaging --build-spec=./moby-init.json
 ```
 
 This will produce a package under `bundles/jammy` which is ready to deploy.
