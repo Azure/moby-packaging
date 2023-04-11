@@ -56,6 +56,10 @@ mkdir -p moby-init/legal
 touch moby-init/legal/{LICENSE,NOTICE}
 ```
 
+The `legal` directory is needed for the license, and those two files are
+required. Since this is a demo, the files can be empty for now. They will
+be included as static files in the final package.
+
 #### [Container filesystem layout](container-filesystem-layout)
 
 moby-packaging will create and manage a pipeline of containers with an
