@@ -7,7 +7,7 @@ in the Makefiles. Once built, a project is packaged for its target distribution.
 
 This project uses dagger to manage containerized building and packaging.
 
-## Quick start
+## [Quick start](quick-start)
 
 The following example shows how to create a .deb package for containerd v1.7.0,
 specifically for ubuntu jammy.
@@ -148,6 +148,96 @@ var (
 )
 EOF
 ```
+
+The struct here is defined in `pkg/archive/archive.go`.
+
+The key element here is the `Files` entry: the `Source` file is the location in
+the build container of a file we want to package. The `Dest` file is the final
+location on the target system. Once built and published to a debian repo, one
+would run `apt-get install moby-init`; this would install the `tini-static`
+binary we built at the location `/ur/bin/docker-init`.
+
+The `Conflicts` and `Replaces` entries are used by the consuming package manager
+to remove older versions of the same package.
+
+In addition to these two entries, there are entries which specify runtime
+dependency packages. The package manager will install those packages as well.
+The `Binaries` entry is also used for dependency management. Since a binary may
+be dynamically linked, it will be inspected for runtime dependencies (and also
+installed by the package manager).
+
+`Name`, `Webpage`, and `Description` are used by the package manager when
+displaying information about the package.
+
+Finally, note the `package` directive at the top of the file. `mobyinit` will
+be used as an import in the next step.
+
+### Updating moby-packaging to recognize the new package
+
+To enable the packaging system to build this package, update
+`targets/target.go`:
+
+```go
+import (
+    // ...
+    mobyinit "packaging/moby-init"
+    // ...
+)
+
+// ...
+
+func (t *Target) Packager(projectName string) archive.Interface {
+	mappings := map[string]archive.Archive{
+		"moby-engine":                  engine.Archive,
+		"moby-cli":                     cli.Archive,
+		"moby-containerd":              containerd.Archive,
+		"moby-containerd-shim-systemd": shim.Archive,
+		"moby-runc":                    runc.Archive,
+		"moby-compose":                 compose.Archive,
+		"moby-buildx":                  buildx.Archive,
+
+         // this references the `Archive` struct created in the previous step
+		"moby-init":                    mobyinit.Archive,
+	}
+
+	a := mappings[projectName]
+
+	switch t.PkgKind() {
+	case "deb":
+		return archive.NewDebArchive(&a, MirrorPrefix())
+	case "rpm":
+		return archive.NewRPMArchive(&a, MirrorPrefix())
+	case "win":
+		return archive.NewWinArchive(&a, MirrorPrefix())
+	default:
+		panic("unknown pkgKind: " + t.pkgKind)
+	}
+}
+```
+
+### Producing the final package
+
+As with the [quick start](#quick-start), we need to supply moby-packaging with
+some information about what to build.
+
+```bash
+cat > ./moby-containerd.json <<'EOF'
+{
+  "arch": "amd64",
+  "commit": "de40ad007797e0dcd8b7126f27bb87401d224240",
+  "repo": "https://github.com/krallin/tini.git",
+  "package": "moby-init",
+  "distro": "jammy",
+  "tag": "0.19.0",
+  "os": "linux",
+  "revision": "9"
+}
+EOF
+
+go run packaging --build-spec=./moby-containerd.json
+```
+
+This will produce a package under `bundles/jammy` which is ready to deploy.
 
 ## Contributing
 
