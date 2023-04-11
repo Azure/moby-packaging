@@ -7,7 +7,7 @@ in the Makefiles. Once built, a project is packaged for its target distribution.
 
 This project uses dagger to manage containerized building and packaging.
 
-## [Quick start](quick-start)
+## Quick start
 
 The following example shows how to create a .deb package for containerd v1.7.0,
 specifically for ubuntu jammy.
@@ -60,7 +60,7 @@ The `legal` directory is needed for the license, and those two files are
 required. Since this is a demo, the files can be empty for now. They will
 be included as static files in the final package.
 
-#### [Container filesystem layout](container-filesystem-layout)
+#### Container filesystem layout
 
 moby-packaging will create and manage a pipeline of containers with an
 opinionated filesystem layout. Within the container, anything in the project
@@ -71,7 +71,7 @@ The source for the target package (in this example, `moby-init` which is built
 from the upstream repository [krallin/tini](https://github.com/krallin/tini))
 will be mounted into `/build/src`.
 
-This will be important later, when [specifying](#specify-package-layout) the
+This will be important later, when [specifying](#specify-the-package-layout) the
 layout of the package.
 
 Any static files that you want to be in the final package should live in
@@ -104,7 +104,7 @@ is at the absolute path `/build/src/build`.
 This particular build will output a file, `tini-static` in the absolute path
 `/build/src/build`.
 
-### [Specify the package layout](specify-package-layout)
+### Specify the package layout
 
 Packages for distro repositories are essentially archives (tarballs, cpio, zip
 files) containing files at their final destination on the target system. They additionally
