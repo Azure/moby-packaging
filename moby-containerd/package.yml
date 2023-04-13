@@ -1,5 +1,6 @@
 name: moby-containerd
 webpage: "https://github.com/containerd/containerd"
+description: "#moby-containerd/description"
 makefile: "#moby-containerd/Makefile"
 files:
   - source: "/build/src/bin"
@@ -13,7 +14,7 @@ files:
     compress: true
 systemd:
   - source: "/build/src/containerd.service"
-    dest: "lib/systemd/system/containerd.service"
+    dest: "/lib/systemd/system/containerd.service"
 binaries:
   deb:
     - "/build/src/bin/containerd"
@@ -81,13 +82,3 @@ installScripts:
       script: "#moby-containerd/postinstall/deb/prerm"
     - when: post-removal
       script: "#moby-containerd/postinstall/deb/postrm"
-description: |
-  Industry-standard container runtime
-   containerd is an industry-standard container runtime with an emphasis on
-   simplicity, robustness and portability. It is available as a daemon for Linux
-   and Windows, which can manage the complete container lifecycle of its host
-   system: image transfer and storage, container execution and supervision,
-   low-level storage and network attachments, etc.
-   .
-   containerd is designed to be embedded into a larger system, rather than being
-   used directly by developers or end-users.

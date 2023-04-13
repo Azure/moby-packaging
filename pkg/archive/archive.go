@@ -12,12 +12,6 @@ type PkgAction int
 type PkgInstallMap map[PkgKind][]InstallScript
 type PkgInstallMap2 map[PkgKind][]InstallScript2
 
-// const (
-// 	PkgKindDeb PkgKind = iota
-// 	PkgKindRPM
-// 	PkgKindWindows
-// )
-
 const (
 	PkgKindDeb PkgKind = "deb"
 	PkgKindRPM PkgKind = "rpm"

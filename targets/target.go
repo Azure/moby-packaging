@@ -197,19 +197,6 @@ func (t *Target) goMD2Man(os, arch string) *dagger.File {
 }
 
 func (t *Target) Packager(projectName string) archive.Interface {
-	// mappings := map[string]archive.Archive{
-	// 	"moby-engine":                  engine.Archive,
-	// 	"moby-cli":                     cli.Archive,
-	// 	"moby-containerd":              containerd.Archive,
-	// 	"moby-containerd-shim-systemd": shim.Archive,
-	// 	"moby-runc":                    runc.Archive,
-	// 	"moby-compose":                 compose.Archive,
-	// 	"moby-buildx":                  buildx.Archive,
-	// 	"moby-init":                    mobyinit.Archive,
-	// }
-
-	// a := mappings[projectName]
-
 	a := Definition
 
 	switch t.PkgKind() {
@@ -248,12 +235,16 @@ func (t *Target) Make(project *build.Spec) *dagger.Directory {
 	commitTime := t.getCommitTime(project.Pkg, source)
 
 	build := t.c.Pipeline(project.Pkg).
-		WithDirectory("/build", projectDir).
-		WithNewFile("/build/Makefile", dagger.ContainerWithNewFileOpts{
+		WithDirectory("/build", projectDir)
+
+	if Definition.Makefile != "" {
+		build = build.WithNewFile("/build/Makefile", dagger.ContainerWithNewFileOpts{
 			Contents:    string(Definition.Makefile),
 			Permissions: 0o644,
-		}).
-		WithDirectory("/build/hack/cross", hackDir).
+		})
+	}
+
+	build = build.WithDirectory("/build/hack/cross", hackDir).
 		WithDirectory("/build/src", source).
 		WithWorkdir("/build").
 		WithMountedFile("/usr/bin/go-md2man", md2man).

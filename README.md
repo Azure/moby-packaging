@@ -260,3 +260,139 @@ trademarks or logos is subject to and must follow
 [Microsoft's Trademark & Brand Guidelines](https://www.microsoft.com/en-us/legal/intellectualproperty/trademarks/usage/general).
 Use of Microsoft trademarks or logos in modified versions of this project must not cause confusion or imply Microsoft sponsorship.
 Any use of third-party trademarks or logos are subject to those third-party's policies.
+
+## YAML input
+<table>
+   <thead>
+      <tr>
+         <th>Key</th>
+         <th>Value</th>
+      </tr>
+   </thead>
+   <tbody>
+      <tr>
+         <td><code>name</code></td>
+         <td><code>moby-engine</code></td>
+      </tr>
+      <tr>
+         <td><code>makefile</code></td>
+         <td><code>"#moby-engine/Makefile"</code></td>
+      </tr>
+      <tr>
+         <td><code>webpage</code></td>
+         <td><code>https://github.com/moby/moby</code></td>
+      </tr>
+      <tr>
+         <td><code>files</code></td>
+         <td>A list of dictionaries, where each dictionary has the following keys:</td>
+      </tr>
+      <tr>
+         <td></td>
+         <td>- <code>source</code>: a string that represents the source path of the file to be installed.</td>
+      </tr>
+      <tr>
+         <td></td>
+         <td>- <code>dest</code>: a string that represents the destination path of the file to be installed.</td>
+      </tr>
+      <tr>
+         <td></td>
+         <td>- <code>isdir</code> (optional): a boolean that indicates whether the destination path is a directory. Default value is <code>false</code>.</td>
+      </tr>
+      <tr>
+         <td></td>
+         <td>- <code>compress</code> (optional): a boolean that indicates whether the file should be compressed. Default value is <code>false</code>.</td>
+      </tr>
+      <tr>
+         <td><code>systemd</code></td>
+         <td>A list of dictionaries, where each dictionary has the same keys as <code>files</code>, and represents the systemd units to be installed.</td>
+      </tr>
+      <tr>
+         <td><code>binaries</code></td>
+         <td>A dictionary with the following keys:</td>
+      </tr>
+      <tr>
+         <td></td>
+         <td>- <code>deb</code>: a list of strings, where each string represents the path of a binary file to be installed for Debian-based systems.</td>
+      </tr>
+      <tr>
+         <td></td>
+         <td>- <code>rpm</code>: a list of strings, where each string represents the path of a binary file to be installed for Red Hat-based systems.</td>
+      </tr>
+      <tr>
+         <td></td>
+         <td>- <code>win</code>: a list of strings, where each string represents the path of a binary file to be installed for Windows systems.</td>
+      </tr>
+      <tr>
+         <td><code>recommends</code></td>
+         <td>A dictionary with the following keys:</td>
+      </tr>
+      <tr>
+         <td></td>
+         <td>- <code>deb</code>: a list of strings, where each string represents the name of a recommended package for Debian-based systems.</td>
+      </tr>
+      <tr>
+         <td><code>suggests</code></td>
+         <td>A dictionary with the following keys:</td>
+      </tr>
+      <tr>
+         <td></td>
+         <td>- <code>deb</code>: a list of strings, where each string represents the name of a suggested package for Debian-based systems.</td>
+      </tr>
+      <tr>
+         <td><code>conflicts</code></td>
+         <td>A dictionary with the following keys:</td>
+      </tr>
+      <tr>
+         <td></td>
+         <td>- <code>deb</code>: a list of strings, where each string represents the name of a conflicting package for Debian-based systems.</td>
+      </tr>
+      <tr>
+         <td></td>
+         <td>- <code>rpm</code>: a list of strings, where each string represents the name of a conflicting package for Red Hat-based systems.</td>
+      </tr>
+      <tr>
+         <td><code>replaces</code></td>
+         <td>A dictionary with the following keys:</td>
+      </tr>
+      <tr>
+         <td></td>
+         <td>- <code>deb</code>: a list of strings, where each string represents the name of a replaced package for Debian-based systems.</td>
+      </tr>
+      <tr>
+         <td><code>provides</code></td>
+         <td>An empty dictionary.</td>
+      </tr>
+      <tr>
+         <td><code>runtimeDeps</code></td>
+         <td>A dictionary with the following keys:</td>
+      </tr>
+      <tr>
+         <td></td>
+         <td>- <code>deb</code>: a list of strings, where each string represents the name and version of a runtime dependency package for Debian-based systems.</td>
+      </tr>
+      <tr>
+         <td></td>
+         <td>- <code>rpm</code>: a list of strings, where each string represents the name and version of a runtime dependency package for Red Hat-based systems.</td>
+      </tr>
+      <tr>
+         <td><code>installScripts</code></td>
+         <td>A dictionary with the following keys:</td>
+      </tr>
+      <tr>
+         <td></td>
+         <td>- <code>deb</code>: a list of dictionaries, where each dictionary has the following keys:</td>
+      </tr>
+      <tr>
+         <td></td>
+         <td>- <code>when</code>: a string that represents when the script should be executed (e.g. <code>post-install</code>, <code>pre-removal</code>, <code>post-removal</code>).</td>
+      </tr>
+      <tr>
+         <td></td>
+         <td>- <code>script</code>: a string that contains the path to the script to be executed.</td>
+      </tr>
+      <tr>
+         <td></td>
+         <td>- <code>rpm</code>: a list of dictionaries</td>
+      </tr>
+   </tbody>
+</table>

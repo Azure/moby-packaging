@@ -23,6 +23,26 @@ import (
 )
 
 func main() {
+	// mappings := map[string]archive.Archive{
+	// 	"moby-engine":                  engine.Archive,
+	// 	"moby-cli":                     cli.Archive,
+	// 	"moby-containerd":              containerd.Archive,
+	// 	"moby-containerd-shim-systemd": shim.Archive,
+	// 	"moby-runc":                    runc.Archive,
+	// 	"moby-compose":                 compose.Archive,
+	// 	"moby-buildx":                  buildx.Archive,
+	// 	"moby-init":                    mobyinit.Archive,
+	// }
+
+	// for p, arch := range mappings {
+	// 	b, err := yaml.Marshal(&arch)
+	// 	if err != nil {
+	// 		fmt.Println(p, "didn't work")
+	// 	}
+	// 	os.WriteFile("/tmp/moby/"+p+".yaml", b, 0o644)
+	// }
+	// os.Exit(0)
+
 	flags := flag.NewFlagSet(filepath.Base(os.Args[0]), flag.ExitOnError)
 
 	go func() {
@@ -42,21 +62,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	b, err := os.ReadFile(*pkgDef)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "bad filename")
+	archive, err := readPackageYAML(*pkgDef)
+	if err != nil || archive == nil {
+		fmt.Fprintf(os.Stderr, "unable to parse package yaml: %s\n", err)
 		flag.Usage()
 		os.Exit(1)
 	}
 
-	var p archive.NewArchive
-	if err := yaml.Unmarshal(b, &p); err != nil {
-		fmt.Fprintln(os.Stderr, "can't read yaml")
-		flag.Usage()
-		os.Exit(1)
-	}
-
-	targets.Definition = p
+	targets.Definition = *archive
 
 	if *buildSpec == "" {
 		fmt.Fprintln(os.Stderr, "no build spec provided")
@@ -98,6 +111,19 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
+}
+
+func readPackageYAML(pkgDef string) (*archive.NewArchive, error) {
+	b, err := os.ReadFile(pkgDef)
+	if err != nil {
+		return nil, err
+	}
+
+	var archive archive.NewArchive
+	if err := yaml.Unmarshal(b, &archive); err != nil {
+		return nil, err
+	}
+	return &archive, nil
 }
 
 func readBuildSpec(filename string) (*build.Spec, error) {
