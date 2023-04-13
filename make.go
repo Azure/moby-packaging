@@ -23,19 +23,6 @@ import (
 )
 
 func main() {
-	b, err := os.ReadFile(os.Args[1])
-	if err != nil {
-		panic(err)
-	}
-	var p archive.NewArchive
-	if err := yaml.Unmarshal(b, &p); err != nil {
-		panic(err)
-	}
-	fmt.Printf("%#v/n", p)
-	os.Exit(0)
-	// z, err := archive.ParseText(os.Args[1])
-	// fmt.Println(z, err)
-	// os.Exit(0)
 	flags := flag.NewFlagSet(filepath.Base(os.Args[0]), flag.ExitOnError)
 
 	go func() {
@@ -48,11 +35,28 @@ func main() {
 	}()
 
 	buildSpec := flags.String("build-spec", "", "Location of the build spec json file")
+	pkgDef := flags.String("package-definition", "", "Location of the package definition yaml file")
 
 	if err := flags.Parse(os.Args[1:]); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
+
+	b, err := os.ReadFile(*pkgDef)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "bad filename")
+		flag.Usage()
+		os.Exit(1)
+	}
+
+	var p archive.NewArchive
+	if err := yaml.Unmarshal(b, &p); err != nil {
+		fmt.Fprintln(os.Stderr, "can't read yaml")
+		flag.Usage()
+		os.Exit(1)
+	}
+
+	targets.Definition = p
 
 	if *buildSpec == "" {
 		fmt.Fprintln(os.Stderr, "no build spec provided")

@@ -4,14 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	buildx "packaging/moby-buildx"
-	cli "packaging/moby-cli"
-	compose "packaging/moby-compose"
-	containerd "packaging/moby-containerd"
-	shim "packaging/moby-containerd-shim-systemd"
-	engine "packaging/moby-engine"
-	mobyinit "packaging/moby-init"
-	runc "packaging/moby-runc"
 	"packaging/pkg/apt"
 	"packaging/pkg/archive"
 	"packaging/pkg/build"
@@ -19,6 +11,8 @@ import (
 
 	"dagger.io/dagger"
 )
+
+var Definition archive.NewArchive
 
 func (t *Target) AptInstall(pkgs ...string) *Target {
 	c := apt.AptInstall(t.c, t.client.CacheVolume(t.name+"-apt-cache"), t.client.CacheVolume(t.name+"-apt-lib-cache"), pkgs...)
@@ -203,26 +197,28 @@ func (t *Target) goMD2Man(os, arch string) *dagger.File {
 }
 
 func (t *Target) Packager(projectName string) archive.Interface {
-	mappings := map[string]archive.Archive{
-		"moby-engine":                  engine.Archive,
-		"moby-cli":                     cli.Archive,
-		"moby-containerd":              containerd.Archive,
-		"moby-containerd-shim-systemd": shim.Archive,
-		"moby-runc":                    runc.Archive,
-		"moby-compose":                 compose.Archive,
-		"moby-buildx":                  buildx.Archive,
-		"moby-init":                    mobyinit.Archive,
-	}
+	// mappings := map[string]archive.Archive{
+	// 	"moby-engine":                  engine.Archive,
+	// 	"moby-cli":                     cli.Archive,
+	// 	"moby-containerd":              containerd.Archive,
+	// 	"moby-containerd-shim-systemd": shim.Archive,
+	// 	"moby-runc":                    runc.Archive,
+	// 	"moby-compose":                 compose.Archive,
+	// 	"moby-buildx":                  buildx.Archive,
+	// 	"moby-init":                    mobyinit.Archive,
+	// }
 
-	a := mappings[projectName]
+	// a := mappings[projectName]
+
+	a := Definition
 
 	switch t.PkgKind() {
 	case "deb":
-		return archive.NewDebArchive(&a, MirrorPrefix())
-	case "rpm":
-		return archive.NewRPMArchive(&a, MirrorPrefix())
-	case "win":
-		return archive.NewWinArchive(&a, MirrorPrefix())
+		return archive.NewDebArchive2(&a, MirrorPrefix())
+	// case "rpm":
+	// 	return archive.NewRPMArchive(&a, MirrorPrefix())
+	// case "win":
+	// 	return archive.NewWinArchive(&a, MirrorPrefix())
 	default:
 		panic("unknown pkgKind: " + t.pkgKind)
 	}

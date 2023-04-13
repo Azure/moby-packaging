@@ -8,7 +8,7 @@ import (
 
 type textKind int
 
-type TextOrFile []byte
+type TextOrFile string
 
 const EOF = '\x05'
 
@@ -47,21 +47,21 @@ func (t *TextOrFile) UnmarshalYAML(unmarshal func(interface{}) error) error {
 		return err
 	}
 
-	var buf []byte
+	var buf string
 	switch text.kind {
 	case filename:
 		b, err := os.ReadFile(text.data)
 		if err != nil {
 			return err
 		}
-		buf = b
+		buf = string(b)
 	case str:
-		buf = []byte(text.data)
+		buf = text.data
 	default:
 		return fmt.Errorf("unintelligible string: %s", s)
 	}
 
-	*t = buf
+	*t = TextOrFile(buf)
 	return nil
 }
 
