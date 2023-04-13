@@ -7,11 +7,11 @@ import (
 )
 
 type winArchive struct {
-	a            NewArchive
+	a            Archive
 	mirrorPrefix string
 }
 
-func NewWinArchive(a *NewArchive, mp string) Interface {
+func NewWinArchive(a *Archive, mp string) Interface {
 	if a == nil {
 		panic("nil archive supplied")
 	}

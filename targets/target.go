@@ -12,8 +12,6 @@ import (
 	"dagger.io/dagger"
 )
 
-var Definition archive.NewArchive
-
 func (t *Target) AptInstall(pkgs ...string) *Target {
 	c := apt.AptInstall(t.c, t.client.CacheVolume(t.name+"-apt-cache"), t.client.CacheVolume(t.name+"-apt-lib-cache"), pkgs...)
 	return t.update(c)
@@ -196,16 +194,14 @@ func (t *Target) goMD2Man(os, arch string) *dagger.File {
 	return c.File(outfile)
 }
 
-func (t *Target) Packager(projectName string) archive.Interface {
-	a := Definition
-
+func (t *Target) Packager(projectName string, pkgDef *archive.Archive) archive.Interface {
 	switch t.PkgKind() {
 	case "deb":
-		return archive.NewDebArchive(&a, MirrorPrefix())
+		return archive.NewDebArchive(pkgDef, MirrorPrefix())
 	case "rpm":
-		return archive.NewRPMArchive(&a, MirrorPrefix())
+		return archive.NewRPMArchive(pkgDef, MirrorPrefix())
 	case "win":
-		return archive.NewWinArchive(&a, MirrorPrefix())
+		return archive.NewWinArchive(pkgDef, MirrorPrefix())
 	default:
 		panic("unknown pkgKind: " + t.pkgKind)
 	}
@@ -226,7 +222,7 @@ func (t *Target) getCommitTime(projectName string, sourceDir *dagger.Directory) 
 	return strings.TrimSpace(commitTime)
 }
 
-func (t *Target) Make(project *build.Spec) *dagger.Directory {
+func (t *Target) Make(project *build.Spec, pkgDef *archive.Archive) *dagger.Directory {
 	projectDir := t.client.Host().Directory(project.Pkg)
 	hackDir := t.client.Host().Directory("hack/cross")
 	md2man := t.goMD2Man(project.OS, project.Arch)
@@ -237,9 +233,9 @@ func (t *Target) Make(project *build.Spec) *dagger.Directory {
 	build := t.c.Pipeline(project.Pkg).
 		WithDirectory("/build", projectDir)
 
-	if Definition.Makefile != "" {
+	if pkgDef.Makefile != "" {
 		build = build.WithNewFile("/build/Makefile", dagger.ContainerWithNewFileOpts{
-			Contents:    string(Definition.Makefile),
+			Contents:    string(pkgDef.Makefile),
 			Permissions: 0o644,
 		})
 	}
@@ -259,7 +255,7 @@ func (t *Target) Make(project *build.Spec) *dagger.Directory {
 
 	//return build.Directory("/out")
 
-	packager := t.Packager(project.Pkg)
+	packager := t.Packager(project.Pkg, pkgDef)
 	return packager.Package(t.client, build, project)
 }
 

@@ -64,11 +64,11 @@ var (
 )
 
 type debArchive struct {
-	a            NewArchive
+	a            Archive
 	mirrorPrefix string
 }
 
-func NewDebArchive(a *NewArchive, mp string) Interface {
+func NewDebArchive(a *Archive, mp string) Interface {
 	if a == nil {
 		panic("nil archive supplied")
 	}

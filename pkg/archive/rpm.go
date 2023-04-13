@@ -38,7 +38,7 @@ type (
 	mapSet map[string]map[string]empty
 
 	rpmArchive struct {
-		a            NewArchive
+		a            Archive
 		mirrorPrefix string
 	}
 )
@@ -53,7 +53,7 @@ func (m mapSet) contains(distro, pkg string) bool {
 	return false
 }
 
-func NewRPMArchive(a *NewArchive, mp string) Interface {
+func NewRPMArchive(a *Archive, mp string) Interface {
 	if a == nil {
 		panic("nil archive supplied")
 	}

@@ -49,8 +49,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	targets.Definition = *archive
-
 	if *buildSpec == "" {
 		fmt.Fprintln(os.Stderr, "no build spec provided")
 		flag.Usage()
@@ -87,19 +85,19 @@ func main() {
 		spec.Arch = a
 	}
 
-	if err := do(ctx, client, spec); err != nil {
+	if err := do(ctx, client, spec, archive); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
 
-func readPackageYAML(pkgDef string) (*archive.NewArchive, error) {
+func readPackageYAML(pkgDef string) (*archive.Archive, error) {
 	b, err := os.ReadFile(pkgDef)
 	if err != nil {
 		return nil, err
 	}
 
-	var archive archive.NewArchive
+	var archive archive.Archive
 	if err := yaml.Unmarshal(b, &archive); err != nil {
 		return nil, err
 	}
@@ -120,14 +118,14 @@ func readBuildSpec(filename string) (*build.Spec, error) {
 	return &spec, nil
 }
 
-func do(ctx context.Context, client *dagger.Client, cfg *build.Spec) error {
+func do(ctx context.Context, client *dagger.Client, cfg *build.Spec, pkgDef *archive.Archive) error {
 	platform := dagger.Platform(fmt.Sprintf("%s/%s", cfg.OS, cfg.Arch))
 
 	target, err := targets.GetTarget(cfg.Distro)(ctx, client, platform)
 	if err != nil {
 		return err
 	}
-	out := target.Make(cfg)
+	out := target.Make(cfg, pkgDef)
 
 	_, err = out.Export(ctx, filepath.Join("bundles", cfg.Distro))
 	return err

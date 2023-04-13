@@ -40,7 +40,7 @@ type InstallScript struct {
 	Script Text      `json:"script"`
 }
 
-type NewArchive struct {
+type Archive struct {
 	Name     Text      `json:"name"`
 	Makefile Text      `json:"makefile"`
 	Webpage  Text      `json:"webpage"`
