@@ -201,11 +201,11 @@ func (t *Target) Packager(projectName string) archive.Interface {
 
 	switch t.PkgKind() {
 	case "deb":
-		return archive.NewDebArchive2(&a, MirrorPrefix())
+		return archive.NewDebArchive(&a, MirrorPrefix())
 	case "rpm":
-		return archive.NewRPMArchive2(&a, MirrorPrefix())
+		return archive.NewRPMArchive(&a, MirrorPrefix())
 	case "win":
-		return archive.NewWinArchive2(&a, MirrorPrefix())
+		return archive.NewWinArchive(&a, MirrorPrefix())
 	default:
 		panic("unknown pkgKind: " + t.pkgKind)
 	}
