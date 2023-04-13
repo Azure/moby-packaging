@@ -14,13 +14,32 @@ import (
 	"strings"
 	"time"
 
+	"packaging/pkg/archive"
 	"packaging/pkg/build"
 
 	"dagger.io/dagger"
 	"golang.org/x/sys/unix"
+	"gopkg.in/yaml.v3"
 )
 
+type Placeholder struct {
+	Data archive.EText `json:"data"`
+}
+
 func main() {
+	b, err := os.ReadFile(os.Args[1])
+	if err != nil {
+		panic(err)
+	}
+	var p Placeholder
+	if err := yaml.Unmarshal(b, &p); err != nil {
+		panic(err)
+	}
+	fmt.Println(string(p.Data))
+	os.Exit(0)
+	// z, err := archive.ParseText(os.Args[1])
+	// fmt.Println(z, err)
+	// os.Exit(0)
 	flags := flag.NewFlagSet(filepath.Base(os.Args[0]), flag.ExitOnError)
 
 	go func() {
