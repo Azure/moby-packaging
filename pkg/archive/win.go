@@ -52,3 +52,50 @@ func (w *winArchive) moveStaticFiles(c *dagger.Container, rootdir string) *dagge
 
 	return c
 }
+
+type winArchive2 struct {
+	a            NewArchive
+	mirrorPrefix string
+}
+
+func NewWinArchive2(a *NewArchive, mp string) Interface {
+	if a == nil {
+		panic("nil archive supplied")
+	}
+
+	return &winArchive2{
+		a:            *a,
+		mirrorPrefix: mp,
+	}
+}
+
+func (w *winArchive2) Package(client *dagger.Client, c *dagger.Container, project *build.Spec) *dagger.Directory {
+	dir := client.Directory()
+	rootDir := "/package"
+
+	c = c.WithDirectory(rootDir, dir)
+	c = w.moveStaticFiles(c, rootDir)
+
+	c = c.
+		WithEnvVariable("PROJECT", project.Pkg).
+		WithEnvVariable("VERSION", project.Tag).
+		WithExec([]string{"bash", "-xuec", `
+        : ${PROJECT}
+        : ${VERSION}
+
+        mkdir -p "/out"
+        cd /package
+        zip "/out/${PROJECT}-${VERSION}.zip" *
+        `})
+
+	return c.Directory("/out")
+}
+
+func (w *winArchive2) moveStaticFiles(c *dagger.Container, rootdir string) *dagger.Container {
+	for i := range w.a.Binaries[PkgKindWin] {
+		b := w.a.Binaries[PkgKindWin][i]
+		c = c.WithExec([]string{"cp", b, "/package"})
+	}
+
+	return c
+}

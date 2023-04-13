@@ -215,10 +215,10 @@ func (t *Target) Packager(projectName string) archive.Interface {
 	switch t.PkgKind() {
 	case "deb":
 		return archive.NewDebArchive2(&a, MirrorPrefix())
-	// case "rpm":
-	// 	return archive.NewRPMArchive(&a, MirrorPrefix())
-	// case "win":
-	// 	return archive.NewWinArchive(&a, MirrorPrefix())
+	case "rpm":
+		return archive.NewRPMArchive2(&a, MirrorPrefix())
+	case "win":
+		return archive.NewWinArchive2(&a, MirrorPrefix())
 	default:
 		panic("unknown pkgKind: " + t.pkgKind)
 	}
@@ -249,6 +249,10 @@ func (t *Target) Make(project *build.Spec) *dagger.Directory {
 
 	build := t.c.Pipeline(project.Pkg).
 		WithDirectory("/build", projectDir).
+		WithNewFile("/build/Makefile", dagger.ContainerWithNewFileOpts{
+			Contents:    string(Definition.Makefile),
+			Permissions: 0o644,
+		}).
 		WithDirectory("/build/hack/cross", hackDir).
 		WithDirectory("/build/src", source).
 		WithWorkdir("/build").

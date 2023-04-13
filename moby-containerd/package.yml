@@ -1,5 +1,6 @@
 name: moby-containerd
 webpage: "https://github.com/containerd/containerd"
+makefile: "#moby-containerd/Makefile"
 files:
   - source: "/build/src/bin"
     dest: "usr/bin"

@@ -48,8 +48,8 @@ type InstallScript struct {
 }
 
 type InstallScript2 struct {
-	When   PkgAction  `json:"when"`
-	Script TextOrFile `json:"script"`
+	When   PkgAction `json:"when"`
+	Script Text      `json:"script"`
 }
 
 type Archive struct {
@@ -74,10 +74,11 @@ type Archive struct {
 }
 
 type NewArchive struct {
-	Name    TextOrFile `json:"name"`
-	Webpage TextOrFile `json:"webpage"`
-	Files   []File     `json:"files"`
-	Systemd []Systemd  `json:"systemd"`
+	Name     Text      `json:"name"`
+	Makefile Text      `json:"makefile"`
+	Webpage  Text      `json:"webpage"`
+	Files    []File    `json:"files"`
+	Systemd  []Systemd `json:"systemd"`
 	// required by some package types for dependency resolution
 	Binaries       PkgKindMap     `json:"binaries"`
 	Recommends     PkgKindMap     `json:"recommends"`
@@ -88,14 +89,14 @@ type NewArchive struct {
 	BuildDeps      PkgKindMap     `json:"buildDeps"`
 	RuntimeDeps    PkgKindMap     `json:"runtimeDeps"`
 	InstallScripts PkgInstallMap2 `json:"installScripts"`
-	Description    TextOrFile     `json:"description"`
+	Description    Text           `json:"description"`
 }
 
 var (
 	ErrUnknownPkgAction = errors.New("unrecognized package type")
 )
 
-func (a *PkgAction) unmarshalyaml(unmarshal func(interface{}) error) error {
+func (a *PkgAction) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	var s string
 	if err := unmarshal(&s); err != nil {
 		return err

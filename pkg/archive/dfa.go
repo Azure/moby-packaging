@@ -6,37 +6,24 @@ import (
 	"strings"
 )
 
-type textKind int
-
-type TextOrFile string
-
-const EOF = '\x05'
+type kindOfText int
 
 const (
-	invalid textKind = iota
+	EOF = '\x05'
+
+	invalid kindOfText = iota
 	filename
 	str
 )
 
-func (t text) String() string {
-	var x string
-	switch t.kind {
-	case filename:
-		x = "filename"
-	case str:
-		x = "str"
-	default:
-		x = "invalid"
-	}
-	return x + "(" + t.data + ")"
-}
-
-type text struct {
-	kind textKind
+type textOrFile struct {
+	kind kindOfText
 	data string
 }
 
-func (t *TextOrFile) UnmarshalYAML(unmarshal func(interface{}) error) error {
+type Text string
+
+func (t *Text) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	var s string
 	if err := unmarshal(&s); err != nil {
 		return err
@@ -54,6 +41,7 @@ func (t *TextOrFile) UnmarshalYAML(unmarshal func(interface{}) error) error {
 		if err != nil {
 			return err
 		}
+
 		buf = string(b)
 	case str:
 		buf = text.data
@@ -61,13 +49,13 @@ func (t *TextOrFile) UnmarshalYAML(unmarshal func(interface{}) error) error {
 		return fmt.Errorf("unintelligible string: %s", s)
 	}
 
-	*t = TextOrFile(buf)
+	*t = Text(buf)
 	return nil
 }
 
-func parseText(s string) (text, error) {
+func parseText(s string) (textOrFile, error) {
 	data := []rune(s)
-	var t textKind
+	var t kindOfText
 
 	data = append(data, EOF)
 	i := 0
@@ -105,10 +93,10 @@ func parseText(s string) (text, error) {
 	}
 
 	if t == invalid {
-		return text{}, fmt.Errorf("invalid string or filename: %s", s)
+		return textOrFile{}, fmt.Errorf("invalid string or filename: %s", s)
 	}
 
-	return text{
+	return textOrFile{
 		kind: t,
 		data: buf.String(),
 	}, nil

@@ -1,13 +1,33 @@
-.PHONY: rpm deb rpm/% deb/% win win/%
+.PHONY: deb win rpm _rpm _hcsbinaries _binaries _man
 
-rpm deb win:
-	$(MAKE) -f $(@).mk $@
+export GOPROXY := direct
+export GO111MODULE := on
+export GOFLAGS := -trimpath
+export GOGC := off
 
-rpm/%:
-	$(MAKE) -f rpm.mk $*
+deb: _binaries _man
 
-deb/%:
-	$(MAKE) -f deb.mk $*
+win: _binaries _hcsbinaries
 
-win/%:
-	$(MAKE) -f win.mk $*
+rpm: _rpm _binaries _man
+
+_rpm: rpm
+export BUILDTAGS := no_btrfs
+
+_binaries:
+	cd src \
+		&& $(MAKE) binaries \
+			VERSION='$(VERSION)-$(REVISION)' \
+			REVISION='$(COMMIT)'
+
+_man:
+	mkdir -vp /man
+	export SKIP_GOLANG_WRAPPER=1; \
+	export CC=""; \
+	cd src \
+		&& [ -n "$$(ls man/*)" ] || $(MAKE) man && $(MAKE) install-man DESTDIR= MANDIR=$(CURDIR)/man
+
+_hcsbinaries:
+	cd src/hcs-shim && \
+		mkdir -p $(CURDIR)/src/bin && \
+		GO111MODULE=on go build -mod=vendor -o "bin/containerd-shim-runhcs-v1.exe" ./cmd/containerd-shim-runhcs-v1
