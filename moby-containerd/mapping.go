@@ -24,10 +24,10 @@ var (
 		Name:    "moby-containerd",
 		Webpage: "https://github.com/containerd/containerd",
 		Files: []archive.File{
-			{Source: "src/bin", Dest: "usr/bin"},
-			{Source: "man", Dest: "/usr/share/man"},
-			{Source: "debian/legal/LICENSE", Dest: "/usr/share/doc/moby-containerd/LICENSE"},
-			{Source: "debian/legal/NOTICE", Dest: "/usr/share/doc/moby-containerd/NOTICE.gz", Compress: true},
+			{Source: "/build/src/bin", Dest: "usr/bin"},
+			{Source: "/build/man", Dest: "/usr/share/man"},
+			{Source: "/build/legal/LICENSE", Dest: "/usr/share/doc/moby-containerd/LICENSE"},
+			{Source: "/build/legal/NOTICE", Dest: "/usr/share/doc/moby-containerd/NOTICE.gz", Compress: true},
 		},
 		Systemd: []archive.Systemd{
 			{Source: "/build/src/containerd.service", Dest: "lib/systemd/system/containerd.service"},

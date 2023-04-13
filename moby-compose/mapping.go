@@ -8,15 +8,15 @@ var (
 	}
 	Mapping2 = []archive.File{
 		{
-			Source: "src/bin/docker-compose",
+			Source: "/build/src/bin/docker-compose",
 			Dest:   "/usr/libexec/docker/cli-plugins/docker-compose",
 		},
 		{
-			Source: "debian/legal/LICENSE",
+			Source: "/build/legal/LICENSE",
 			Dest:   "/usr/share/doc/moby-compose/LICENSE",
 		},
 		{
-			Source:   "debian/legal/NOTICE",
+			Source:   "/build/legal/NOTICE",
 			Dest:     "/usr/share/doc/moby-compose/NOTICE.gz",
 			Compress: true,
 		},
@@ -27,15 +27,15 @@ var (
 		Webpage: "https://github.com/docker/compose-cli",
 		Files: []archive.File{
 			{
-				Source: "src/bin/docker-compose",
+				Source: "/build/src/bin/docker-compose",
 				Dest:   "/usr/libexec/docker/cli-plugins/docker-compose",
 			},
 			{
-				Source: "debian/legal/LICENSE",
+				Source: "/build/legal/LICENSE",
 				Dest:   "/usr/share/doc/moby-compose/LICENSE",
 			},
 			{
-				Source:   "debian/legal/NOTICE",
+				Source:   "/build/legal/NOTICE",
 				Dest:     "/usr/share/doc/moby-compose/NOTICE.gz",
 				Compress: true,
 			},

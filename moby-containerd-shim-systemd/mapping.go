@@ -24,19 +24,19 @@ var (
 		Webpage: "https://github.com/cpuguy83/containerd-shim-systemd-v1",
 		Files: []archive.File{
 			{
-				Source: "src/bin/containerd-shim-systemd-v1",
+				Source: "/build/src/bin/containerd-shim-systemd-v1",
 				Dest:   "/usr/bin/containerd-shim-systemd-v1",
 			},
 			{
-				Source: "systemd/containerd-shim-systemd-v1.socket",
+				Source: "/build/systemd/containerd-shim-systemd-v1.socket",
 				Dest:   "/lib/systemd/system/containerd-shim-systemd-v1.socket",
 			},
 			{
-				Source: "debian/legal/LICENSE",
+				Source: "/build/legal/LICENSE",
 				Dest:   "/usr/share/doc/moby-containerd-shim-systemd/LICENSE",
 			},
 			{
-				Source:   "debian/legal/NOTICE",
+				Source:   "/build/legal/NOTICE",
 				Dest:     "/usr/share/doc/moby-containerd-shim-systemd/NOTICE.gz",
 				Compress: true,
 			},

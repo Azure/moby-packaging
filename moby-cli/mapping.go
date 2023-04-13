@@ -26,24 +26,24 @@ var (
 		Webpage: "https://github.com/docker/cli",
 		Files: []archive.File{
 			{
-				Source: "src/build/docker",
+				Source: "/build/src/build/docker",
 				Dest:   "/usr/bin/docker",
 			},
 			{
-				Source: "src/contrib/completion/zsh/_docker",
+				Source: "/build/src/contrib/completion/zsh/_docker",
 				Dest:   "/usr/share/zsh/vendor-completions/_docker",
 			},
 			{
-				Source: "debian/legal/LICENSE",
+				Source: "/build/legal/LICENSE",
 				Dest:   "/usr/share/doc/moby-cli/LICENSE",
 			},
 			{
-				Source:   "debian/legal/NOTICE",
+				Source:   "/build/legal/NOTICE",
 				Dest:     "/usr/share/doc/moby-cli/NOTICE.gz",
 				Compress: true,
 			},
 			{
-				Source:   "src/contrib/completion/bash/docker",
+				Source:   "/build/src/contrib/completion/bash/docker",
 				Dest:     "/usr/share/bash-completion/completions/docker",
 				Compress: true,
 			},
