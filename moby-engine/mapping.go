@@ -42,7 +42,6 @@ var (
 		Systemd: []archive.Systemd{
 			{Source: "/build/systemd/docker.service", Dest: "/lib/systemd/system/docker.service"},
 		},
-		Postinst:    []string{"/build/debian/moby-engine.postinst"},
 		Binaries:    []string{"/build/bundles/dynbinary-daemon/dockerd", "/build/src/libnetwork/docker-proxy"},
 		WinBinaries: []string{"/build/src/bundles/binary-daemon/dockerd.exe"},
 		RuntimeDeps: map[archive.PkgKind][]string{

@@ -1,6 +1,6 @@
 package archive
 
 type Systemd struct {
-	Source string
-	Dest   string
+	Source string `json:"source"`
+	Dest   string `json:"dest"`
 }

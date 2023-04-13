@@ -8,7 +8,7 @@ import (
 
 type textKind int
 
-type EText []byte
+type TextOrFile []byte
 
 const EOF = '\x05'
 
@@ -36,7 +36,7 @@ type text struct {
 	data string
 }
 
-func (t *EText) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (t *TextOrFile) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	var s string
 	if err := unmarshal(&s); err != nil {
 		return err
