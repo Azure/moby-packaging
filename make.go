@@ -23,26 +23,6 @@ import (
 )
 
 func main() {
-	// mappings := map[string]archive.Archive{
-	// 	"moby-engine":                  engine.Archive,
-	// 	"moby-cli":                     cli.Archive,
-	// 	"moby-containerd":              containerd.Archive,
-	// 	"moby-containerd-shim-systemd": shim.Archive,
-	// 	"moby-runc":                    runc.Archive,
-	// 	"moby-compose":                 compose.Archive,
-	// 	"moby-buildx":                  buildx.Archive,
-	// 	"moby-init":                    mobyinit.Archive,
-	// }
-
-	// for p, arch := range mappings {
-	// 	b, err := yaml.Marshal(&arch)
-	// 	if err != nil {
-	// 		fmt.Println(p, "didn't work")
-	// 	}
-	// 	os.WriteFile("/tmp/moby/"+p+".yaml", b, 0o644)
-	// }
-	// os.Exit(0)
-
 	flags := flag.NewFlagSet(filepath.Base(os.Args[0]), flag.ExitOnError)
 
 	go func() {

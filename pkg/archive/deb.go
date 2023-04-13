@@ -137,7 +137,7 @@ func (d *debArchive) withInstallScripts(c *dagger.Container) (*dagger.Container,
 	return c, newArgs
 }
 
-func (d *debArchive) installScript(script *InstallScript2, c *dagger.Container) (*dagger.Container, []string) {
+func (d *debArchive) installScript(script *InstallScript, c *dagger.Container) (*dagger.Container, []string) {
 	newArgs := []string{}
 
 	var templateStr, filename, flag string

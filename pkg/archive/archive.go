@@ -10,7 +10,6 @@ type PkgKind string
 type PkgKindMap map[PkgKind][]string
 type PkgAction int
 type PkgInstallMap map[PkgKind][]InstallScript
-type PkgInstallMap2 map[PkgKind][]InstallScript2
 
 const (
 	PkgKindDeb PkgKind = "deb"
@@ -37,34 +36,8 @@ const (
 )
 
 type InstallScript struct {
-	When   PkgAction
-	Script string
-}
-
-type InstallScript2 struct {
 	When   PkgAction `json:"when"`
 	Script Text      `json:"script"`
-}
-
-type Archive struct {
-	Name    string `json:"name"`
-	Webpage string
-	Files   []File
-	Systemd []Systemd
-	// list of filenames
-	Postinst []string
-	// required for debian dependency resolution
-	Binaries       []string
-	WinBinaries    []string
-	Recommends     PkgKindMap
-	Suggests       PkgKindMap
-	Conflicts      PkgKindMap
-	Replaces       PkgKindMap
-	Provides       PkgKindMap
-	BuildDeps      PkgKindMap
-	RuntimeDeps    PkgKindMap
-	InstallScripts PkgInstallMap
-	Description    string
 }
 
 type NewArchive struct {
@@ -74,20 +47,20 @@ type NewArchive struct {
 	Files    []File    `json:"files"`
 	Systemd  []Systemd `json:"systemd"`
 	// required by some package types for dependency resolution
-	Binaries       PkgKindMap     `json:"binaries"`
-	Recommends     PkgKindMap     `json:"recommends"`
-	Suggests       PkgKindMap     `json:"suggests"`
-	Conflicts      PkgKindMap     `json:"conflicts"`
-	Replaces       PkgKindMap     `json:"replaces"`
-	Provides       PkgKindMap     `json:"provides"`
-	BuildDeps      PkgKindMap     `json:"buildDeps"`
-	RuntimeDeps    PkgKindMap     `json:"runtimeDeps"`
-	InstallScripts PkgInstallMap2 `json:"installScripts"`
-	Description    Text           `json:"description"`
+	Binaries       PkgKindMap    `json:"binaries"`
+	Recommends     PkgKindMap    `json:"recommends"`
+	Suggests       PkgKindMap    `json:"suggests"`
+	Conflicts      PkgKindMap    `json:"conflicts"`
+	Replaces       PkgKindMap    `json:"replaces"`
+	Provides       PkgKindMap    `json:"provides"`
+	BuildDeps      PkgKindMap    `json:"buildDeps"`
+	RuntimeDeps    PkgKindMap    `json:"runtimeDeps"`
+	InstallScripts PkgInstallMap `json:"installScripts"`
+	Description    Text          `json:"description"`
 }
 
 var (
-	ErrUnknownPkgAction = errors.New("unrecognized package type")
+	ErrUnknownPkgAction = errors.New("unrecognized package action")
 )
 
 func (a *PkgAction) UnmarshalYAML(unmarshal func(interface{}) error) error {

@@ -130,7 +130,7 @@ func (r *rpmArchive) withInstallScripts(c *dagger.Container) (*dagger.Container,
 	return c, newArgs
 }
 
-func (r *rpmArchive) installScript(script *InstallScript2, c *dagger.Container) (*dagger.Container, []string) {
+func (r *rpmArchive) installScript(script *InstallScript, c *dagger.Container) (*dagger.Container, []string) {
 	newArgs := []string{}
 
 	var templateStr, filename, flag string
