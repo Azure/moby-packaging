@@ -253,7 +253,6 @@ func (t *Target) Make(project *build.Spec) *dagger.Directory {
 
 	build := t.c.Pipeline(project.Pkg).
 		WithDirectory("/build", projectDir).
-		WithDirectory("/build/debian/legal", projectDir.Directory("legal")).
 		WithDirectory("/build/hack/cross", hackDir).
 		WithDirectory("/build/src", source).
 		WithWorkdir("/build").

@@ -5,15 +5,15 @@ import "packaging/pkg/archive"
 var (
 	Mapping2 = []archive.File{
 		{
-			Source: "src/build/tini-static",
+			Source: "/build/src/build/tini-static",
 			Dest:   "usr/bin/docker-init",
 		},
 		{
-			Source: "legal/LICENSE",
+			Source: "/build/legal/LICENSE",
 			Dest:   "/usr/share/doc/moby-init/LICENSE",
 		},
 		{
-			Source:   "legal/NOTICE",
+			Source:   "/build/legal/NOTICE",
 			Dest:     "/usr/share/doc/moby-init/NOTICE.gz",
 			Compress: true,
 		},
@@ -24,15 +24,15 @@ var (
 		Webpage: "https://github.com/krallin/tini",
 		Files: []archive.File{
 			{
-				Source: "src/build/tini-static",
+				Source: "/build/src/build/tini-static",
 				Dest:   "usr/bin/docker-init",
 			},
 			{
-				Source: "legal/LICENSE",
+				Source: "/build/legal/LICENSE",
 				Dest:   "/usr/share/doc/moby-init/LICENSE",
 			},
 			{
-				Source:   "legal/NOTICE",
+				Source:   "/build/legal/NOTICE",
 				Dest:     "/usr/share/doc/moby-init/NOTICE.gz",
 				Compress: true,
 			},
