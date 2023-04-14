@@ -252,38 +252,38 @@ Any use of third-party trademarks or logos are subject to those third-party's po
 | name | The name for your package |
 | makefile | The text content or anchored filename of a Makefile. See Makefile formatting for more information |
 | webpage | https://github.com/moby/moby |
-| files | A list of dictionaries, where each dictionary has the following keys: |
-|| **source**: a string that represents the source path of the file to be installed. |
-|| **dest**: a string that represents the destination path of the file to be installed. |
-|| **isdir** *(optional)*: a boolean that indicates whether the destination path is a directory. Default value is false. |
-|| **compress** *(optional)*: a boolean that indicates whether the file should be compressed. Default value is false. |
+| files | *[objects]*, where each dictionary has the following keys: |
+|| **source**: *string* that represents the source path of the file to be installed. |
+|| **dest**: *string* that represents the destination path of the file to be installed. |
+|| **isdir** *(optional)*: *bool* that indicates whether the destination path is a directory. Default value is false. |
+|| **compress** *(optional)*: *bool* that indicates whether the file should be compressed. Default value is false. |
 || *note*: when both `compress` and `isdir` are true, the individual files in the directory will be compressed, not the directory as a whole |
-| systemd | A list of dictionaries, where each dictionary has the same keys as files, and represents the systemd units to be installed. |
+| systemd | *[objects]*, where each dictionary has the same keys as files, and represents the systemd units to be installed. |
 | binaries | A list of binaries according to package type. This is used for dependency management, since the binary may be dynamically linked: |
-|| **deb**: a list of strings, where each string represents the path of a binary file to be installed for Debian-based systems. |
-|| **rpm**: a list of strings, where each string represents the path of a binary file to be installed for Red Hat-based systems. |
-|| **win**: a list of strings, where each string represents the path of a binary file to be installed for Windows systems. |
-| recommends | A dictionary with the following keys: |
-|| **deb**: a list of strings, where each string represents the name of a recommended package for Debian-based systems. |
-|| **rpm**: a list of strings, where each string represents the name of a recommended package for Red Hat-based systems. |
-| suggests | A dictionary with the following keys: |
-|| **deb**: a list of strings, where each string represents the name of a suggested package for Debian-based systems. |
-|| **rpm**: a list of strings, where each string represents the name of a suggested package for Red Hat-based systems. |
-| conflicts | A dictionary with the following keys: |
-|| **deb**: a list of strings, where each string represents the name of a conflicting package for Debian-based systems. |
-|| **rpm**: a list of strings, where each string represents the name of a conflicting package for Red Hat-based systems. |
-| replaces | A dictionary with the following keys: |
-|| **deb**: a list of strings, where each string represents the name of a replaced package for Debian-based systems. |
-|| **rpm**: a list of strings, where each string represents the name of a replaced package for Red Hat-based systems. |
-| provides | A dictionary with the following keys: |
-|| **deb**: a list of strings, where each string represents the name of the provided package for Debian-based systems. |
-|| **rpm**: a list of strings, where each string represents the name of the provided package for Red Hat-based systems. |
-| runtimeDeps | A dictionary with the following keys: |
-|| **deb**: a list of strings, where each string represents the name and version of a runtime dependency package for Debian-based systems. |
-|| **rpm**: a list of strings, where each string represents the name and version of a runtime dependency package for Red Hat-based systems. |
-| installScripts | A dictionary with the following keys: |
-|| **deb**: a list of dictionaries, where each dictionary has the following keys: |
-|| **when**: a string that represents when the script should be executed (e.g. post-install, pre-removal, post-removal). |
-|| **script**: a string that contains the path to the script to be executed. |
-|| **rpm**: a list of dictionaries |
+|| **deb**: *[strings]*, where each string represents the path of a binary file to be installed for Debian-based systems. |
+|| **rpm**: *[strings]*, where each string represents the path of a binary file to be installed for Red Hat-based systems. |
+|| **win**: *[strings]*, where each string represents the path of a binary file to be installed for Windows systems. |
+| recommends | A list of recommended packages according to package type |
+|| **deb**: *[strings]*, where each string represents the name of a recommended package for Debian-based systems. |
+|| **rpm**: *[strings]*, where each string represents the name of a recommended package for Red Hat-based systems. |
+| suggests | A list of suggested packages according to package type: |
+|| **deb**: *[strings]*, where each string represents the name of a suggested package for Debian-based systems. |
+|| **rpm**: *[strings]*, where each string represents the name of a suggested package for Red Hat-based systems. |
+| conflicts | A list of conflicting packages according to package type: |
+|| **deb**: *[strings]*, where each string represents the name of a conflicting package for Debian-based systems. |
+|| **rpm**: *[strings]*, where each string represents the name of a conflicting package for Red Hat-based systems. |
+| replaces | list of packages that will be replaced by this one, according to package type: |
+|| **deb**: *[strings]*, where each string represents the name of a replaced package for Debian-based systems. |
+|| **rpm**: *[strings]*, where each string represents the name of a replaced package for Red Hat-based systems. |
+| provides | The names of packages provided by this package: |
+|| **deb**: *[strings]*, where each string represents the name of the provided package for Debian-based systems. |
+|| **rpm**: *[strings]*, where each string represents the name of the provided package for Red Hat-based systems. |
+| runtimeDeps | A list of runtime dependencies, according to package type: |
+|| **deb**: *[strings]*, where each string represents the name and version of a runtime dependency package for Debian-based systems. |
+|| **rpm**: *[strings]*, where each string represents the name and version of a runtime dependency package for Red Hat-based systems. |
+| installScripts | A list of install scripts, according to package type and when they should be executed: |
+|| **deb**: *[objects]*, where each dictionary has the following keys: |
+|| **when**: *string* that represents when the script should be executed (e.g. post-install, pre-removal, post-removal). |
+|| **script**: *string* that contains the path to the script to be executed. |
+|| **rpm**: *[objects]* |
 
