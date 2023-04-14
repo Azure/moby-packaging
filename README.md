@@ -124,9 +124,9 @@ This particular build will output a file, `tini-static` at the absolute path
 ### Specify the package layout
 
 Packages for distro repositories are essentially archives (tarballs, cpio, zip
-files) containing files at their final destination on the target system. They additionally
-contain additional information, such as post-install scripts (to be run on the target system),
-dependency information, and a description.
+files) containing files at their final destination on the target system. They
+also contain additional information, such as post-install scripts (to be run on
+the target system), dependency information, and a description.
 
 To specify where our newly built binary should go, we have to tell
 moby-packaging where to find them in our container, and where they belong on
@@ -169,11 +169,17 @@ description: |-
 
 The format here is unmarshaled into the struct in `pkg/archive/archive.go`.
 
+Strings that begin with `#` are *embedded files*. In this example,
+`#moby-init/Makefile` means "replace this string with the contents of
+moby-init/Makefile on the host filesystem". Thus, the whole string
+"#moby-init/Makefile" will be replaced with the contents of the Makefile we
+created in the previous step.
+
 The key element here is the `files` entry: the `source` file is the location in
 the build container of a file we want to package. the `dest` file is the final
 location on the target system. Once built and published to a debian repo, one
-would run `apt-get install moby-init`; this would install the `tini-static`
-binary we built at the location `/ur/bin/docker-init`.
+would run `apt-get install moby-init`; this would install the built
+`tini-static` binary at the location `/ur/bin/docker-init`.
 
 the `conflicts` and `replaces` entries are used by the consuming package manager
 to remove older versions of the same package.
@@ -187,10 +193,13 @@ installed by the package manager).
 `name`, `webpage`, and `description` are used by the package manager when
 displaying information about the package.
 
+See the [yaml schema](#yaml-input) for a more detailed description of the
+various options.
+
 ### Producing the final package
 
 As with the [quick start](#quick-start), we need to supply moby-packaging with
-some information about what to build.
+some information about the source and verioning info.
 
 ```bash
 cat > ./moby-init.json <<'EOF'
