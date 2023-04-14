@@ -7,7 +7,7 @@ import (
 
 // type PkgKind int
 type PkgKind string
-type PkgKindMap map[PkgKind][]string
+type PkgKindMap map[PkgKind]TextList
 type PkgAction int
 type PkgInstallMap map[PkgKind][]InstallScript
 

@@ -89,7 +89,7 @@ func (r *rpmArchive) Package(client *dagger.Client, c *dagger.Container, project
 	}
 
 	for i := range r.a.RuntimeDeps[PkgKindRPM] {
-		dep := r.a.RuntimeDeps[PkgKindRPM][i]
+		dep := r.a.RuntimeDeps[PkgKindRPM][i].String()
 		if rpmPkgBlacklist.contains(project.Distro, dep) {
 			continue
 		}
@@ -98,7 +98,7 @@ func (r *rpmArchive) Package(client *dagger.Client, c *dagger.Container, project
 	}
 
 	for i := range r.a.Conflicts[PkgKindRPM] {
-		conf := r.a.Conflicts[PkgKindRPM][i]
+		conf := r.a.Conflicts[PkgKindRPM][i].String()
 		fpmArgs = append(fpmArgs, "--conflicts", conf)
 	}
 

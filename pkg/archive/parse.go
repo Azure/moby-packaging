@@ -6,6 +6,21 @@ import (
 )
 
 type Text string
+type TextList []Text
+
+func (t Text) String() string {
+	return string(t)
+}
+
+func (tl TextList) Strings() []string {
+	ret := []string{}
+
+	for _, s := range tl {
+		ret = append(ret, s.String())
+	}
+
+	return ret
+}
 
 func (t *Text) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	var s string

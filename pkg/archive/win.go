@@ -46,7 +46,7 @@ func (w *winArchive) Package(client *dagger.Client, c *dagger.Container, project
 
 func (w *winArchive) moveStaticFiles(c *dagger.Container, rootdir string) *dagger.Container {
 	for i := range w.a.Binaries[PkgKindWin] {
-		b := w.a.Binaries[PkgKindWin][i]
+		b := w.a.Binaries[PkgKindWin][i].String()
 		c = c.WithExec([]string{"cp", b, "/package"})
 	}
 

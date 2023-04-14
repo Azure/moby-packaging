@@ -12,7 +12,7 @@ import (
 )
 
 func join(pkgKind PkgKind, m PkgKindMap) string {
-	return strings.Join(m[pkgKind], ", ")
+	return strings.Join(m[pkgKind].Strings(), ", ")
 }
 
 const ControlTemplate = `
@@ -207,7 +207,7 @@ func (d *debArchive) withControlFile(c *dagger.Container, version string, projec
 		panic(err)
 	}
 
-	binaries := d.a.Binaries[PkgKindDeb]
+	binaries := d.a.Binaries[PkgKindDeb].Strings()
 
 	return c.
 		WithNewFile("/build/debian/control", dagger.ContainerWithNewFileOpts{Contents: buf.String()}).
