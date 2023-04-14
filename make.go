@@ -35,6 +35,7 @@ func main() {
 
 	buildSpec := flags.String("build-spec", "", "Location of the build spec json file")
 	pkgDef := flags.String("package-definition", "", "Location of the package definition yaml file")
+	projectDir := flags.String("project-dir", "", "Location of the project directory containing static files")
 
 	if err := flags.Parse(os.Args[1:]); err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -58,6 +59,10 @@ func main() {
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "could not read or parse build spec file")
 		os.Exit(1)
+	}
+
+	if *projectDir == "" {
+		*projectDir = spec.Pkg
 	}
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, unix.SIGTERM)
@@ -84,7 +89,7 @@ func main() {
 		spec.Arch = a
 	}
 
-	if err := do(ctx, client, spec, archive); err != nil {
+	if err := do(ctx, client, spec, archive, *projectDir); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
@@ -117,14 +122,14 @@ func readBuildSpec(filename string) (*build.Spec, error) {
 	return &spec, nil
 }
 
-func do(ctx context.Context, client *dagger.Client, cfg *build.Spec, pkgDef *archive.Archive) error {
+func do(ctx context.Context, client *dagger.Client, cfg *build.Spec, pkgDef *archive.Archive, projectDir string) error {
 	platform := dagger.Platform(fmt.Sprintf("%s/%s", cfg.OS, cfg.Arch))
 
 	target, err := targets.GetTarget(cfg.Distro)(ctx, client, platform)
 	if err != nil {
 		return err
 	}
-	out := target.Make(cfg, pkgDef)
+	out := target.Make(cfg, pkgDef, projectDir)
 
 	_, err = out.Export(ctx, filepath.Join("bundles", cfg.Distro))
 	return err

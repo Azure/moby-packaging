@@ -222,15 +222,15 @@ func (t *Target) getCommitTime(projectName string, sourceDir *dagger.Directory) 
 	return strings.TrimSpace(commitTime)
 }
 
-func (t *Target) Make(project *build.Spec, pkgDef *archive.Archive) *dagger.Directory {
-	projectDir := t.client.Host().Directory(project.Pkg)
+func (t *Target) Make(spec *build.Spec, pkgDef *archive.Archive, projectDirectory string) *dagger.Directory {
+	projectDir := t.client.Host().Directory(projectDirectory)
 	hackDir := t.client.Host().Directory("hack/cross")
-	md2man := t.goMD2Man(project.OS, project.Arch)
+	md2man := t.goMD2Man(spec.OS, spec.Arch)
 
-	source := t.getSource(project)
-	commitTime := t.getCommitTime(project.Pkg, source)
+	source := t.getSource(spec)
+	commitTime := t.getCommitTime(spec.Pkg, source)
 
-	build := t.c.Pipeline(project.Pkg).
+	build := t.c.Pipeline(spec.Pkg).
 		WithDirectory("/build", projectDir)
 
 	if pkgDef.Makefile != "" {
@@ -244,19 +244,15 @@ func (t *Target) Make(project *build.Spec, pkgDef *archive.Archive) *dagger.Dire
 		WithDirectory("/build/src", source).
 		WithWorkdir("/build").
 		WithMountedFile("/usr/bin/go-md2man", md2man).
-		WithEnvVariable("REVISION", project.Revision).
-		WithEnvVariable("VERSION", project.Tag).
-		WithEnvVariable("COMMIT", project.Commit).
+		WithEnvVariable("REVISION", spec.Revision).
+		WithEnvVariable("VERSION", spec.Tag).
+		WithEnvVariable("COMMIT", spec.Commit).
 		WithEnvVariable("SOURCE_DATE_EPOCH", commitTime).
 		WithExec(t.applyPatchesCommand()).
 		WithExec([]string{"/usr/bin/make", t.PkgKind()})
-		// WithExec([]string{"mkdir", "/out"}).
-		// WithExec([]string{"tar", "-cvzf", "/out/test.tar.gz", "/build"})
 
-	//return build.Directory("/out")
-
-	packager := t.Packager(project.Pkg, pkgDef)
-	return packager.Package(t.client, build, project)
+	packager := t.Packager(spec.Pkg, pkgDef)
+	return packager.Package(t.client, build, spec)
 }
 
 func WithPlatformEnvs(c *dagger.Container, build, target dagger.Platform) *dagger.Container {

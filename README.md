@@ -1,9 +1,21 @@
 ## About
 
+This project is an all-in-one system for building upstream projects from
+source, and creating packages for various platforms and distributions. For
+example, say you want to build and package `containerd` for use on an Ubuntu
+system. Fill out a couple of YAML files, and moby-packaging will fetch the
+source from the upstream git repository, build the project, and package it
+into a `.deb` file for distribution.
+
+Because such workflows are often automated, we have made it easy to trigger
+builds externally.
+
+<!--
 This repository holds the logic for building and packaging various moby OSS
 packages, for several different distros. Builds are performed by fetching the
 source from upstream (github) and building it according to the logic specified
 in the Makefiles. Once built, a project is packaged for its target distribution.
+-->
 
 This project uses dagger to manage containerized building and packaging.
 
@@ -22,11 +34,15 @@ cat > ./moby-containerd.json <<'EOF'
   "distro": "jammy",
   "tag": "1.7.0",
   "os": "linux",
-  "revision": "7"
+  "revision": "1"
 }
 EOF
 
-go run packaging --build-spec=./moby-containerd.json
+# moby-containerd/package.yml has already been provided in this repo
+go run packaging \
+    --build-spec=./moby-containerd.json \
+    --package-definition=moby-containerd/package.yml \
+    --project-dir=moby-containerd
 ```
 
 The `commit` field is the commit hash of the `tag` in question. The `tag` field
@@ -42,8 +58,16 @@ then be published in a package repository.
 
 ### Overview
 
-Currently, adding a new package involves several steps. We plan to improve the
-user experience around this in the near future.
+A project is made up of three main components:
+
+1. A project directory containing static files to be used during building and
+   packaging.
+1. A build spec, which provides information about the source to be built, the
+   target OS and architecture, and versioning information.
+1. A package definition file, in YAML format. This file specifies build steps
+   (in the form of a Makefile), and information needed by the packager. For
+   example, conflicting packages to remove before installation, or runtime
+   dependencies that should be installed alongside the new package.
 
 ### Add a new package directory
 
@@ -78,7 +102,6 @@ package type you wish to build (currently, `deb`, `rpm`, or `win`).
 
 ```bash
 cat > moby-init/Makefile <<'EOF'
-
 .PHONY: rpm deb
 
 rpm deb: tini-static
@@ -95,8 +118,8 @@ Note that the working directory will be `/build` (see [Container filesystem
 layout](#container-filesystem-layout)). The above reference to `./src/build`
 is at the absolute path `/build/src/build`.
 
-This particular build will output a file, `tini-static` in the absolute path
-`/build/src/build`.
+This particular build will output a file, `tini-static` at the absolute path
+`/build/src/build/tini-static`.
 
 ### Specify the package layout
 
@@ -110,110 +133,59 @@ moby-packaging where to find them in our container, and where they belong on
 the target system. Here is an example for our (admittedly simple) package.
 
 ```bash
-cat > moby-init/mapping.go <<'EOF'
-package mobyinit
-
-import "packaging/pkg/archive"
-
-var (
-	Archive = archive.Archive{
-		Name:    "moby-init",
-		Webpage: "https://github.com/krallin/tini",
-		Files: []archive.File{
-			{
-				Source: "/build/src/build/tini-static",
-				Dest:   "/usr/bin/docker-init",
-			},
-		},
-		Binaries: []string{
-			"/build/src/build/tini-static",
-		},
-		Conflicts: archive.PkgKindMap{
-			archive.PkgKindDeb: {
-				"tini",
-			},
-		},
-		Replaces: archive.PkgKindMap{
-			archive.PkgKindDeb: {
-				"tini",
-			},
-		},
-		Description: `tiny but valid init for containers
- Tini is the simplest init you could think of.
- .
- All Tini does is spawn a single child (Tini is meant to be run in a
- container), and wait for it to exit all the while reaping zombies and
- performing signal forwarding.`,
-	}
-)
-EOF
+printf '
+name: moby-init
+webpage: https://github.com/krallin/tini
+makefile: "#moby-init/Makefile"
+files:
+  - source: /build/src/build/tini-static
+    dest: usr/bin/docker-init
+  - source: /build/legal/LICENSE
+    dest: /usr/share/doc/moby-init/LICENSE
+  - source: /build/legal/NOTICE
+    dest: /usr/share/doc/moby-init/NOTICE.gz
+    compress: true
+binaries:
+  deb:
+    - /build/src/build/tini-static
+  rpm:
+    - /build/src/build/tini-static
+  win: []
+conflicts:
+  deb:
+    - tini
+replaces:
+  deb:
+    - tini
+description: |-
+  tiny but valid init for containers
+   Tini is the simplest init you could think of.
+   .
+   All Tini does is spawn a single child (Tini is meant to be run in a
+   container), and wait for it to exit all the while reaping zombies and
+   performing signal forwarding.
+' > moby-init/package.yml
 ```
 
-The struct here is defined in `pkg/archive/archive.go`.
+The format here is unmarshaled into the struct in `pkg/archive/archive.go`.
 
-The key element here is the `Files` entry: the `Source` file is the location in
-the build container of a file we want to package. The `Dest` file is the final
+The key element here is the `files` entry: the `source` file is the location in
+the build container of a file we want to package. the `dest` file is the final
 location on the target system. Once built and published to a debian repo, one
 would run `apt-get install moby-init`; this would install the `tini-static`
 binary we built at the location `/ur/bin/docker-init`.
 
-The `Conflicts` and `Replaces` entries are used by the consuming package manager
+the `conflicts` and `replaces` entries are used by the consuming package manager
 to remove older versions of the same package.
 
 In addition to these two entries, there are entries which specify runtime
 dependency packages. The package manager will install those packages as well.
-The `Binaries` entry is also used for dependency management. Since a binary may
+the `binaries` entry is also used for dependency management. Since a binary may
 be dynamically linked, it will be inspected for runtime dependencies (and also
 installed by the package manager).
 
-`Name`, `Webpage`, and `Description` are used by the package manager when
+`name`, `webpage`, and `description` are used by the package manager when
 displaying information about the package.
-
-Finally, note the `package` directive at the top of the file. `mobyinit` will
-be used as an import in the next step.
-
-### Updating moby-packaging to recognize the new package
-
-To enable the packaging system to build this package, update
-`targets/target.go`:
-
-```go
-import (
-    // ...
-    mobyinit "packaging/moby-init"
-    // ...
-)
-
-// ...
-
-func (t *Target) Packager(projectName string) archive.Interface {
-	mappings := map[string]archive.Archive{
-		"moby-engine":                  engine.Archive,
-		"moby-cli":                     cli.Archive,
-		"moby-containerd":              containerd.Archive,
-		"moby-containerd-shim-systemd": shim.Archive,
-		"moby-runc":                    runc.Archive,
-		"moby-compose":                 compose.Archive,
-		"moby-buildx":                  buildx.Archive,
-
-         // this references the `Archive` struct created in the previous step
-		"moby-init":                    mobyinit.Archive,
-	}
-
-	a := mappings[projectName]
-
-	switch t.PkgKind() {
-	case "deb":
-		return archive.NewDebArchive(&a, MirrorPrefix())
-	case "rpm":
-		return archive.NewRPMArchive(&a, MirrorPrefix())
-	case "win":
-		return archive.NewWinArchive(&a, MirrorPrefix())
-	default:
-		panic("unknown pkgKind: " + t.pkgKind)
-	}
-}
-```
 
 ### Producing the final package
 
@@ -234,7 +206,10 @@ cat > ./moby-init.json <<'EOF'
 }
 EOF
 
-go run packaging --build-spec=./moby-init.json
+go run packaging \
+    --build-spec=./moby-init.json \
+    --package-definition=moby-init/package.yml \
+    --project-dir=moby-init
 ```
 
 This will produce a package under `bundles/jammy` which is ready to deploy.
