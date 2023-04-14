@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"net/http"
@@ -111,7 +110,7 @@ func readBuildSpec(filename string) (*build.Spec, error) {
 	}
 
 	var spec build.Spec
-	if err := json.Unmarshal(b, &spec); err != nil {
+	if err := yaml.Unmarshal(b, &spec); err != nil {
 		return nil, err
 	}
 

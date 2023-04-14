@@ -1,14 +1,14 @@
 package build
 
 type Spec struct {
-	Pkg      string `json:"package"`
-	Distro   string `json:"distro"`
-	Arch     string `json:"arch"`
-	OS       string `json:"os"`
-	Repo     string `json:"repo"`
-	Commit   string `json:"commit"`
-	Tag      string `json:"tag"`
-	Revision string `json:"revision"`
+	Pkg      string `yaml:"package"`
+	Distro   string `yaml:"distro"`
+	Arch     string `yaml:"arch"`
+	OS       string `yaml:"os"`
+	Repo     string `yaml:"repo"`
+	Commit   string `yaml:"commit"`
+	Tag      string `yaml:"tag"`
+	Revision string `yaml:"revision"`
 }
 
 // values from moby trigger
