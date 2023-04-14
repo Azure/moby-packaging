@@ -4,7 +4,7 @@ description: "#moby-containerd/description"
 makefile: "#moby-containerd/Makefile"
 files:
   - source: "/build/src/bin"
-    dest: "usr/bin"
+    dest: "/usr/bin"
   - source: "/build/man"
     dest: "/usr/share/man"
   - source: "/build/legal/LICENSE"
