@@ -13,7 +13,8 @@ func (t *Text) UnmarshalYAML(unmarshal func(interface{}) error) error {
 		return err
 	}
 
-	_, escaped := strings.CutPrefix(s, `\`)
+	var escaped bool
+	s, escaped = strings.CutPrefix(s, `\`)
 
 	filenameOrText, ok := strings.CutPrefix(s, "#")
 	if ok && !escaped {
