@@ -19,6 +19,9 @@ in the Makefiles. Once built, a project is packaged for its target distribution.
 
 This project uses dagger to manage containerized building and packaging.
 
+## Architecture
+![architecture](./architecture.png)
+
 ## Quick start
 
 The following example shows how to create a .deb package for containerd v1.7.0,
