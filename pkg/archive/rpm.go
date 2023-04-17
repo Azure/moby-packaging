@@ -74,8 +74,6 @@ func (r *rpmArchive) Package(client *dagger.Client, c *dagger.Container, project
 	pkgDir := c.Directory(rootDir)
 	fpm := fpmContainer(client, r.mirrorPrefix)
 
-	filename := fmt.Sprintf("%s-%s+azure-%s.%s.%s.rpm", project.Pkg, project.Tag, project.Revision, rpmDistroMap[project.Distro], rpmArchMap[project.Arch])
-
 	fpmArgs := []string{"fpm",
 		"-s", "dir",
 		"-t", "rpm",
@@ -108,12 +106,14 @@ func (r *rpmArchive) Package(client *dagger.Client, c *dagger.Container, project
 	fpmArgs = append(fpmArgs, args...)
 	fpmArgs = append(fpmArgs, ".")
 
+	outDir := client.Directory()
+
 	return fpm.WithDirectory("/package", pkgDir).
 		WithDirectory("/build", c.Directory("/build")).
 		WithWorkdir("/package").
-		WithEnvVariable("OUTPUT_FILENAME", filename).
 		WithExec(fpmArgs).
-		WithExec([]string{"bash", "-c", `mkdir -vp /out; mv *.rpm "/out/${OUTPUT_FILENAME}"`}).
+		WithDirectory("/out", outDir).
+		WithExec([]string{"bash", "-c", `mv *.rpm /out`}).
 		Directory("/out")
 }
 

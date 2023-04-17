@@ -41,7 +41,7 @@ EOF
 # moby-containerd/package.yml has already been provided in this repo
 go run packaging \
     --build-spec=./moby-containerd.json \
-    --package-definition=moby-containerd/package.yml \
+    --package-spec=moby-containerd/package.yml \
     --project-dir=moby-containerd
 ```
 
@@ -217,7 +217,7 @@ EOF
 
 go run packaging \
     --build-spec=./moby-init.json \
-    --package-definition=moby-init/package.yml \
+    --package-spec=moby-init/package.yml \
     --project-dir=moby-init
 ```
 

@@ -188,10 +188,6 @@ fi
 	return c, newArgs
 }
 
-func replaceAll(b []byte, from, to string) string {
-	return strings.ReplaceAll(string(b), from, to)
-}
-
 func (d *debArchive) withControlFile(c *dagger.Container, version string, project *build.Spec) *dagger.Container {
 	t := ControlTemplate
 

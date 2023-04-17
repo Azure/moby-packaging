@@ -34,7 +34,7 @@ func main() {
 	}()
 
 	buildSpec := flags.String("build-spec", "", "Location of the build spec json file")
-	pkgDef := flags.String("package-definition", "", "Location of the package definition yaml file")
+	packageSpec := flags.String("package-spec", "", "Location of the package definition yaml file")
 	projectDir := flags.String("project-dir", "", "Location of the project directory containing static files")
 
 	if err := flags.Parse(os.Args[1:]); err != nil {
@@ -42,7 +42,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	archive, err := readPackageYAML(*pkgDef)
+	archive, err := readPackageYAML(*packageSpec)
 	if err != nil || archive == nil {
 		fmt.Fprintf(os.Stderr, "unable to parse package yaml: %s\n", err)
 		flag.Usage()
