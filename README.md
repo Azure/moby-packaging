@@ -134,6 +134,8 @@ the target system. Here is an example for our (admittedly simple) package.
 
 ```bash
 printf '
+# the `name` field is for documentation only, and ignored. instead, the
+# `package` field in the build spec is used for generating control information
 name: moby-init
 webpage: https://github.com/krallin/tini
 makefile: "#moby-init/Makefile"
@@ -249,7 +251,6 @@ Any use of third-party trademarks or logos are subject to those third-party's po
 
 | Key  | Value |
 |------|-------|
-| name | The name for your package |
 | makefile | The text content or anchored filename of a Makefile. See Makefile formatting for more information |
 | webpage | https://github.com/moby/moby |
 | files | *[objects]*, where each dictionary has the following keys: |

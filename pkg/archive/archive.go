@@ -41,7 +41,6 @@ type InstallScript struct {
 }
 
 type Archive struct {
-	Name     Text      `json:"name"`
 	Makefile Text      `json:"makefile"`
 	Webpage  Text      `json:"webpage"`
 	Files    []File    `json:"files"`

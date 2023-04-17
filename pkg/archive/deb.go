@@ -198,7 +198,14 @@ func (d *debArchive) withControlFile(c *dagger.Container, version string, projec
 
 	buf := new(bytes.Buffer)
 
-	err = tpl.Execute(buf, d.a)
+	type namedArchive struct {
+		Archive
+		Name string
+	}
+
+	a := namedArchive{Archive: d.a, Name: project.Pkg}
+
+	err = tpl.Execute(buf, a)
 	if err != nil {
 		panic(err)
 	}
