@@ -30,7 +30,7 @@ binaries:
     - "/build/src/bin/containerd-stress"
   win:
     - "/build/src/bin/containerd.exe"
-    - "/build/src/bin/containerd-shim-runhcs-v1.exe"
+    - "/build/hcs-shim/bin/containerd-shim-runhcs-v1.exe"
     - "/build/src/bin/ctr.exe"
 runtimeDeps:
   rpm:
