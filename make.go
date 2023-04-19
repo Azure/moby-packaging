@@ -12,7 +12,7 @@ import (
 	"strings"
 
 	"dagger.io/dagger"
-	"github.com/Azure/moby-packaging/pkg/build"
+	"github.com/Azure/moby-packaging/pkg/archive"
 	"github.com/Azure/moby-packaging/targets"
 	"golang.org/x/sys/unix"
 )
@@ -51,7 +51,7 @@ func main() {
 	}
 }
 
-func readBuildSpec(filename string) (*build.Spec, error) {
+func readBuildSpec(filename string) (*archive.Spec, error) {
 	if filename == "" {
 		return nil, fmt.Errorf("no build spec file specified")
 	}
@@ -61,7 +61,7 @@ func readBuildSpec(filename string) (*build.Spec, error) {
 		return nil, err
 	}
 
-	var spec build.Spec
+	var spec archive.Spec
 	if err := json.Unmarshal(b, &spec); err != nil {
 		return nil, err
 	}
@@ -69,7 +69,7 @@ func readBuildSpec(filename string) (*build.Spec, error) {
 	return &spec, nil
 }
 
-func do(ctx context.Context, client *dagger.Client, cfg *build.Spec) (*dagger.Directory, error) {
+func do(ctx context.Context, client *dagger.Client, cfg *archive.Spec) (*dagger.Directory, error) {
 	if cfg.Arch == "" {
 		p, err := client.DefaultPlatform(ctx)
 		if err != nil {

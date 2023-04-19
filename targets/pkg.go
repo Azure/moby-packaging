@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"dagger.io/dagger"
-	"github.com/Azure/moby-packaging/pkg/build"
+	"github.com/Azure/moby-packaging/pkg/archive"
 )
 
 const (
@@ -16,7 +16,7 @@ func FetchRef(client *dagger.Client, repo, commit string) *dagger.GitRef {
 	return client.Git(repo, dagger.GitOpts{KeepGitDir: true}).Commit(commit)
 }
 
-func (t *Target) getSource(project *build.Spec) *dagger.Directory {
+func (t *Target) getSource(project *archive.Spec) *dagger.Directory {
 	client := t.client.Pipeline(project.Pkg + "-src")
 	gitRef := FetchRef(client, project.Repo, project.Commit)
 	dir := fetchExternalSource(client, gitRef, project)
@@ -24,7 +24,7 @@ func (t *Target) getSource(project *build.Spec) *dagger.Directory {
 	return dir
 }
 
-func fetchExternalSource(client *dagger.Client, gitRef *dagger.GitRef, project *build.Spec) *dagger.Directory {
+func fetchExternalSource(client *dagger.Client, gitRef *dagger.GitRef, project *archive.Spec) *dagger.Directory {
 	switch project.Pkg {
 	case "moby-containerd":
 		if project.Distro == "windows" {
@@ -35,7 +35,7 @@ func fetchExternalSource(client *dagger.Client, gitRef *dagger.GitRef, project *
 	return gitRef.Tree()
 }
 
-func injectHCSShimSource(client *dagger.Client, gitRef *dagger.GitRef, project *build.Spec) *dagger.Directory {
+func injectHCSShimSource(client *dagger.Client, gitRef *dagger.GitRef, project *archive.Spec) *dagger.Directory {
 	c := client.Container().
 		From(MirrorPrefix()+"/buildpack-deps:buster").
 		WithDirectory("/src", gitRef.Tree())

@@ -8,11 +8,11 @@ import (
 	"testing"
 
 	"dagger.io/dagger"
-	"github.com/Azure/moby-packaging/pkg/build"
+	"github.com/Azure/moby-packaging/pkg/archive"
 )
 
 var (
-	buildSpec *build.Spec
+	buildSpec *archive.Spec
 )
 
 func getClient(ctx context.Context, t *testing.T) *dagger.Client {

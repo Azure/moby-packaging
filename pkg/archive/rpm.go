@@ -8,7 +8,6 @@ import (
 	"text/template"
 
 	"dagger.io/dagger"
-	"github.com/Azure/moby-packaging/pkg/build"
 )
 
 var (
@@ -34,9 +33,9 @@ var (
 )
 
 type (
-	empty      struct{}
-	mapSet     map[string]map[string]empty
-	rpmArchive struct {
+	empty       struct{}
+	mapSet      map[string]map[string]empty
+	RpmPackager struct {
 		a            Archive
 		mirrorPrefix string
 	}
@@ -52,18 +51,18 @@ func (m mapSet) contains(distro, pkg string) bool {
 	return false
 }
 
-func NewRPMArchive(a *Archive, mp string) Interface {
+func NewRPMPackager(a *Archive, mp string) *RpmPackager {
 	if a == nil {
 		panic("nil archive supplied")
 	}
 
-	return &rpmArchive{
+	return &RpmPackager{
 		a:            *a,
 		mirrorPrefix: mp,
 	}
 }
 
-func (r *rpmArchive) Package(client *dagger.Client, c *dagger.Container, project *build.Spec) *dagger.Directory {
+func (r *RpmPackager) Package(client *dagger.Client, c *dagger.Container, project *Spec) *dagger.Directory {
 	dir := client.Directory()
 	rootDir := "/package"
 
@@ -116,7 +115,7 @@ func (r *rpmArchive) Package(client *dagger.Client, c *dagger.Container, project
 		Directory("/out")
 }
 
-func (r *rpmArchive) withInstallScripts(c *dagger.Container) (*dagger.Container, []string) {
+func (r *RpmPackager) withInstallScripts(c *dagger.Container) (*dagger.Container, []string) {
 	newArgs := []string{}
 
 	for i := range r.a.InstallScripts[PkgKindRPM] {
@@ -129,7 +128,7 @@ func (r *rpmArchive) withInstallScripts(c *dagger.Container) (*dagger.Container,
 	return c, newArgs
 }
 
-func (r *rpmArchive) installScript(script *InstallScript, c *dagger.Container) (*dagger.Container, []string) {
+func (r *RpmPackager) installScript(script *InstallScript, c *dagger.Container) (*dagger.Container, []string) {
 	newArgs := []string{}
 
 	var templateStr, filename, flag string
@@ -177,7 +176,7 @@ fi
 	newArgs = append(newArgs, flag, filename)
 	return c, newArgs
 }
-func (r *rpmArchive) moveStaticFiles(c *dagger.Container, rootdir string) *dagger.Container {
+func (r *RpmPackager) moveStaticFiles(c *dagger.Container, rootdir string) *dagger.Container {
 	files := r.a.Files
 	for i := range r.a.Systemd {
 		sd := r.a.Systemd[i]

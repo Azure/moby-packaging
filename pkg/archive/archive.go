@@ -1,16 +1,9 @@
 package archive
 
-// type PkgKind int
 type PkgKind string
 type PkgKindMap map[PkgKind][]string
 type PkgAction int
 type PkgInstallMap map[PkgKind][]InstallScript
-
-// const (
-// 	PkgKindDeb PkgKind = iota
-// 	PkgKindRPM
-// 	PkgKindWindows
-// )
 
 const (
 	PkgKindDeb PkgKind = "deb"

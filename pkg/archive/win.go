@@ -2,26 +2,25 @@ package archive
 
 import (
 	"dagger.io/dagger"
-	"github.com/Azure/moby-packaging/pkg/build"
 )
 
-type winArchive struct {
+type WinPackager struct {
 	a            Archive
 	mirrorPrefix string
 }
 
-func NewWinArchive(a *Archive, mp string) Interface {
+func NewWinPackager(a *Archive, mp string) *WinPackager {
 	if a == nil {
 		panic("nil archive supplied")
 	}
 
-	return &winArchive{
+	return &WinPackager{
 		a:            *a,
 		mirrorPrefix: mp,
 	}
 }
 
-func (w *winArchive) Package(client *dagger.Client, c *dagger.Container, project *build.Spec) *dagger.Directory {
+func (w *WinPackager) Package(client *dagger.Client, c *dagger.Container, project *Spec) *dagger.Directory {
 	dir := client.Directory()
 	rootDir := "/package"
 
@@ -43,7 +42,7 @@ func (w *winArchive) Package(client *dagger.Client, c *dagger.Container, project
 	return c.Directory("/out")
 }
 
-func (w *winArchive) moveStaticFiles(c *dagger.Container, rootdir string) *dagger.Container {
+func (w *WinPackager) moveStaticFiles(c *dagger.Container, rootdir string) *dagger.Container {
 	for i := range w.a.WinBinaries {
 		b := w.a.WinBinaries[i]
 		c = c.WithExec([]string{"cp", b, "/package"})

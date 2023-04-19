@@ -16,7 +16,6 @@ import (
 	runc "github.com/Azure/moby-packaging/moby-runc"
 	"github.com/Azure/moby-packaging/pkg/apt"
 	"github.com/Azure/moby-packaging/pkg/archive"
-	"github.com/Azure/moby-packaging/pkg/build"
 
 	"dagger.io/dagger"
 )
@@ -199,7 +198,11 @@ func (t *Target) goMD2Man(os, arch string) *dagger.File {
 	return c.File(outfile)
 }
 
-func (t *Target) Packager(projectName string) archive.Interface {
+type Packager interface {
+	Package(*dagger.Client, *dagger.Container, *archive.Spec) *dagger.Directory
+}
+
+func (t *Target) Packager(projectName string) Packager {
 	mappings := map[string]archive.Archive{
 		"moby-engine":                  engine.Archive,
 		"moby-cli":                     cli.Archive,
@@ -215,11 +218,11 @@ func (t *Target) Packager(projectName string) archive.Interface {
 
 	switch t.PkgKind() {
 	case "deb":
-		return archive.NewDebArchive(&a, MirrorPrefix())
+		return archive.NewDebPackager(&a, MirrorPrefix())
 	case "rpm":
-		return archive.NewRPMArchive(&a, MirrorPrefix())
+		return archive.NewRPMPackager(&a, MirrorPrefix())
 	case "win":
-		return archive.NewWinArchive(&a, MirrorPrefix())
+		return archive.NewWinPackager(&a, MirrorPrefix())
 	default:
 		panic("unknown pkgKind: " + t.pkgKind)
 	}
@@ -240,7 +243,7 @@ func (t *Target) getCommitTime(projectName string, sourceDir *dagger.Directory) 
 	return strings.TrimSpace(commitTime)
 }
 
-func (t *Target) Make(project *build.Spec) *dagger.Directory {
+func (t *Target) Make(project *archive.Spec) *dagger.Directory {
 	projectDir := t.client.Host().Directory(project.Pkg)
 	hackDir := t.client.Host().Directory("hack/cross")
 	md2man := t.goMD2Man(project.OS, project.Arch)

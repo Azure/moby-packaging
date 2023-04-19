@@ -8,7 +8,6 @@ import (
 	"text/template"
 
 	"dagger.io/dagger"
-	"github.com/Azure/moby-packaging/pkg/build"
 )
 
 func join(pkgKind PkgKind, m PkgKindMap) string {
@@ -63,23 +62,23 @@ var (
 	}
 )
 
-type debArchive struct {
+type DebPackager struct {
 	a            Archive
 	mirrorPrefix string
 }
 
-func NewDebArchive(a *Archive, mp string) Interface {
+func NewDebPackager(a *Archive, mp string) *DebPackager {
 	if a == nil {
 		panic("nil archive supplied")
 	}
 
-	return &debArchive{
+	return &DebPackager{
 		a:            *a,
 		mirrorPrefix: mp,
 	}
 }
 
-func (d *debArchive) Package(client *dagger.Client, c *dagger.Container, project *build.Spec) *dagger.Directory {
+func (d *DebPackager) Package(client *dagger.Client, c *dagger.Container, project *Spec) *dagger.Directory {
 	dir := client.Directory()
 	rootDir := "/package"
 
@@ -115,7 +114,7 @@ func (d *debArchive) Package(client *dagger.Client, c *dagger.Container, project
 		Directory("/out")
 }
 
-func (d *debArchive) moveStaticFiles(c *dagger.Container, rootdir string) *dagger.Container {
+func (d *DebPackager) moveStaticFiles(c *dagger.Container, rootdir string) *dagger.Container {
 	for i := range d.a.Files {
 		f := d.a.Files[i]
 		c = f.MoveStaticFile(c, rootdir)
@@ -124,7 +123,7 @@ func (d *debArchive) moveStaticFiles(c *dagger.Container, rootdir string) *dagge
 	return c
 }
 
-func (d *debArchive) withInstallScripts(c *dagger.Container) (*dagger.Container, []string) {
+func (d *DebPackager) withInstallScripts(c *dagger.Container) (*dagger.Container, []string) {
 	newArgs := []string{}
 
 	for i := range d.a.InstallScripts[PkgKindDeb] {
@@ -137,7 +136,7 @@ func (d *debArchive) withInstallScripts(c *dagger.Container) (*dagger.Container,
 	return c, newArgs
 }
 
-func (d *debArchive) installScript(script *InstallScript, c *dagger.Container) (*dagger.Container, []string) {
+func (d *DebPackager) installScript(script *InstallScript, c *dagger.Container) (*dagger.Container, []string) {
 	newArgs := []string{}
 
 	var templateStr, filename, flag string
@@ -188,7 +187,7 @@ fi
 	return c, newArgs
 }
 
-func (d *debArchive) withControlFile(c *dagger.Container, version string, project *build.Spec) *dagger.Container {
+func (d *DebPackager) withControlFile(c *dagger.Container, version string, project *Spec) *dagger.Container {
 	t := ControlTemplate
 
 	tpl, err := template.New("control").Funcs(template.FuncMap{"join": join}).Parse(t)
@@ -236,7 +235,7 @@ EOF
 		})
 }
 
-func (d *debArchive) systemdArgs() []string {
+func (d *DebPackager) systemdArgs() []string {
 	args := []string{}
 
 	for i := range d.a.Systemd {
