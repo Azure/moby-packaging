@@ -7,6 +7,8 @@ in the Makefiles. Once built, a project is packaged for its target distribution.
 
 This project uses dagger to manage containerized building and packaging.
 
+***Note***: This is still under heavy development and is not yet ready for production use.
+
 ## Quick start
 
 The following example shows how to create a .deb package for containerd v1.7.0,
