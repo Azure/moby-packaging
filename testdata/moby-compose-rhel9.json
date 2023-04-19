@@ -5,6 +5,5 @@
   "package": "moby-compose",
   "distro": "rhel9",
   "tag": "2.16.0",
-  "os": "linux",
   "revision": "7"
 }

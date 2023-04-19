@@ -5,6 +5,5 @@
   "package": "moby-buildx",
   "distro": "centos7",
   "tag": "0.10.3",
-  "os": "linux",
   "revision": "7"
 }

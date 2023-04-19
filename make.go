@@ -83,7 +83,11 @@ func do(ctx context.Context, client *dagger.Client, cfg *archive.Spec) (*dagger.
 		cfg.Arch = a
 	}
 
-	platform := dagger.Platform(fmt.Sprintf("%s/%s", cfg.OS, cfg.Arch))
+	targetOs := "linux"
+	if cfg.Distro == "windows" {
+		targetOs = "windows"
+	}
+	platform := dagger.Platform(fmt.Sprintf("%s/%s", targetOs, cfg.Arch))
 
 	target, err := targets.GetTarget(ctx, cfg.Distro, client, platform)
 	if err != nil {

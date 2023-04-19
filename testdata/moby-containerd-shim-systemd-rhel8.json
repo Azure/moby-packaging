@@ -5,6 +5,5 @@
   "package": "moby-containerd-shim-systemd",
   "distro": "rhel8",
   "tag": "0.0.1",
-  "os": "linux",
   "revision": "0"
 }

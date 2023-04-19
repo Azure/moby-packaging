@@ -1,8 +1,4 @@
 parameters:
-  - name: os
-    displayName: os
-    type: string
-    default: linux
   - name: arch
     displayName: arch
     type: string
@@ -67,7 +63,6 @@ stages:
                   "package": "${{ parameters.package_name }}",
                   "distro": "${{ parameters.distro }}",
                   "tag": "${{ parameters.tag }}",
-                  "os": "${{ parameters.os }}",
                   "revision": "${{ coalesce(parameters.revision, '1') }}"
                 }
               ' | go run packaging --build-spec=/dev/stdin

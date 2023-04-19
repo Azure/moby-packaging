@@ -5,6 +5,5 @@
   "package": "moby-cli",
   "distro": "rhel9",
   "tag": "23.0.0",
-  "os": "linux",
   "revision": "8"
 }

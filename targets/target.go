@@ -2,7 +2,6 @@ package targets
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"strings"
 
@@ -178,17 +177,13 @@ func (t *Target) applyPatchesCommand() []string {
 	}
 }
 
-func (t *Target) goMD2Man(os, arch string) *dagger.File {
+func (t *Target) goMD2Man() *dagger.File {
 	repo := "https://github.com/cpuguy83/go-md2man.git"
 	ref := "v2.0.2"
 	outfile := "/build/bin/go-md2man"
 	srcDir := t.client.Git(repo, dagger.GitOpts{KeepGitDir: true}).Commit(ref).Tree()
 
-	targetPlatformOpt := dagger.ContainerOpts{
-		Platform: dagger.Platform(fmt.Sprintf("%s/%s", os, arch)),
-	}
-
-	c := t.client.Container(targetPlatformOpt).
+	c := t.client.Container().
 		From(GoRef).
 		WithDirectory("/build", srcDir).
 		WithWorkdir("/build").
@@ -246,7 +241,7 @@ func (t *Target) getCommitTime(projectName string, sourceDir *dagger.Directory) 
 func (t *Target) Make(project *archive.Spec) *dagger.Directory {
 	projectDir := t.client.Host().Directory(project.Pkg)
 	hackDir := t.client.Host().Directory("hack/cross")
-	md2man := t.goMD2Man(project.OS, project.Arch)
+	md2man := t.goMD2Man()
 
 	source := t.getSource(project)
 	commitTime := t.getCommitTime(project.Pkg, source)

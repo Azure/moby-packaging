@@ -5,6 +5,5 @@
   "package": "moby-buildx",
   "distro": "mariner2",
   "tag": "0.10.3",
-  "os": "linux",
   "revision": "8"
 }

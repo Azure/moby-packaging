@@ -5,6 +5,5 @@
   "package": "moby-runc",
   "distro": "rhel9",
   "tag": "1.1.4",
-  "os": "linux",
   "revision": "7"
 }

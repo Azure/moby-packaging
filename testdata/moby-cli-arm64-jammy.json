@@ -5,6 +5,5 @@
   "package": "moby-cli",
   "distro": "jammy",
   "tag": "23.0.0",
-  "os": "linux",
   "revision": "8"
 }
