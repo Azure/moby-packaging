@@ -23,11 +23,15 @@ func AptInstall(c *dagger.Container, aptCache, aptLibCache *dagger.CacheVolume, 
 	c2 := c.WithMountedDirectory("/etc/apt/apt.conf.d", dir)
 
 	if aptCache != nil {
-		c2 = c2.WithMountedCache("/var/cache/apt", aptCache)
+		c2 = c2.WithMountedCache("/var/cache/apt", aptCache, dagger.ContainerWithMountedCacheOpts{
+			Sharing: dagger.Locked,
+		})
 
 	}
 	if aptLibCache != nil {
-		c2 = c2.WithMountedCache("/var/lib/apt", aptLibCache)
+		c2 = c2.WithMountedCache("/var/lib/apt", aptLibCache, dagger.ContainerWithMountedCacheOpts{
+			Sharing: dagger.Locked,
+		})
 	}
 
 	c2 = c2.WithExec([]string{
