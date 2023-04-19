@@ -2,10 +2,10 @@ package testutil
 
 import (
 	"context"
-	"packaging/pkg/apt"
-	"packaging/targets"
 
 	"dagger.io/dagger"
+	"github.com/Azure/moby-packaging/pkg/apt"
+	"github.com/Azure/moby-packaging/targets"
 )
 
 func NewQemuImg(ctx context.Context, client *dagger.Client, platform dagger.Platform) *dagger.Container {

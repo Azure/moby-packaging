@@ -1,4 +1,4 @@
-module packaging
+module github.com/Azure/moby-packaging
 
 go 1.19
 

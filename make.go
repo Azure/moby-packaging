@@ -8,13 +8,12 @@ import (
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
-	"packaging/targets"
 	"path/filepath"
 	"strings"
 
-	"packaging/pkg/build"
-
 	"dagger.io/dagger"
+	"github.com/Azure/moby-packaging/pkg/build"
+	"github.com/Azure/moby-packaging/targets"
 	"golang.org/x/sys/unix"
 )
 
@@ -86,7 +85,7 @@ func do(ctx context.Context, client *dagger.Client, cfg *build.Spec) (*dagger.Di
 
 	platform := dagger.Platform(fmt.Sprintf("%s/%s", cfg.OS, cfg.Arch))
 
-	target, err := targets.GetTarget(cfg.Distro)(ctx, client, platform)
+	target, err := targets.GetTarget(ctx, cfg.Distro, client, platform)
 	if err != nil {
 		return nil, err
 	}

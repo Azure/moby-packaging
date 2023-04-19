@@ -2,7 +2,8 @@ package shim
 
 import (
 	_ "embed"
-	"packaging/pkg/archive"
+
+	"github.com/Azure/moby-packaging/pkg/archive"
 )
 
 var (

@@ -1,8 +1,8 @@
 package main
 
 import (
-	"packaging/pkg/apt"
-	"packaging/targets"
+	"github.com/Azure/moby-packaging/pkg/apt"
+	"github.com/Azure/moby-packaging/targets"
 
 	"dagger.io/dagger"
 )

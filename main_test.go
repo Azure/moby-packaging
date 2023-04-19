@@ -5,10 +5,10 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"packaging/pkg/build"
 	"testing"
 
 	"dagger.io/dagger"
+	"github.com/Azure/moby-packaging/pkg/build"
 )
 
 var (

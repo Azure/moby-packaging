@@ -1,6 +1,6 @@
 package buildx
 
-import "packaging/pkg/archive"
+import "github.com/Azure/moby-packaging/pkg/archive"
 
 var (
 	Mapping = map[string]string{

@@ -4,18 +4,19 @@ import (
 	"context"
 	"fmt"
 	"os"
-	buildx "packaging/moby-buildx"
-	cli "packaging/moby-cli"
-	compose "packaging/moby-compose"
-	containerd "packaging/moby-containerd"
-	shim "packaging/moby-containerd-shim-systemd"
-	engine "packaging/moby-engine"
-	mobyinit "packaging/moby-init"
-	runc "packaging/moby-runc"
-	"packaging/pkg/apt"
-	"packaging/pkg/archive"
-	"packaging/pkg/build"
 	"strings"
+
+	buildx "github.com/Azure/moby-packaging/moby-buildx"
+	cli "github.com/Azure/moby-packaging/moby-cli"
+	compose "github.com/Azure/moby-packaging/moby-compose"
+	containerd "github.com/Azure/moby-packaging/moby-containerd"
+	shim "github.com/Azure/moby-packaging/moby-containerd-shim-systemd"
+	engine "github.com/Azure/moby-packaging/moby-engine"
+	mobyinit "github.com/Azure/moby-packaging/moby-init"
+	runc "github.com/Azure/moby-packaging/moby-runc"
+	"github.com/Azure/moby-packaging/pkg/apt"
+	"github.com/Azure/moby-packaging/pkg/archive"
+	"github.com/Azure/moby-packaging/pkg/build"
 
 	"dagger.io/dagger"
 )
@@ -47,31 +48,27 @@ func MirrorPrefix() string {
 	return prefix
 }
 
-func GetTarget(distro string) func(context.Context, *dagger.Client, dagger.Platform) (*Target, error) {
-	switch distro {
-	case "jammy":
-		return Jammy
-	case "buster":
-		return Buster
-	case "bionic":
-		return Bionic
-	case "bullseye":
-		return Bullseye
-	case "focal":
-		return Focal
-	case "rhel8":
-		return Rhel8
-	case "rhel9":
-		return Rhel9
-	case "centos7":
-		return Centos7
-	case "windows":
-		return Windows
-	case "mariner2":
-		return Mariner2
-	default:
+type MakeTargetFunc func(context.Context, *dagger.Client, dagger.Platform) (*Target, error)
+
+var targets = map[string]MakeTargetFunc{
+	"jammy":    Jammy,
+	"buster":   Buster,
+	"bionic":   Bionic,
+	"bullseye": Bullseye,
+	"focal":    Focal,
+	"rhel8":    Rhel8,
+	"rhel9":    Rhel9,
+	"centos7":  Centos7,
+	"windows":  Windows,
+	"mariner2": Mariner2,
+}
+
+func GetTarget(ctx context.Context, distro string, client *dagger.Client, platform dagger.Platform) (*Target, error) {
+	f, ok := targets[distro]
+	if !ok {
 		panic("unknown distro: " + distro)
 	}
+	return f(ctx, client, platform)
 }
 
 var (

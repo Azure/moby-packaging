@@ -3,9 +3,9 @@ package targets
 import (
 	"context"
 	"os"
-	"packaging/pkg/apt"
 
 	"dagger.io/dagger"
+	"github.com/Azure/moby-packaging/pkg/apt"
 )
 
 var (

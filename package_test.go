@@ -7,12 +7,12 @@ import (
 	"encoding/hex"
 	"os"
 	"os/signal"
-	"packaging/targets"
-	"packaging/testutil"
 	"path"
 	"testing"
 
 	"dagger.io/dagger"
+	"github.com/Azure/moby-packaging/targets"
+	"github.com/Azure/moby-packaging/testutil"
 )
 
 var (

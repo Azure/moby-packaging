@@ -3,12 +3,12 @@ package archive
 import (
 	"bytes"
 	"fmt"
-	"packaging/pkg/build"
 	"path/filepath"
 	"strings"
 	"text/template"
 
 	"dagger.io/dagger"
+	"github.com/Azure/moby-packaging/pkg/build"
 )
 
 func join(pkgKind PkgKind, m PkgKindMap) string {

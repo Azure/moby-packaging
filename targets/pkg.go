@@ -2,10 +2,10 @@ package targets
 
 import (
 	"context"
-	"packaging/pkg/build"
 	"strings"
 
 	"dagger.io/dagger"
+	"github.com/Azure/moby-packaging/pkg/build"
 )
 
 const (

@@ -1,9 +1,8 @@
 package archive
 
 import (
-	"packaging/pkg/apt"
-
 	"dagger.io/dagger"
+	"github.com/Azure/moby-packaging/pkg/apt"
 )
 
 func fpmContainer(client *dagger.Client, mirrorPrefix string) *dagger.Container {

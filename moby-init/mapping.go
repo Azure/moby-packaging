@@ -1,6 +1,6 @@
 package mobyinit
 
-import "packaging/pkg/archive"
+import "github.com/Azure/moby-packaging/pkg/archive"
 
 var (
 	Mapping2 = []archive.File{

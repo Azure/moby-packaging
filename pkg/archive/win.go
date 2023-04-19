@@ -1,9 +1,8 @@
 package archive
 
 import (
-	"packaging/pkg/build"
-
 	"dagger.io/dagger"
+	"github.com/Azure/moby-packaging/pkg/build"
 )
 
 type winArchive struct {
