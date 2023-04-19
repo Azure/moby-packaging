@@ -12,7 +12,7 @@ const (
 	aptUpdatedPath = "/var/cache/apt/moby/updated"
 )
 
-func AptInstall(c *dagger.Container, aptCache, aptLibCache *dagger.CacheVolume, pkgs ...string) *dagger.Container {
+func Install(c *dagger.Container, aptCache, aptLibCache *dagger.CacheVolume, pkgs ...string) *dagger.Container {
 	// We don't want these files to persist in the rootfs, so we create them in a tempdir and mount them in.
 	dir := c.Directory("/etc/apt/apt.conf.d").
 		WithNewFile("docker-clean", "").        // overwrite the default docker-clean file

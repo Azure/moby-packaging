@@ -11,7 +11,7 @@ import (
 func NewQemuImg(ctx context.Context, client *dagger.Client, platform dagger.Platform) *dagger.Container {
 	ctr := client.Container(dagger.ContainerOpts{Platform: platform}).From(targets.JammyRef)
 
-	return apt.AptInstall(
+	return apt.Install(
 		ctr,
 		client.CacheVolume(targets.JammyAptCacheKey),
 		client.CacheVolume(targets.JammyAptLibCacheKey),

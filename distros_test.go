@@ -43,7 +43,7 @@ func Jammy(client *dagger.Client) *dagger.Container {
 	deb := client.HTTP("https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb")
 
 	c := client.Container().From(targets.JammyRef)
-	return apt.AptInstall(c, client.CacheVolume(targets.JammyAptCacheKey), client.CacheVolume(targets.JammyAptLibCacheKey),
+	return apt.Install(c, client.CacheVolume(targets.JammyAptCacheKey), client.CacheVolume(targets.JammyAptLibCacheKey),
 		"systemd", "strace", "ssh", "udev", "iptables",
 	).
 		WithExec([]string{"systemctl", "enable", "ssh"}).
@@ -58,7 +58,7 @@ func Focal(client *dagger.Client) *dagger.Container {
 	deb := client.HTTP("https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb")
 
 	c := client.Container().From(targets.FocalRef)
-	return apt.AptInstall(c, client.CacheVolume(targets.FocalAptCacheKey), client.CacheVolume(targets.FocalAptLibCacheKey),
+	return apt.Install(c, client.CacheVolume(targets.FocalAptCacheKey), client.CacheVolume(targets.FocalAptLibCacheKey),
 		"systemd", "strace", "ssh", "udev", "iptables",
 	).
 		WithExec([]string{"systemctl", "enable", "ssh"}).
@@ -74,7 +74,7 @@ func Bionic(client *dagger.Client) *dagger.Container {
 	deb := client.HTTP("https://packages.microsoft.com/config/ubuntu/18.04/packages-microsoft-prod.deb")
 	c2 := c.WithMountedFile("/tmp/packages-microsoft-prod.deb", deb).
 		WithExec([]string{"/usr/bin/dpkg", "-i", "/tmp/packages-microsoft-prod.deb"})
-	c2 = apt.AptInstall(c2, client.CacheVolume(targets.BionicAptCacheKey), client.CacheVolume(targets.BionicAptLibCacheKey), "aptly")
+	c2 = apt.Install(c2, client.CacheVolume(targets.BionicAptCacheKey), client.CacheVolume(targets.BionicAptLibCacheKey), "aptly")
 	return c.WithRootfs(c2.Rootfs())
 }
 
@@ -83,7 +83,7 @@ func Bullseye(client *dagger.Client) *dagger.Container {
 	deb := client.HTTP("https://packages.microsoft.com/config/debian/11/packages-microsoft-prod.deb")
 	c2 := c.WithMountedFile("/tmp/packages-microsoft-prod.deb", deb).
 		WithExec([]string{"/usr/bin/dpkg", "-i", "/tmp/packages-microsoft-prod.deb"})
-	c2 = apt.AptInstall(c2, client.CacheVolume(targets.BullseyeAptCacheKey), client.CacheVolume(targets.BullseyeAptLibCacheKey), "aptly")
+	c2 = apt.Install(c2, client.CacheVolume(targets.BullseyeAptCacheKey), client.CacheVolume(targets.BullseyeAptLibCacheKey), "aptly")
 	return c.WithRootfs(c2.Rootfs())
 }
 
@@ -92,7 +92,7 @@ func Buster(client *dagger.Client) *dagger.Container {
 	deb := client.HTTP("https://packages.microsoft.com/config/debian/10/packages-microsoft-prod.deb")
 	c2 := c.WithMountedFile("/tmp/packages-microsoft-prod.deb", deb).
 		WithExec([]string{"/usr/bin/dpkg", "-i", "/tmp/packages-microsoft-prod.deb"})
-	c2 = apt.AptInstall(c2, client.CacheVolume(targets.BusterAptCacheKey), client.CacheVolume(targets.BusterAptLibCacheKey), "aptly")
+	c2 = apt.Install(c2, client.CacheVolume(targets.BusterAptCacheKey), client.CacheVolume(targets.BusterAptLibCacheKey), "aptly")
 	return c.WithRootfs(c2.Rootfs())
 }
 

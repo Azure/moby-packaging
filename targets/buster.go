@@ -17,7 +17,7 @@ var (
 func Buster(ctx context.Context, client *dagger.Client, platform dagger.Platform) (*Target, error) {
 	client = client.Pipeline("buster/" + string(platform))
 	c := client.Container(dagger.ContainerOpts{Platform: platform}).From(BusterRef)
-	c = apt.AptInstall(c, client.CacheVolume(BusterAptCacheKey), client.CacheVolume(BusterAptLibCacheKey), BaseDebPackages...)
+	c = apt.Install(c, client.CacheVolume(BusterAptCacheKey), client.CacheVolume(BusterAptLibCacheKey), BaseDebPackages...)
 
 	buildPlatform, err := client.DefaultPlatform(ctx)
 	if err != nil {

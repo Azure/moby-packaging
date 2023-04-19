@@ -17,7 +17,7 @@ var (
 func Jammy(ctx context.Context, client *dagger.Client, platform dagger.Platform) (*Target, error) {
 	client = client.Pipeline("jammy/" + string(platform))
 	c := client.Container(dagger.ContainerOpts{Platform: platform}).From(JammyRef)
-	c = apt.AptInstall(c, client.CacheVolume(JammyAptCacheKey), client.CacheVolume(JammyAptLibCacheKey), BaseDebPackages...)
+	c = apt.Install(c, client.CacheVolume(JammyAptCacheKey), client.CacheVolume(JammyAptLibCacheKey), BaseDebPackages...)
 
 	buildPlatform, err := client.DefaultPlatform(ctx)
 	if err != nil {

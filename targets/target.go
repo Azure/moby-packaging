@@ -21,7 +21,7 @@ import (
 )
 
 func (t *Target) AptInstall(pkgs ...string) *Target {
-	c := apt.AptInstall(t.c, t.client.CacheVolume(t.name+"-apt-cache"), t.client.CacheVolume(t.name+"-apt-lib-cache"), pkgs...)
+	c := apt.Install(t.c, t.client.CacheVolume(t.name+"-apt-cache"), t.client.CacheVolume(t.name+"-apt-lib-cache"), pkgs...)
 	return t.update(c)
 }
 
