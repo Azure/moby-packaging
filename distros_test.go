@@ -1,6 +1,10 @@
 package main
 
 import (
+	"context"
+	_ "embed"
+	"testing"
+
 	"github.com/Azure/moby-packaging/pkg/apt"
 	"github.com/Azure/moby-packaging/targets"
 
@@ -18,7 +22,7 @@ const (
 	mariner2 = "mariner2"
 )
 
-var distros = map[string]func(*dagger.Client) *dagger.Container{
+var distros = map[string]func(context.Context, *testing.T, *dagger.Client) *dagger.Container{
 	jammy:    Jammy,
 	focal:    Focal,
 	bionic:   Bionic,
@@ -28,18 +32,11 @@ var distros = map[string]func(*dagger.Client) *dagger.Container{
 	rhel8:    Rhel8,
 	mariner2: Mariner2,
 }
-var distroIDs = map[string]string{
-	jammy:    "ubuntu22.04",
-	focal:    "ubuntu20.04",
-	bionic:   "ubuntu18.04",
-	bullseye: "debian11",
-	buster:   "debian10",
-	rhel9:    "el9",
-	rhel8:    "el8",
-	mariner2: "mariner2.0",
-}
 
-func Jammy(client *dagger.Client) *dagger.Container {
+//go:emebd tests/deb/install.sh
+var debInstall string
+
+func Jammy(ctx context.Context, t *testing.T, client *dagger.Client) *dagger.Container {
 	deb := client.HTTP("https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb")
 
 	c := client.Container().From(targets.JammyRef)
@@ -51,10 +48,10 @@ func Jammy(client *dagger.Client) *dagger.Container {
 		WithExec([]string{"update-alternatives", "--set", "iptables", "/usr/sbin/iptables-legacy"}).
 		WithMountedFile("/tmp/packages-microsoft-prod.deb", deb).
 		WithExec([]string{"/usr/bin/dpkg", "-i", "/tmp/packages-microsoft-prod.deb"}).
-		WithFile("/opt/moby/install.sh", client.Host().Directory("tests/deb").File("install.sh"))
+		WithNewFile("/opt/moby/install.sh", dagger.ContainerWithNewFileOpts{Contents: debInstall, Permissions: 0744})
 }
 
-func Focal(client *dagger.Client) *dagger.Container {
+func Focal(ctx context.Context, t *testing.T, client *dagger.Client) *dagger.Container {
 	deb := client.HTTP("https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb")
 
 	c := client.Container().From(targets.FocalRef)
@@ -66,10 +63,10 @@ func Focal(client *dagger.Client) *dagger.Container {
 		WithExec([]string{"update-alternatives", "--set", "iptables", "/usr/sbin/iptables-legacy"}).
 		WithMountedFile("/tmp/packages-microsoft-prod.deb", deb).
 		WithExec([]string{"/usr/bin/dpkg", "-i", "/tmp/packages-microsoft-prod.deb"}).
-		WithFile("/opt/moby/install.sh", client.Host().Directory("tests/deb").File("install.sh"))
+		WithNewFile("/opt/moby/install.sh", dagger.ContainerWithNewFileOpts{Contents: debInstall, Permissions: 0744})
 }
 
-func Bionic(client *dagger.Client) *dagger.Container {
+func Bionic(ctx context.Context, t *testing.T, client *dagger.Client) *dagger.Container {
 	c := client.Container().From(targets.BionicRef)
 	deb := client.HTTP("https://packages.microsoft.com/config/ubuntu/18.04/packages-microsoft-prod.deb")
 	c2 := c.WithMountedFile("/tmp/packages-microsoft-prod.deb", deb).
@@ -78,7 +75,7 @@ func Bionic(client *dagger.Client) *dagger.Container {
 	return c.WithRootfs(c2.Rootfs())
 }
 
-func Bullseye(client *dagger.Client) *dagger.Container {
+func Bullseye(ctx context.Context, t *testing.T, client *dagger.Client) *dagger.Container {
 	c := client.Container().From(targets.BullseyeRef)
 	deb := client.HTTP("https://packages.microsoft.com/config/debian/11/packages-microsoft-prod.deb")
 	c2 := c.WithMountedFile("/tmp/packages-microsoft-prod.deb", deb).
@@ -87,7 +84,7 @@ func Bullseye(client *dagger.Client) *dagger.Container {
 	return c.WithRootfs(c2.Rootfs())
 }
 
-func Buster(client *dagger.Client) *dagger.Container {
+func Buster(ctx context.Context, t *testing.T, client *dagger.Client) *dagger.Container {
 	c := client.Container().From(targets.BusterRef)
 	deb := client.HTTP("https://packages.microsoft.com/config/debian/10/packages-microsoft-prod.deb")
 	c2 := c.WithMountedFile("/tmp/packages-microsoft-prod.deb", deb).
@@ -96,7 +93,7 @@ func Buster(client *dagger.Client) *dagger.Container {
 	return c.WithRootfs(c2.Rootfs())
 }
 
-func Rhel9(client *dagger.Client) *dagger.Container {
+func Rhel9(ctx context.Context, t *testing.T, client *dagger.Client) *dagger.Container {
 	c := client.Container().From(targets.Rhel9Ref)
 	c = c.WithExec([]string{"bash", "-c", `
 			dnf install -y https://packages.microsoft.com/config/rhel/9.0/packages-microsoft-prod.rpm
@@ -104,7 +101,7 @@ func Rhel9(client *dagger.Client) *dagger.Container {
 	return c
 }
 
-func Rhel8(client *dagger.Client) *dagger.Container {
+func Rhel8(ctx context.Context, t *testing.T, client *dagger.Client) *dagger.Container {
 	c := client.Container().From(targets.Rhel8Ref)
 	c = c.WithExec([]string{"bash", "-c", `
 			dnf install -y https://packages.microsoft.com/config/rhel/8/packages-microsoft-prod.rpm
@@ -112,6 +109,6 @@ func Rhel8(client *dagger.Client) *dagger.Container {
 	return c
 }
 
-func Mariner2(client *dagger.Client) *dagger.Container {
+func Mariner2(ctx context.Context, t *testing.T, client *dagger.Client) *dagger.Container {
 	return client.Container().From(targets.Mariner2Ref)
 }

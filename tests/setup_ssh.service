@@ -1,0 +1,13 @@
+[Unit]
+Description=Setup SSH Auth for VM
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/setup_ssh
+RemainAfterExit=yes
+
+# Set the standard input of our service to the fifo created by qemu
+StandardInput=file:/dev/virtio-ports/authorized_keys
+
+[Install]
+WantedBy=multi-user.target

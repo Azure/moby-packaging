@@ -8,9 +8,12 @@ import (
 	"os"
 	"os/signal"
 	"path"
+	"path/filepath"
+	"strconv"
 	"testing"
 
 	"dagger.io/dagger"
+	"github.com/Azure/moby-packaging/pkg/archive"
 	"github.com/Azure/moby-packaging/targets"
 	"github.com/Azure/moby-packaging/testutil"
 )
@@ -20,78 +23,46 @@ var (
 	GoRef     = path.Join("mcr.microsoft.com/oss/go/microsoft/golang:" + GoVersion)
 )
 
-const setupSSHService = `
-[Unit]
-Description=Setup SSH Auth for VM
+//go:embed tests/setup_ssh.service
+var setupSSHService string
 
-[Service]
-Type=oneshot
-ExecStart=/usr/local/bin/setup_ssh
-RemainAfterExit=yes
+//go:embed tests/setup_ssh.sh
+var setupSSH string
 
-# Set the standard input of our service to the fifo created by qemu
-StandardInput=file:/dev/virtio-ports/authorized_keys
-
-[Install]
-WantedBy=multi-user.target
-`
-
-const setupSSH = `#!/bin/sh
-mkdir -p /root/.ssh
-while read -r line; do
-	if [ -z "$line" ]; then
-		continue
-	fi
-	echo "$line" >> /root/.ssh/authorized_keys
-	break
-done
-chmod 0600 /root/.ssh/authorized_keys
-`
-
-const entrypointCmd = `
-if [ ! -c /dev/kvm ]; then
-	mknod /dev/kvm c 10 232
-	chmod a+rw /dev/kvm
-fi
-rm /tmp/rootfs.qcow2
-qemu-img create -f qcow2 -b /tmp/rootfs-base.qcow2 -F qcow2 /tmp/rootfs.qcow2
-exec /usr/local/bin/docker-entrypoint --vm-port-forward=22 --vm-port-forward=8080 --uid=65534 --gid=65534
-`
+//go:embed tests/docker-entrypoint.sh
+var entrypointCmd string
 
 const entrypointVersion = "5ebaa181f866e32e59e37face813cf25b74e8911"
 
-func TestPackage(t *testing.T) {
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
-	defer cancel()
+//go:embed tests/test_runner.sh
+var testRunnerCmd string
 
+//go:embed tests/test.sh
+var testSH string
+
+func testPackage(ctx context.Context, t *testing.T, client *dagger.Client, spec *archive.Spec) {
 	// set up the daemon container
-	getContainer, ok := distros[buildSpec.Distro]
+	getContainer, ok := distros[spec.Distro]
 	if !ok {
-		t.Fatalf("unknown distro: %s", buildSpec.Distro)
+		t.Fatalf("unknown distro: %s", spec.Distro)
 	}
 
-	client := getClient(ctx, t)
-	buildOutput, err := do(ctx, client, buildSpec)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	platform, err := client.DefaultPlatform(ctx)
+	buildOutput, err := do(ctx, client, spec)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	batsCore, batsHelpers := makeBats(client)
 
-	c := getContainer(client).
+	qemu := testutil.NewQemuImg(ctx, client)
+
+	c := getContainer(ctx, t, client).
 		WithDirectory("/opt/bats", batsCore).
 		WithExec([]string{"/bin/sh", "-c", "cd /opt/bats && ./install.sh /usr/local"}).
 		WithDirectory("/opt/moby/test_helper", batsHelpers).
-		WithFile("/opt/moby/test.sh", client.Host().Directory("tests").File("test.sh"))
+		WithNewFile("/opt/moby/test.sh", dagger.ContainerWithNewFileOpts{Contents: testSH, Permissions: 0744}).
 
-	qemu := testutil.NewQemuImg(ctx, client, platform)
-
-	goCtr, err := targets.InstallGo(ctx, c, client.CacheVolume(targets.GoModCacheKey), client.CacheVolume("jammy-go-build-cache-"+string(platform)))
+	goCtr, err := targets.InstallGo(ctx, c, client.CacheVolume(targets.GoModCacheKey), client.CacheVolume("jammy-go-build-cache-"+spec.Arch))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -128,66 +99,53 @@ func TestPackage(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	sockets := client.CacheVolume("qemu-micro-env-sockets-" + t.Name() + hex.EncodeToString(buf[:n]))
+	sockets := client.CacheVolume("qemu-micro-env-sockets-" + hex.EncodeToString(buf[:n]))
+
 	runner := qemu.
 		WithMountedFile("/tmp/rootfs-base.qcow2", qcow).
 		WithMountedFile("/usr/local/bin/docker-entrypoint", entrypointBin).
 		WithMountedCache("/tmp/sockets", sockets).
-		WithExec([]string{"/bin/sh", "-c", "mkdir -p /tmp/sockets && chown 65534:65534 /tmp/sockets"}).
-		WithExec([]string{"/bin/sh", "-c", entrypointCmd}, dagger.ContainerWithExecOpts{
+		WithNewFile("/usr/local/bin/docker-entrypoint.sh", dagger.ContainerWithNewFileOpts{Contents: entrypointCmd, Permissions: 0744}).
+		WithExec([]string{"/bin/sh", "-c", "chown -R 65534:65534 /tmp/sockets"}).
+		WithEnvVariable("DEBUG", strconv.FormatBool(flDebug)).
+		WithExec([]string{"docker-entrypoint.sh"}, dagger.ContainerWithExecOpts{
 			InsecureRootCapabilities: true,
 		}).
 		WithExposedPort(22, dagger.ContainerWithExposedPortOpts{Protocol: dagger.Tcp, Description: "VM ssh"})
 
-	const (
-		svc      = "testvm"
-		apltySvc = "localapt"
-	)
-	testRunner := qemu.WithServiceBinding(svc, runner).
+	const svc = "testvm"
+
+	testRunner := qemu.
 		WithEnvVariable("SSH_HOST", svc).
 		WithMountedCache("/tmp/sockets", sockets).
 		WithEnvVariable("SSH_AUTH_SOCK", "/tmp/sockets/agent.sock").
-		WithMountedDirectory("/tmp/pkg", buildOutput)
-
-	// TODO: It would be really nice if we could move these tests out of bats and into go tests.
-	//    Gist of it would be to create a go subtest for each test case and use ssh to run the test.
-	//    This would just allow us to more easily integrate with the test framework and get better reporting.
-	testRunner = testRunner.WithExec([]string{
-		"/bin/bash",
-		"-c",
-		`
-until [ -S /tmp/sockets/agent.sock ]; do
-	echo waiting for ssh agent socket
-	sleep 1
-done
-
-sshCmd() {
-	ssh -o StrictHostKeyChecking=no ${SSH_HOST} $@
-}
-
-scpCmd() {
-	scp -o StrictHostKeyChecking=no $@
-}
-
-scpCmd -r /tmp/pkg ${SSH_HOST}:/var/pkg || exit
-
-sshCmd '/opt/moby/install.sh; let ec=$?; if [ $ec -ne 0 ]; then journalctl -u docker.service; fi; exit $ec' || exit
-
-sshCmd 'bats --formatter junit -T -o /opt/moby/ /opt/moby/test.sh'
-let ec=$?
-
-set -e
-scpCmd ${SSH_HOST}:/opt/moby/TestReport-test.sh.xml /tmp/report.xml
-
-exit $ec
-`,
-	})
+		WithMountedDirectory("/tmp/pkg", buildOutput).
+		WithServiceBinding(svc, runner).
+		WithNewFile("/usr/local/bin/test_runner.sh", dagger.ContainerWithNewFileOpts{Contents: testRunnerCmd, Permissions: 0744}).
+		// TODO: It would be really nice if we could move these tests out of bats and into go tests.
+		//    Gist of it would be to create a go subtest for each test case and use ssh to run the test.
+		//    This would just allow us to more easily integrate with the test framework and get better reporting.
+		WithExec([]string{"test_runner.sh"})
 
 	report := testRunner.File("/tmp/report.xml")
 	_, err = report.Export(ctx, "_output/report.xml")
 	if err != nil {
 		t.Fatal(err)
 	}
+}
+
+func TestPackages(t *testing.T) {
+	ctx := context.Background()
+
+	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt)
+	defer cancel()
+
+	client := getClient(ctx, t)
+
+	t.Run(filepath.Join(buildSpec.Pkg+"/"+buildSpec.Distro+"/"+buildSpec.Arch), func(t *testing.T) {
+		testPackage(ctx, t, client, buildSpec)
+	})
+
 }
 
 func makeBats(client *dagger.Client) (core *dagger.Directory, helpers *dagger.Directory) {

@@ -8,8 +8,8 @@ import (
 	"github.com/Azure/moby-packaging/targets"
 )
 
-func NewQemuImg(ctx context.Context, client *dagger.Client, platform dagger.Platform) *dagger.Container {
-	ctr := client.Container(dagger.ContainerOpts{Platform: platform}).From(targets.JammyRef)
+func NewQemuImg(ctx context.Context, client *dagger.Client) *dagger.Container {
+	ctr := client.Container().From(targets.JammyRef)
 
 	return apt.Install(
 		ctr,
