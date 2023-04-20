@@ -61,6 +61,7 @@ func testPackage(ctx context.Context, t *testing.T, client *dagger.Client, spec 
 		WithExec([]string{"/bin/sh", "-c", "cd /opt/bats && ./install.sh /usr/local"}).
 		WithDirectory("/opt/moby/test_helper", batsHelpers).
 		WithNewFile("/opt/moby/test.sh", dagger.ContainerWithNewFileOpts{Contents: testSH, Permissions: 0744}).
+		WithDirectory("/lib/modules", qemu.Directory("/lib/modules"))
 
 	goCtr, err := targets.InstallGo(ctx, c, client.CacheVolume(targets.GoModCacheKey), client.CacheVolume("jammy-go-build-cache-"+spec.Arch))
 	if err != nil {

@@ -42,7 +42,6 @@ prepare_local_apt() {
 install() {
     apt-get update
     apt-get install -y \
-        linux-modules-$(uname -r) \
         moby-engine="${TEST_ENGINE_PACKAGE_VERSION}*" \
         moby-cli="${TEST_CLI_PACKAGE_VERSION}*" \
         moby-containerd="${TEST_CONTAINERD_PACKAGE_VERSION}*" \
