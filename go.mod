@@ -5,7 +5,7 @@ go 1.19
 require (
 	dagger.io/dagger v0.5.2
 	golang.org/x/sync v0.1.0
-	golang.org/x/sys v0.3.0
+	golang.org/x/sys v0.7.0
 )
 
 require (
