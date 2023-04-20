@@ -39,6 +39,11 @@ func main() {
 	}
 	defer client.Close()
 
+	go func() {
+		<-ctx.Done()
+		client.Close()
+	}()
+
 	out, err := do(ctx, client, spec)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
