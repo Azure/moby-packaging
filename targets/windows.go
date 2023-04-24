@@ -2,10 +2,10 @@ package targets
 
 import (
 	"context"
-	"packaging/pkg/apt"
 	"path"
 
 	"dagger.io/dagger"
+	"github.com/Azure/moby-packaging/pkg/apt"
 )
 
 var (
@@ -15,7 +15,7 @@ var (
 func Windows(ctx context.Context, client *dagger.Client, platform dagger.Platform) (*Target, error) {
 	client = client.Pipeline("windows/" + string(platform))
 	c := client.Container(dagger.ContainerOpts{Platform: platform}).From(WindowsRef)
-	c = apt.AptInstall(c, client.CacheVolume("bullseye-apt-cache"), client.CacheVolume("bullseye-apt-lib-cache"), BaseWinPackages...)
+	c = apt.Install(c, client.CacheVolume("bullseye-apt-cache"), client.CacheVolume("bullseye-apt-lib-cache"), BaseWinPackages...)
 	c = c.WithEnvVariable("GOOS", "windows")
 
 	buildPlatform, err := client.DefaultPlatform(ctx)

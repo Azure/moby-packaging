@@ -5,6 +5,5 @@
   "package": "moby-engine",
   "distro": "mariner2",
   "tag": "23.0.0",
-  "os": "linux",
   "revision": "0"
 }

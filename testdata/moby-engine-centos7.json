@@ -5,6 +5,5 @@
   "package": "moby-engine",
   "distro": "centos7",
   "tag": "23.0.0",
-  "os": "linux",
   "revision": "3"
 }

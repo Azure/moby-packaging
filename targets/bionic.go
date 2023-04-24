@@ -2,10 +2,10 @@ package targets
 
 import (
 	"context"
-	"packaging/pkg/apt"
 	"path"
 
 	"dagger.io/dagger"
+	"github.com/Azure/moby-packaging/pkg/apt"
 )
 
 var (
@@ -17,7 +17,7 @@ var (
 func Bionic(ctx context.Context, client *dagger.Client, platform dagger.Platform) (*Target, error) {
 	client = client.Pipeline("bionic/" + string(platform))
 	c := client.Container(dagger.ContainerOpts{Platform: platform}).From(BionicRef)
-	c = apt.AptInstall(c, client.CacheVolume(BionicAptCacheKey), client.CacheVolume(BionicAptLibCacheKey), BaseDebPackages...)
+	c = apt.Install(c, client.CacheVolume(BionicAptCacheKey), client.CacheVolume(BionicAptLibCacheKey), BaseDebPackages...)
 
 	buildPlatform, err := client.DefaultPlatform(ctx)
 	if err != nil {

@@ -5,6 +5,5 @@
   "package": "moby-buildx",
   "distro": "rhel8",
   "tag": "0.10.3",
-  "os": "linux",
   "revision": "9"
 }

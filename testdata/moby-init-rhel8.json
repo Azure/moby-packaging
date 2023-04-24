@@ -5,6 +5,5 @@
   "package": "moby-init",
   "distro": "rhel8",
   "tag": "0.19.0",
-  "os": "linux",
   "revision": "1"
 }

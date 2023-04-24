@@ -2,26 +2,25 @@ package targets
 
 import (
 	"context"
-	"fmt"
 	"os"
-	buildx "packaging/moby-buildx"
-	cli "packaging/moby-cli"
-	compose "packaging/moby-compose"
-	containerd "packaging/moby-containerd"
-	shim "packaging/moby-containerd-shim-systemd"
-	engine "packaging/moby-engine"
-	mobyinit "packaging/moby-init"
-	runc "packaging/moby-runc"
-	"packaging/pkg/apt"
-	"packaging/pkg/archive"
-	"packaging/pkg/build"
 	"strings"
+
+	buildx "github.com/Azure/moby-packaging/moby-buildx"
+	cli "github.com/Azure/moby-packaging/moby-cli"
+	compose "github.com/Azure/moby-packaging/moby-compose"
+	containerd "github.com/Azure/moby-packaging/moby-containerd"
+	shim "github.com/Azure/moby-packaging/moby-containerd-shim-systemd"
+	engine "github.com/Azure/moby-packaging/moby-engine"
+	mobyinit "github.com/Azure/moby-packaging/moby-init"
+	runc "github.com/Azure/moby-packaging/moby-runc"
+	"github.com/Azure/moby-packaging/pkg/apt"
+	"github.com/Azure/moby-packaging/pkg/archive"
 
 	"dagger.io/dagger"
 )
 
 func (t *Target) AptInstall(pkgs ...string) *Target {
-	c := apt.AptInstall(t.c, t.client.CacheVolume(t.name+"-apt-cache"), t.client.CacheVolume(t.name+"-apt-lib-cache"), pkgs...)
+	c := apt.Install(t.c, t.client.CacheVolume(t.name+"-apt-cache"), t.client.CacheVolume(t.name+"-apt-lib-cache"), pkgs...)
 	return t.update(c)
 }
 
@@ -47,31 +46,27 @@ func MirrorPrefix() string {
 	return prefix
 }
 
-func GetTarget(distro string) func(context.Context, *dagger.Client, dagger.Platform) (*Target, error) {
-	switch distro {
-	case "jammy":
-		return Jammy
-	case "buster":
-		return Buster
-	case "bionic":
-		return Bionic
-	case "bullseye":
-		return Bullseye
-	case "focal":
-		return Focal
-	case "rhel8":
-		return Rhel8
-	case "rhel9":
-		return Rhel9
-	case "centos7":
-		return Centos7
-	case "windows":
-		return Windows
-	case "mariner2":
-		return Mariner2
-	default:
+type MakeTargetFunc func(context.Context, *dagger.Client, dagger.Platform) (*Target, error)
+
+var targets = map[string]MakeTargetFunc{
+	"jammy":    Jammy,
+	"buster":   Buster,
+	"bionic":   Bionic,
+	"bullseye": Bullseye,
+	"focal":    Focal,
+	"rhel8":    Rhel8,
+	"rhel9":    Rhel9,
+	"centos7":  Centos7,
+	"windows":  Windows,
+	"mariner2": Mariner2,
+}
+
+func GetTarget(ctx context.Context, distro string, client *dagger.Client, platform dagger.Platform) (*Target, error) {
+	f, ok := targets[distro]
+	if !ok {
 		panic("unknown distro: " + distro)
 	}
+	return f(ctx, client, platform)
 }
 
 var (
@@ -182,17 +177,13 @@ func (t *Target) applyPatchesCommand() []string {
 	}
 }
 
-func (t *Target) goMD2Man(os, arch string) *dagger.File {
+func (t *Target) goMD2Man() *dagger.File {
 	repo := "https://github.com/cpuguy83/go-md2man.git"
 	ref := "v2.0.2"
 	outfile := "/build/bin/go-md2man"
 	srcDir := t.client.Git(repo, dagger.GitOpts{KeepGitDir: true}).Commit(ref).Tree()
 
-	targetPlatformOpt := dagger.ContainerOpts{
-		Platform: dagger.Platform(fmt.Sprintf("%s/%s", os, arch)),
-	}
-
-	c := t.client.Container(targetPlatformOpt).
+	c := t.client.Container().
 		From(GoRef).
 		WithDirectory("/build", srcDir).
 		WithWorkdir("/build").
@@ -202,7 +193,11 @@ func (t *Target) goMD2Man(os, arch string) *dagger.File {
 	return c.File(outfile)
 }
 
-func (t *Target) Packager(projectName string) archive.Interface {
+type Packager interface {
+	Package(*dagger.Client, *dagger.Container, *archive.Spec) *dagger.Directory
+}
+
+func (t *Target) Packager(projectName string) Packager {
 	mappings := map[string]archive.Archive{
 		"moby-engine":                  engine.Archive,
 		"moby-cli":                     cli.Archive,
@@ -218,11 +213,11 @@ func (t *Target) Packager(projectName string) archive.Interface {
 
 	switch t.PkgKind() {
 	case "deb":
-		return archive.NewDebArchive(&a, MirrorPrefix())
+		return archive.NewDebPackager(&a, MirrorPrefix())
 	case "rpm":
-		return archive.NewRPMArchive(&a, MirrorPrefix())
+		return archive.NewRPMPackager(&a, MirrorPrefix())
 	case "win":
-		return archive.NewWinArchive(&a, MirrorPrefix())
+		return archive.NewWinPackager(&a, MirrorPrefix())
 	default:
 		panic("unknown pkgKind: " + t.pkgKind)
 	}
@@ -243,10 +238,10 @@ func (t *Target) getCommitTime(projectName string, sourceDir *dagger.Directory) 
 	return strings.TrimSpace(commitTime)
 }
 
-func (t *Target) Make(project *build.Spec) *dagger.Directory {
+func (t *Target) Make(project *archive.Spec) *dagger.Directory {
 	projectDir := t.client.Host().Directory(project.Pkg)
 	hackDir := t.client.Host().Directory("hack/cross")
-	md2man := t.goMD2Man(project.OS, project.Arch)
+	md2man := t.goMD2Man()
 
 	source := t.getSource(project)
 	commitTime := t.getCommitTime(project.Pkg, source)

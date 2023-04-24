@@ -2,10 +2,10 @@ package targets
 
 import (
 	"context"
-	"packaging/pkg/apt"
 	"path"
 
 	"dagger.io/dagger"
+	"github.com/Azure/moby-packaging/pkg/apt"
 )
 
 var (
@@ -17,7 +17,7 @@ var (
 func Bullseye(ctx context.Context, client *dagger.Client, platform dagger.Platform) (*Target, error) {
 	client = client.Pipeline("bullseye/" + string(platform))
 	c := client.Container(dagger.ContainerOpts{Platform: platform}).From(BullseyeRef)
-	c = apt.AptInstall(c, client.CacheVolume(BullseyeAptCacheKey), client.CacheVolume(BullseyeAptLibCacheKey), BaseDebPackages...)
+	c = apt.Install(c, client.CacheVolume(BullseyeAptCacheKey), client.CacheVolume(BullseyeAptLibCacheKey), BaseDebPackages...)
 
 	buildPlatform, err := client.DefaultPlatform(ctx)
 	if err != nil {

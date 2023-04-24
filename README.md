@@ -23,7 +23,6 @@ cat > ./moby-containerd.json <<'EOF'
   "package": "moby-containerd",
   "distro": "jammy",
   "tag": "1.7.0",
-  "os": "linux",
   "revision": "7"
 }
 EOF
@@ -231,7 +230,6 @@ cat > ./moby-init.json <<'EOF'
   "package": "moby-init",
   "distro": "jammy",
   "tag": "0.19.0",
-  "os": "linux",
   "revision": "9"
 }
 EOF

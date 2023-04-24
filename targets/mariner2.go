@@ -2,9 +2,9 @@ package targets
 
 import (
 	"context"
-	"packaging/pkg/tdnf"
 
 	"dagger.io/dagger"
+	"github.com/Azure/moby-packaging/pkg/tdnf"
 )
 
 const Mariner2Ref = "mcr.microsoft.com/cbl-mariner/base/core:2.0"
