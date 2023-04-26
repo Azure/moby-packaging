@@ -1,26 +1,26 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 until [ -S /tmp/sockets/agent.sock ]; do
     echo Waiting for ssh agent socket >&2
     sleep 1
 done
 
+sshOpts="-o StrictHostKeyChecking=no -o ConnectTimeout=1 -o ConnectionAttempts=60"
+
 sshCmd() {
-    ssh -o StrictHostKeyChecking=no ${SSH_HOST} $@
+    ssh -T -n ${sshOpts} ${SSH_HOST} "$@"
 }
 
 scpCmd() {
-    scp -o StrictHostKeyChecking=no $@
+    scp ${sshOpts} $@
 }
 
-scpCmd -r /tmp/pkg ${SSH_HOST}:/var/pkg || exit
+scpCmd -r /tmp/pkg ${SSH_HOST}:/var/pkg
 
-sshCmd '/opt/moby/install.sh; let ec=$?; if [ $ec -ne 0 ]; then journalctl -u docker.service; fi; exit $ec' || exit
-
+sshCmd '/opt/moby/install.sh' || exit
 sshCmd 'bats --formatter junit -T -o /opt/moby/ /opt/moby/test.sh'
 let ec=$?
 
-set -e
-scpCmd ${SSH_HOST}:/opt/moby/TestReport-test.sh.xml /tmp/report.xml
+scpCmd ${SSH_HOST}:/opt/moby/TestReport-test.sh.xml /tmp/report.xml || exit
 
 exit $ec

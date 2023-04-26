@@ -5,10 +5,9 @@ import (
 	_ "embed"
 	"testing"
 
+	"dagger.io/dagger"
 	"github.com/Azure/moby-packaging/pkg/apt"
 	"github.com/Azure/moby-packaging/targets"
-
-	"dagger.io/dagger"
 )
 
 const (
@@ -33,7 +32,7 @@ var distros = map[string]func(context.Context, *testing.T, *dagger.Client) *dagg
 	mariner2: Mariner2,
 }
 
-//go:emebd tests/deb/install.sh
+//go:embed tests/deb/install.sh
 var debInstall string
 
 func Jammy(ctx context.Context, t *testing.T, client *dagger.Client) *dagger.Container {
@@ -44,7 +43,6 @@ func Jammy(ctx context.Context, t *testing.T, client *dagger.Client) *dagger.Con
 		"systemd", "strace", "ssh", "udev", "iptables",
 	).
 		WithExec([]string{"systemctl", "enable", "ssh"}).
-		WithExec([]string{"systemctl", "enable", "systemd-udevd"}).
 		WithExec([]string{"update-alternatives", "--set", "iptables", "/usr/sbin/iptables-legacy"}).
 		WithMountedFile("/tmp/packages-microsoft-prod.deb", deb).
 		WithExec([]string{"/usr/bin/dpkg", "-i", "/tmp/packages-microsoft-prod.deb"}).
