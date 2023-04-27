@@ -10,3 +10,9 @@ updates:
       - dependency-name: "*"
         update-types:
         - "version-update:semver-major"
+
+
+  - package-ecosystem: docker
+    directory: /tests
+    schedule:
+      interval: daily
