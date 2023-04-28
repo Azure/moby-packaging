@@ -23,22 +23,24 @@ var (
 	GoRef     = path.Join("mcr.microsoft.com/oss/go/microsoft/golang:" + GoVersion)
 )
 
-//go:embed tests/setup_ssh.service
-var setupSSHService string
-
-//go:embed tests/setup_ssh.sh
-var setupSSH string
-
-//go:embed tests/docker-entrypoint.sh
-var entrypointCmd string
-
 const entrypointVersion = "892ed9a42ceb5f9a9c7198adfc316da64a573274"
 
-//go:embed tests/test_runner.sh
-var testRunnerCmd string
+var (
+	//go:embed tests/setup_ssh.service
+	setupSSHService string
 
-//go:embed tests/test.sh
-var testSH string
+	//go:embed tests/setup_ssh.sh
+	setupSSH string
+
+	//go:embed tests/docker-entrypoint.sh
+	entrypointCmd string
+
+	//go:embed tests/test_runner.sh
+	testRunnerCmd string
+
+	//go:embed tests/test.sh
+	testSH string
+)
 
 func testPackage(ctx context.Context, t *testing.T, client *dagger.Client, spec *archive.Spec) {
 	// set up the daemon container

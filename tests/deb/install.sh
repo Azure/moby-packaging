@@ -74,7 +74,7 @@ install)
 "")
     prepare_local_apt
     install
-    pkill -9 aptly
+    pkill -9 aptly || true
     init
     ;;
 *)
