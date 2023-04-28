@@ -3,6 +3,9 @@ package main
 import (
 	"context"
 	_ "embed"
+	"encoding/json"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"dagger.io/dagger"
@@ -32,8 +35,16 @@ var distros = map[string]func(context.Context, *testing.T, *dagger.Client) *dagg
 	mariner2: Mariner2,
 }
 
-//go:embed tests/deb/install.sh
-var debInstall string
+var (
+	//go:embed tests/deb/install.sh
+	debInstall string
+
+	//go:embed tests/centos8/install.sh
+	rhel8Install string
+
+	//go:embed tests/mariner2/install.sh
+	mariner2Install string
+)
 
 func Jammy(ctx context.Context, t *testing.T, client *dagger.Client) *dagger.Container {
 	deb := client.HTTP("https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb")
@@ -57,7 +68,6 @@ func Focal(ctx context.Context, t *testing.T, client *dagger.Client) *dagger.Con
 		"systemd", "strace", "ssh", "udev", "iptables",
 	).
 		WithExec([]string{"systemctl", "enable", "ssh"}).
-		WithExec([]string{"systemctl", "enable", "systemd-udevd"}).
 		WithExec([]string{"update-alternatives", "--set", "iptables", "/usr/sbin/iptables-legacy"}).
 		WithMountedFile("/tmp/packages-microsoft-prod.deb", deb).
 		WithExec([]string{"/usr/bin/dpkg", "-i", "/tmp/packages-microsoft-prod.deb"}).
@@ -65,48 +75,116 @@ func Focal(ctx context.Context, t *testing.T, client *dagger.Client) *dagger.Con
 }
 
 func Bionic(ctx context.Context, t *testing.T, client *dagger.Client) *dagger.Container {
-	c := client.Container().From(targets.BionicRef)
 	deb := client.HTTP("https://packages.microsoft.com/config/ubuntu/18.04/packages-microsoft-prod.deb")
-	c2 := c.WithMountedFile("/tmp/packages-microsoft-prod.deb", deb).
-		WithExec([]string{"/usr/bin/dpkg", "-i", "/tmp/packages-microsoft-prod.deb"})
-	c2 = apt.Install(c2, client.CacheVolume(targets.BionicAptCacheKey), client.CacheVolume(targets.BionicAptLibCacheKey), "aptly")
-	return c.WithRootfs(c2.Rootfs())
+
+	c := client.Container().From(targets.BionicRef)
+	return apt.Install(c, client.CacheVolume(targets.BionicAptCacheKey), client.CacheVolume(targets.BionicAptLibCacheKey),
+		"systemd", "strace", "ssh", "udev", "iptables",
+	).
+		WithExec([]string{"systemctl", "enable", "ssh"}).
+		WithExec([]string{"update-alternatives", "--set", "iptables", "/usr/sbin/iptables-legacy"}).
+		WithMountedFile("/tmp/packages-microsoft-prod.deb", deb).
+		WithExec([]string{"/usr/bin/dpkg", "-i", "/tmp/packages-microsoft-prod.deb"}).
+		WithNewFile("/opt/moby/install.sh", dagger.ContainerWithNewFileOpts{Contents: debInstall, Permissions: 0744})
 }
 
 func Bullseye(ctx context.Context, t *testing.T, client *dagger.Client) *dagger.Container {
-	c := client.Container().From(targets.BullseyeRef)
 	deb := client.HTTP("https://packages.microsoft.com/config/debian/11/packages-microsoft-prod.deb")
-	c2 := c.WithMountedFile("/tmp/packages-microsoft-prod.deb", deb).
-		WithExec([]string{"/usr/bin/dpkg", "-i", "/tmp/packages-microsoft-prod.deb"})
-	c2 = apt.Install(c2, client.CacheVolume(targets.BullseyeAptCacheKey), client.CacheVolume(targets.BullseyeAptLibCacheKey), "aptly")
-	return c.WithRootfs(c2.Rootfs())
+
+	c := client.Container().From(targets.BullseyeRef)
+	return apt.Install(c, client.CacheVolume(targets.BullseyeAptCacheKey), client.CacheVolume(targets.BullseyeAptLibCacheKey),
+		"systemd", "strace", "ssh", "udev", "iptables",
+	).
+		WithExec([]string{"systemctl", "enable", "ssh"}).
+		WithExec([]string{"update-alternatives", "--set", "iptables", "/usr/sbin/iptables-legacy"}).
+		WithMountedFile("/tmp/packages-microsoft-prod.deb", deb).
+		WithExec([]string{"/usr/bin/dpkg", "-i", "/tmp/packages-microsoft-prod.deb"}).
+		WithNewFile("/opt/moby/install.sh", dagger.ContainerWithNewFileOpts{Contents: debInstall, Permissions: 0744})
 }
 
 func Buster(ctx context.Context, t *testing.T, client *dagger.Client) *dagger.Container {
-	c := client.Container().From(targets.BusterRef)
 	deb := client.HTTP("https://packages.microsoft.com/config/debian/10/packages-microsoft-prod.deb")
-	c2 := c.WithMountedFile("/tmp/packages-microsoft-prod.deb", deb).
-		WithExec([]string{"/usr/bin/dpkg", "-i", "/tmp/packages-microsoft-prod.deb"})
-	c2 = apt.Install(c2, client.CacheVolume(targets.BusterAptCacheKey), client.CacheVolume(targets.BusterAptLibCacheKey), "aptly")
-	return c.WithRootfs(c2.Rootfs())
+
+	c := client.Container().From(targets.BusterRef)
+	return apt.Install(c, client.CacheVolume(targets.BusterAptCacheKey), client.CacheVolume(targets.BusterAptLibCacheKey),
+		"systemd", "strace", "ssh", "udev", "iptables",
+	).
+		WithExec([]string{"systemctl", "enable", "ssh"}).
+		WithExec([]string{"update-alternatives", "--set", "iptables", "/usr/sbin/iptables-legacy"}).
+		WithMountedFile("/tmp/packages-microsoft-prod.deb", deb).
+		WithExec([]string{"/usr/bin/dpkg", "-i", "/tmp/packages-microsoft-prod.deb"}).
+		WithNewFile("/opt/moby/install.sh", dagger.ContainerWithNewFileOpts{Contents: debInstall, Permissions: 0744})
 }
 
 func Rhel9(ctx context.Context, t *testing.T, client *dagger.Client) *dagger.Container {
-	c := client.Container().From(targets.Rhel9Ref)
-	c = c.WithExec([]string{"bash", "-c", `
+	return client.Container().From(targets.Rhel9Ref).
+		WithExec([]string{
+			"dnf", "install", "-y",
+			"createrepo_c", "systemd", "strace", "openssh-server", "openssh-clients", "udev", "iptables", "dnf-command(config-manager)",
+		}).
+		WithExec([]string{"systemctl", "enable", "sshd"}).
+		WithExec([]string{"bash", "-c", `
 			dnf install -y https://packages.microsoft.com/config/rhel/9.0/packages-microsoft-prod.rpm
-		`})
-	return c
+		`}).
+		WithNewFile("/opt/moby/install.sh", dagger.ContainerWithNewFileOpts{Contents: rhel8Install, Permissions: 0744})
 }
 
 func Rhel8(ctx context.Context, t *testing.T, client *dagger.Client) *dagger.Container {
-	c := client.Container().From(targets.Rhel8Ref)
-	c = c.WithExec([]string{"bash", "-c", `
+	return client.Container().From(targets.Rhel8Ref).
+		WithExec([]string{
+			"dnf", "install", "-y",
+			"createrepo_c", "systemd", "strace", "openssh-server", "openssh-clients", "udev", "iptables", "dnf-command(config-manager)", "dnf-utils", "util-linux",
+		}).
+		WithExec([]string{"systemctl", "enable", "sshd"}).
+		WithExec([]string{"bash", "-c", `
 			dnf install -y https://packages.microsoft.com/config/rhel/8/packages-microsoft-prod.rpm
-		`})
-	return c
+		`}).
+		WithNewFile("/opt/moby/install.sh", dagger.ContainerWithNewFileOpts{Contents: rhel8Install, Permissions: 0744})
 }
 
 func Mariner2(ctx context.Context, t *testing.T, client *dagger.Client) *dagger.Container {
-	return client.Container().From(targets.Mariner2Ref)
+	c := client.Container().From(targets.Mariner2Ref).
+		WithExec([]string{
+			"tdnf", "install", "-y",
+			"createrepo_c", "systemd", "strace", "openssh-server", "openssh-clients", "udev", "iptables", "dnf-command(config-manager)", "dnf-utils", "util-linux",
+		}).
+		WithExec([]string{"systemctl", "enable", "sshd"}).
+		WithExec([]string{"sed", "-i", "s/PermitRootLogin no/PermitRootLogin yes/", "/etc/ssh/sshd_config"}).
+		WithNewFile("/opt/moby/install.sh", dagger.ContainerWithNewFileOpts{Contents: mariner2Install, Permissions: 0744})
+
+	clientPkg := client.Pipeline("Fetch extra mariner packages")
+	p, err := clientPkg.DefaultPlatform(ctx)
+	if err != nil {
+		t.Fatalf("failed to get default platform: %+v", err)
+	}
+	_, arch, ok := strings.Cut(string(p), "/")
+	if !ok {
+		t.Fatalf("failed to get arch from platform: %s", p)
+	}
+
+	// Mariner provides most of our packages but does not currently provide compose, so pull this in ourselves.
+	// TODO: The artifacts API here has a bug where we can't just use the `mariner2/moby-compose/latest/<arch>` endpoint (it gives the wrong package!).
+	// 	So we have to use the `mariner2/moby-compose/latest.json` endpoint and parse the JSON to find the right package.
+	//  Also, mariner is adding compose to the repo soon, so we should remove this once that happens.
+	dt, err := clientPkg.HTTP("https://mobyartifacts.azureedge.net/index/mariner2/moby-compose/latest.json").Contents(ctx)
+	if err != nil {
+		t.Fatalf("failed to get compose url: %+v", err)
+	}
+
+	var pkgs []struct {
+		Uri  string `json:"uri"`
+		Arch string `json:"arch"`
+	}
+
+	if err := json.Unmarshal([]byte(dt), &pkgs); err != nil {
+		t.Fatalf("failed to unmarshal compose url: %+v", err)
+	}
+
+	for _, pkg := range pkgs {
+		if pkg.Arch == arch {
+			c = c.WithFile("/var/pkg/"+filepath.Base(pkg.Uri), clientPkg.HTTP(pkg.Uri), dagger.ContainerWithFileOpts{Permissions: 0640})
+		}
+	}
+
+	return c
 }

@@ -16,22 +16,18 @@ prepare_local_yum() {
     if [ -n "${1}" ]; then
         dir="${1}"
     fi
-    /opt/moby/download-pcks.sh "${dir}"
     createrepo "${dir}"
-    yum-config-manager --disable mariner-official-base
-    yum-config-manager --disable "file://${dir}" || true
-    yum-config-manager --add-repo "file://${dir}"
+    dnf config-manager --add-repo "file://${dir}"
 }
 
 install() {
     tdnf install -y --nogpgcheck \
-        moby-buildx \
-        moby-runc \
-        moby-containerd \
-        moby-engine \
-        moby-cli \
-        moby-compose \
-        moby-init
+        moby-engine-"${TEST_ENGINE_PACKAGE_VERSION}*" \
+        moby-cli-"${TEST_CLI_PACKAGE_VERSION}*" \
+        moby-containerd-"${TEST_CONTAINERD_PACKAGE_VERSION}*" \
+        moby-runc-"${TEST_RUNC_PACKAGE_VERSION}*" \
+        moby-buildx-"${TEST_BUILDX_PACKAGE_VERSION}*" \
+        moby-compose-"${TEST_COMPOSE_PACKAGE_VERSION}*"
 }
 
 init() {
