@@ -23,12 +23,10 @@ prepare_local_apt() {
         return
     fi
 
-    aptly repo show unstable || aptly repo create unstable
+    aptly repo create unstable
     aptly repo add unstable "${dir}"
-    aptly publish show moby-local-testing ||
-        aptly publish repo -distribution=moby-local-testing -skip-signing unstable
-    curl --connect-timeout=1 127.0.0.1:8080 >/dev/null 2>&1 ||
-        aptly serve -listen=127.0.0.1:8080 &
+    aptly publish repo -distribution=moby-local-testing -skip-signing unstable
+    aptly serve -listen=127.0.0.1:8080 &
 
     echo "waiting for apt server to be ready"
     while true; do
@@ -76,6 +74,7 @@ install)
 "")
     prepare_local_apt
     install
+    pkill -9 aptly
     init
     ;;
 *)
