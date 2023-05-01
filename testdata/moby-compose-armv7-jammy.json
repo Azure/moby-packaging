@@ -1,9 +1,0 @@
-{
-  "arch": "arm/v7",
-  "commit": "00c60da331e7a70af922b1afcce5616c8ab6df36",
-  "repo": "https://github.com/docker/compose.git",
-  "package": "moby-compose",
-  "distro": "jammy",
-  "tag": "2.16.0",
-  "revision": "4"
-}
