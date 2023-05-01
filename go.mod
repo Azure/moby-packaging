@@ -3,7 +3,7 @@ module github.com/Azure/moby-packaging
 go 1.19
 
 require (
-	dagger.io/dagger v0.6.0
+	dagger.io/dagger v0.6.1
 	golang.org/x/sync v0.1.0
 	golang.org/x/sys v0.7.0
 )
