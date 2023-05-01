@@ -1,9 +1,0 @@
-{
-  "arch": "amd64",
-  "commit": "e92dd87c3209361f29b692ab4b8f0f9248779297",
-  "repo": "https://github.com/docker/cli.git",
-  "package": "moby-cli",
-  "distro": "mariner2",
-  "tag": "23.0.0",
-  "revision": "8"
-}

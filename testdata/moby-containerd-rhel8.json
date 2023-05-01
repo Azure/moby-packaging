@@ -1,9 +1,0 @@
-{
-  "arch": "amd64",
-  "commit": "1fbd70374134b891f97ce19c70b6e50c7b9f4e0d",
-  "repo": "https://github.com/containerd/containerd.git",
-  "package": "moby-containerd",
-  "distro": "rhel8",
-  "tag": "1.7.0",
-  "revision": "3"
-}

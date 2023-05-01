@@ -1,9 +1,0 @@
-{
-  "arch": "amd64",
-  "commit": "299b677800044531671d336af5f0976fd2e6ac70",
-  "repo": "https://github.com/containerd/containerd.git",
-  "package": "moby-containerd",
-  "distro": "windows",
-  "tag": "1.6.17",
-  "revision": "9"
-}
