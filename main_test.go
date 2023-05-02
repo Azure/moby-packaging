@@ -23,7 +23,12 @@ func getClient(ctx context.Context, t *testing.T) *dagger.Client {
 	if err != nil {
 		t.Fatal(err)
 	}
-	client, err := dagger.Connect(ctx, dagger.WithWorkdir(wd), dagger.WithLogOutput(&testWriter{t: t, prefix: "dagger"}))
+
+	opts := []dagger.ClientOpt{dagger.WithWorkdir(wd)}
+	if flDebug {
+		opts = append(opts, dagger.WithLogOutput(&testWriter{t: t, prefix: "dagger"}))
+	}
+	client, err := dagger.Connect(ctx, opts...)
 	if err != nil {
 		t.Fatal(err)
 	}
