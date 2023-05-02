@@ -14,11 +14,7 @@ import (
 	"github.com/Azure/moby-packaging/pkg/archive"
 	"github.com/Azure/moby-packaging/targets"
 	"github.com/Azure/moby-packaging/testutil"
-)
-
-var (
-	GoVersion = "1.19.5"
-	GoRef     = path.Join("mcr.microsoft.com/oss/go/microsoft/golang:" + GoVersion)
+	"github.com/joshdk/go-junit"
 )
 
 const entrypointVersion = "892ed9a42ceb5f9a9c7198adfc316da64a573274"
@@ -133,10 +129,39 @@ func testPackage(ctx context.Context, t *testing.T, client *dagger.Client, spec 
 		//    This would just allow us to more easily integrate with the test framework and get better reporting.
 		WithExec([]string{"test_runner.sh"})
 
+	// Now take the test report (which is in junit format).
+	// We'll parse that and create a subtest for each test case.
 	report := testRunner.Pipeline("Test Report").File("/tmp/report.xml")
-	_, err = report.Export(ctx, "_output/report.xml")
+	dt, err := report.Contents(ctx)
 	if err != nil {
 		t.Fatal(err)
+	}
+
+	suites, err := junit.Ingest([]byte(dt))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// For each test case, create a subtest and check the status.
+	// We'll mark the test as failed/skipped accordingly.
+	// Unfortunately the run times of these tests will be zeroed out in go since we can't control that from here.
+	for _, s := range suites {
+		for _, tc := range s.Tests {
+			tc := tc
+			t.Run(tc.Name, func(t *testing.T) {
+				if tc.Error != nil {
+					t.Fatal(tc.Error)
+				}
+
+				if tc.Status == junit.StatusSkipped {
+					t.Skip(tc.Message)
+				}
+
+				if s.SystemOut != "" {
+					t.Log(s.SystemOut)
+				}
+			})
+		}
 	}
 }
 
