@@ -33,10 +33,13 @@ for f in $(
 done
 
 echo "Installing Moby packages..." >&2
-sshCmd '/opt/moby/install.sh' || exit
+sshCmd "env -S \"${TEST_EVAL_VARS}\" /opt/moby/install.sh" || exit
 echo "Running tests" >&2
-sshCmd 'bats --formatter junit -T -o /opt/moby/ /opt/moby/test.sh'
-let ec=$?
+
+# Store the exit code of the test run
+# This will get picked up by inside the actual go test to determine if the test failed or not.
+# This shell script must exit with 0 otherwise we won't be able to get the test report
+sshCmd "env -S \"${TEST_EVAL_VARS}\" bats --formatter junit -T -o /opt/moby/ /opt/moby/test.sh"
 
 echo "Fetching test report" >&2
 scpCmd ${SSH_HOST}:/opt/moby/TestReport-test.sh.xml /tmp/report.xml || exit

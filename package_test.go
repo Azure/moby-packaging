@@ -1,13 +1,15 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"crypto/rand"
 	_ "embed"
 	"encoding/hex"
-	"path"
+	"fmt"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"testing"
 
 	"dagger.io/dagger"
@@ -121,6 +123,8 @@ func testPackage(ctx context.Context, t *testing.T, client *dagger.Client, spec 
 		WithEnvVariable("SSH_HOST", svc).
 		WithMountedCache("/tmp/sockets", sockets).
 		WithEnvVariable("SSH_AUTH_SOCK", "/tmp/sockets/agent.sock").
+		// Set the test package version in the environment so the test runner can use it to install and test by package version
+		WithEnvVariable("TEST_EVAL_VARS", pkgTestEnvEval(ctx, t, spec, c)).
 		WithMountedDirectory("/tmp/pkg", buildOutput).
 		WithNewFile("/usr/local/bin/test_runner.sh", dagger.ContainerWithNewFileOpts{Contents: testRunnerCmd, Permissions: 0774}).
 		WithServiceBinding(svc, runner).
@@ -262,4 +266,91 @@ func makeBats(client *dagger.Client) (core *dagger.Directory, helpers *dagger.Di
 		WithDirectory("bats-support", support).
 		WithDirectory("bats-assert", assert)
 	return core, helpers
+}
+
+// getPkgTargetID gets the version ID of the distro that the package has set on it
+// This is taken from /etc/os-release, specifically the concatenated ID and the VERSION_ID fields.
+func getPkgTargetID(ctx context.Context, t *testing.T, c *dagger.Container) string {
+	dt, err := c.File("/etc/os-release").Contents(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	scanner := bufio.NewScanner(strings.NewReader(dt))
+	var (
+		id      string
+		version string
+	)
+	for scanner.Scan() {
+		line := scanner.Text()
+		key, val, ok := strings.Cut(line, "=")
+		if !ok {
+			t.Fatalf("unexpected line in /etc/os-release: %s", line)
+		}
+
+		switch key {
+		case "ID":
+			id, err = strconv.Unquote(val)
+			if err != nil {
+				if err != strconv.ErrSyntax {
+					t.Fatal(err)
+				}
+				id = val
+			}
+		case "VERSION_ID":
+			version, err = strconv.Unquote(val)
+			if err != nil {
+				if err != nil {
+					if err != strconv.ErrSyntax {
+						t.Fatal(err)
+					}
+					version = val
+				}
+			}
+		}
+	}
+
+	if id == "" || version == "" {
+		t.Fatalf("missing ID or VERSION_ID in /etc/os-release: %s", dt)
+	}
+	return id + version
+}
+
+// pkgTestEnvEval generates environment variables (or rather a shell script that can be sourced/eval'd to set them) used by the bats package tests
+// as the expected package version/commit hash/etc to be installed.
+func pkgTestEnvEval(ctx context.Context, t *testing.T, spec *archive.Spec, c *dagger.Container) string {
+	// package name should be moby-<pkg>
+	_, pkg, ok := strings.Cut(spec.Pkg, "-")
+	if !ok {
+		t.Fatalf("unexpected package name: %s", pkg)
+	}
+
+	pkg = strings.ToUpper(pkg)
+
+	versionID := getPkgTargetID(ctx, t, c)
+
+	b := &strings.Builder{}
+
+	writeVar := func(s string) {
+		if _, err := b.WriteString(s); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := b.WriteString(" "); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// This is used to both install the specific package version as well as check the package version in the tests
+	v := fmt.Sprintf(`TEST_%s_PACKAGE_VERSION="%s+azure-%su%s"`, pkg, spec.Tag, versionID, spec.Revision)
+	writeVar(v)
+
+	// This makes it to the tests can check the git commit set on the binary itself
+	v = fmt.Sprintf(`TEST_%s_COMMIT="%s"`, pkg, spec.Commit)
+	writeVar(v)
+
+	// This is used to check the version reported by the binary
+	v = fmt.Sprintf(`TEST_%s_VERSION="%s+azure-%s"`, pkg, spec.Tag, spec.Revision)
+	writeVar(v)
+
+	return b.String()
 }
