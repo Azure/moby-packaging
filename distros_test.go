@@ -51,7 +51,7 @@ func Jammy(ctx context.Context, t *testing.T, client *dagger.Client) *dagger.Con
 
 	c := client.Container().From(targets.JammyRef)
 	return apt.Install(c, client.CacheVolume(targets.JammyAptCacheKey), client.CacheVolume(targets.JammyAptLibCacheKey),
-		"systemd", "strace", "ssh", "udev", "iptables",
+		"systemd", "strace", "ssh", "udev", "iptables", "jq",
 	).
 		WithExec([]string{"systemctl", "enable", "ssh"}).
 		WithExec([]string{"update-alternatives", "--set", "iptables", "/usr/sbin/iptables-legacy"}).
@@ -65,7 +65,7 @@ func Focal(ctx context.Context, t *testing.T, client *dagger.Client) *dagger.Con
 
 	c := client.Container().From(targets.FocalRef)
 	return apt.Install(c, client.CacheVolume(targets.FocalAptCacheKey), client.CacheVolume(targets.FocalAptLibCacheKey),
-		"systemd", "strace", "ssh", "udev", "iptables",
+		"systemd", "strace", "ssh", "udev", "iptables", "jq",
 	).
 		WithExec([]string{"systemctl", "enable", "ssh"}).
 		WithExec([]string{"update-alternatives", "--set", "iptables", "/usr/sbin/iptables-legacy"}).
@@ -79,7 +79,7 @@ func Bionic(ctx context.Context, t *testing.T, client *dagger.Client) *dagger.Co
 
 	c := client.Container().From(targets.BionicRef)
 	return apt.Install(c, client.CacheVolume(targets.BionicAptCacheKey), client.CacheVolume(targets.BionicAptLibCacheKey),
-		"systemd", "strace", "ssh", "udev", "iptables",
+		"systemd", "strace", "ssh", "udev", "iptables", "jq",
 	).
 		WithExec([]string{"systemctl", "enable", "ssh"}).
 		WithExec([]string{"update-alternatives", "--set", "iptables", "/usr/sbin/iptables-legacy"}).
@@ -93,7 +93,7 @@ func Bullseye(ctx context.Context, t *testing.T, client *dagger.Client) *dagger.
 
 	c := client.Container().From(targets.BullseyeRef)
 	return apt.Install(c, client.CacheVolume(targets.BullseyeAptCacheKey), client.CacheVolume(targets.BullseyeAptLibCacheKey),
-		"systemd", "strace", "ssh", "udev", "iptables",
+		"systemd", "strace", "ssh", "udev", "iptables", "jq",
 	).
 		WithExec([]string{"systemctl", "enable", "ssh"}).
 		WithExec([]string{"update-alternatives", "--set", "iptables", "/usr/sbin/iptables-legacy"}).
@@ -107,7 +107,7 @@ func Buster(ctx context.Context, t *testing.T, client *dagger.Client) *dagger.Co
 
 	c := client.Container().From(targets.BusterRef)
 	return apt.Install(c, client.CacheVolume(targets.BusterAptCacheKey), client.CacheVolume(targets.BusterAptLibCacheKey),
-		"systemd", "strace", "ssh", "udev", "iptables",
+		"systemd", "strace", "ssh", "udev", "iptables", "jq",
 	).
 		WithExec([]string{"systemctl", "enable", "ssh"}).
 		WithExec([]string{"update-alternatives", "--set", "iptables", "/usr/sbin/iptables-legacy"}).
@@ -120,7 +120,7 @@ func Rhel9(ctx context.Context, t *testing.T, client *dagger.Client) *dagger.Con
 	return client.Container().From(targets.Rhel9Ref).
 		WithExec([]string{
 			"dnf", "install", "-y",
-			"createrepo_c", "systemd", "strace", "openssh-server", "openssh-clients", "udev", "iptables", "dnf-command(config-manager)",
+			"createrepo_c", "systemd", "strace", "openssh-server", "openssh-clients", "udev", "iptables", "dnf-command(config-manager)", "jq",
 		}).
 		WithExec([]string{"systemctl", "enable", "sshd"}).
 		WithExec([]string{"bash", "-c", `
@@ -133,7 +133,7 @@ func Rhel8(ctx context.Context, t *testing.T, client *dagger.Client) *dagger.Con
 	return client.Container().From(targets.Rhel8Ref).
 		WithExec([]string{
 			"dnf", "install", "-y",
-			"createrepo_c", "systemd", "strace", "openssh-server", "openssh-clients", "udev", "iptables", "dnf-command(config-manager)", "dnf-utils", "util-linux",
+			"createrepo_c", "systemd", "strace", "openssh-server", "openssh-clients", "udev", "iptables", "dnf-command(config-manager)", "dnf-utils", "util-linux", "jq",
 		}).
 		WithExec([]string{"systemctl", "enable", "sshd"}).
 		WithExec([]string{"bash", "-c", `
@@ -146,7 +146,7 @@ func Mariner2(ctx context.Context, t *testing.T, client *dagger.Client) *dagger.
 	c := client.Container().From(targets.Mariner2Ref).
 		WithExec([]string{
 			"tdnf", "install", "-y",
-			"createrepo_c", "systemd", "strace", "openssh-server", "openssh-clients", "udev", "iptables", "dnf-command(config-manager)", "dnf-utils", "util-linux",
+			"createrepo_c", "systemd", "strace", "openssh-server", "openssh-clients", "udev", "iptables", "dnf-command(config-manager)", "dnf-utils", "util-linux", "jq",
 		}).
 		WithExec([]string{"systemctl", "enable", "sshd"}).
 		WithExec([]string{"sed", "-i", "s/PermitRootLogin no/PermitRootLogin yes/", "/etc/ssh/sshd_config"}).
