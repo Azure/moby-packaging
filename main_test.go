@@ -3,8 +3,8 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"os"
+	"os/signal"
 	"testing"
 
 	"dagger.io/dagger"
@@ -14,6 +14,7 @@ import (
 var (
 	buildSpec *archive.Spec
 	flDebug   bool
+	signalCtx context.Context
 )
 
 func getClient(ctx context.Context, t *testing.T) *dagger.Client {
@@ -53,12 +54,17 @@ func TestMain(m *testing.M) {
 	flag.BoolVar(&flDebug, "debug", false, "enable debug logging")
 	flag.Parse()
 
-	var err error
-	buildSpec, err = readBuildSpec(*specFile)
-	if err != nil {
-		panic(err)
+	var cancel func()
+	signalCtx, cancel = signal.NotifyContext(context.Background(), os.Interrupt)
+	defer cancel()
+
+	if *specFile != "" {
+		var err error
+		buildSpec, err = readBuildSpec(*specFile)
+		if err != nil {
+			panic(err)
+		}
 	}
-	fmt.Fprintln(os.Stderr, *buildSpec)
 
 	os.Exit(m.Run())
 }

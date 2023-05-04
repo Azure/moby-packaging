@@ -1,9 +1,0 @@
-{
-  "arch": "amd64",
-  "commit": "7472e5810a839cf1c6d849cb3c375aa941c05d8d",
-  "repo": "https://github.com/cpuguy83/containerd-shim-systemd-v1.git",
-  "package": "moby-containerd-shim-systemd",
-  "distro": "jammy",
-  "tag": "0.0.1",
-  "revision": "4"
-}

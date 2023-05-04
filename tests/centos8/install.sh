@@ -10,7 +10,6 @@ set -e
 : ${TEST_COMPOSE_PACKAGE_VERSION:=''}
 : ${TEST_INIT_PACKAGE_VERSION:=''}
 
-
 DEFAULT_REPO_DIR=/var/pkg
 
 prepare_local_yum() {
@@ -23,7 +22,6 @@ prepare_local_yum() {
     dnf config-manager --add-repo "file://${dir}"
 }
 
-
 install() {
     yum install -y --nogpgcheck \
         moby-engine-"${TEST_ENGINE_PACKAGE_VERSION}*" \
@@ -31,8 +29,7 @@ install() {
         moby-containerd-"${TEST_CONTAINERD_PACKAGE_VERSION}*" \
         moby-runc-"${TEST_RUNC_PACKAGE_VERSION}*" \
         moby-buildx-"${TEST_BUILDX_PACKAGE_VERSION}*" \
-        moby-compose-"${TEST_COMPOSE_PACKAGE_VERSION}*" \
-        moby-init-"${TEST_INIT_PACKAGE_VERSION}*"
+        moby-compose-"${TEST_COMPOSE_PACKAGE_VERSION}*"
 }
 
 init() {
@@ -52,24 +49,23 @@ init() {
 }
 
 case "${1}" in
-    repo)
-        prepare_local_yum "${2}"
-        ;;
-    install)
-        install
-        init
-        ;;
-    "")
+repo)
+    prepare_local_yum "${2}"
+    ;;
+install)
+    install
+    init
+    ;;
+"")
+    prepare_local_yum
+    install
+    init
+    ;;
+*)
+    if [ -d "${1}" ]; then
         prepare_local_yum
-        install
-        init
-        ;;
-    *)
-        if [ -d "${1}" ]; then
-            prepare_local_yum
-        fi
-        install
-        init
-        ;;
+    fi
+    install
+    init
+    ;;
 esac
-
