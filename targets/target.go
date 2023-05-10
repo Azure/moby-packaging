@@ -97,6 +97,22 @@ var (
 		"quilt",
 	}
 
+	BaseBionicPackages = []string{
+		"bash",
+		"build-essential",
+		"cmake",
+		"dh-make",
+		"devscripts",
+		"dh-apparmor",
+		"dpkg-dev",
+		"equivs",
+		"fakeroot",
+		"libdevmapper-dev",
+		"libltdl-dev",
+		"libseccomp-dev",
+		"quilt",
+	}
+
 	BaseMarinerPackages = []string{
 		"bash",
 		"binutils",
@@ -252,6 +268,7 @@ func (t *Target) Make(project *archive.Spec) *dagger.Directory {
 		WithDirectory("/build/src", source).
 		WithWorkdir("/build").
 		WithMountedFile("/usr/bin/go-md2man", md2man).
+		WithEnvVariable("TARGET_DISTRO", project.Distro).
 		WithEnvVariable("REVISION", project.Revision).
 		WithEnvVariable("VERSION", project.Tag).
 		WithEnvVariable("COMMIT", project.Commit).
