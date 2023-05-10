@@ -3,6 +3,10 @@ parameters:
     displayName: arch
     type: string
     default: amd64
+  - name: os
+    displayName: os
+    type: string
+    default: ""
   - name: commit
     displayName: commit
     type: string
