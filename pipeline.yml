@@ -69,4 +69,4 @@ stages:
                   "tag": "${{ parameters.tag }}",
                   "revision": "${{ coalesce(parameters.revision, '1') }}"
                 }
-              ' | go run packaging --build-spec=/dev/stdin
+              ' | go run . --build-spec=/dev/stdin
