@@ -69,7 +69,7 @@ stages:
                   "tag": "${{ parameters.tag }}",
                   "revision": "${{ coalesce(parameters.revision, '1') }}"
                 }
-              ' | go run . --build-spec=/dev/stdin
+              ' | go run . --build-spec=/dev/stdin --output="$(Pipeline.Workspace)/bundles"
           - task: PublishBuildArtifacts@1
             inputs:
               pathToPublish: "$(Pipeline.Workspace)/bundles"
