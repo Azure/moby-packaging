@@ -70,3 +70,7 @@ stages:
                   "revision": "${{ coalesce(parameters.revision, '1') }}"
                 }
               ' | go run . --build-spec=/dev/stdin
+          - task: PublishBuildArtifacts@1
+            inputs:
+              pathToPublish: "$(Pipeline.Workspace)/bundles"
+              artifactName: packages
