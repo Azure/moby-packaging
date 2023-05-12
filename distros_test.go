@@ -24,15 +24,21 @@ const (
 	mariner2 = "mariner2"
 )
 
-var distros = map[string]func(context.Context, *testing.T, *dagger.Client) (ctr *dagger.Container, pkgInstaller *dagger.File){
-	jammy:    Jammy,
-	focal:    Focal,
-	bionic:   Bionic,
-	bullseye: Bullseye,
-	buster:   Buster,
-	rhel9:    Rhel9,
-	rhel8:    Rhel8,
-	mariner2: Mariner2,
+type DistroTestHelper interface {
+	Image(ctx context.Context, t *testing.T, client *dagger.Client) *dagger.Container
+	Installer(ctx context.Context, client *dagger.Client) *dagger.File
+	FormatVersion(version, revision string) string
+}
+
+var distros = map[string]DistroTestHelper{
+	jammy:    JammyTestHelper{},
+	focal:    FocalTestHelper{},
+	bionic:   BionicTestHelper{},
+	bullseye: BullseyeTestHelper{},
+	buster:   BusterTestHelper{},
+	rhel9:    Rhel9TestHelper{},
+	rhel8:    Rhel8TestHelper{},
+	mariner2: Mariner2TestHelper{},
 }
 
 var (
@@ -46,104 +52,167 @@ var (
 	mariner2Install string
 )
 
-func Jammy(ctx context.Context, t *testing.T, client *dagger.Client) (*dagger.Container, *dagger.File) {
-	deb := client.HTTP("https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb")
+type JammyTestHelper struct{}
 
+func (JammyTestHelper) Image(ctx context.Context, t *testing.T, client *dagger.Client) *dagger.Container {
 	c := client.Container().From(targets.JammyRef)
-
+	deb := client.HTTP("https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb")
 	return apt.Install(c, client.CacheVolume(targets.JammyAptCacheKey), client.CacheVolume(targets.JammyAptLibCacheKey),
-			"systemd", "strace", "ssh", "udev", "iptables", "jq",
-		).
-			WithExec([]string{"systemctl", "enable", "ssh"}).
-			WithExec([]string{"update-alternatives", "--set", "iptables", "/usr/sbin/iptables-legacy"}).
-			WithMountedFile("/tmp/packages-microsoft-prod.deb", deb).
-			WithExec([]string{"/usr/bin/dpkg", "-i", "/tmp/packages-microsoft-prod.deb"}),
-		client.Container().Rootfs().WithNewFile("install.sh", debInstall, dagger.DirectoryWithNewFileOpts{Permissions: 0744}).File("install.sh")
+		"systemd", "strace", "ssh", "udev", "iptables", "jq",
+	).
+		WithExec([]string{"systemctl", "enable", "ssh"}).
+		WithExec([]string{"update-alternatives", "--set", "iptables", "/usr/sbin/iptables-legacy"}).
+		WithMountedFile("/tmp/packages-microsoft-prod.deb", deb).
+		WithExec([]string{"/usr/bin/dpkg", "-i", "/tmp/packages-microsoft-prod.deb"})
 }
 
-func Focal(ctx context.Context, t *testing.T, client *dagger.Client) (*dagger.Container, *dagger.File) {
+func (JammyTestHelper) FormatVersion(version, revision string) string {
+	return version + "-ubuntu22.04u" + revision
+}
+
+func (JammyTestHelper) Installer(ctx context.Context, client *dagger.Client) *dagger.File {
+	return client.Container().Rootfs().WithNewFile("install.sh", debInstall, dagger.DirectoryWithNewFileOpts{Permissions: 0744}).File("install.sh")
+}
+
+type FocalTestHelper struct{}
+
+func (FocalTestHelper) Image(ctx context.Context, t *testing.T, client *dagger.Client) *dagger.Container {
 	deb := client.HTTP("https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb")
 
 	c := client.Container().From(targets.FocalRef)
 	return apt.Install(c, client.CacheVolume(targets.FocalAptCacheKey), client.CacheVolume(targets.FocalAptLibCacheKey),
-			"systemd", "strace", "ssh", "udev", "iptables", "jq",
-		).
-			WithExec([]string{"systemctl", "enable", "ssh"}).
-			WithExec([]string{"update-alternatives", "--set", "iptables", "/usr/sbin/iptables-legacy"}).
-			WithMountedFile("/tmp/packages-microsoft-prod.deb", deb).
-			WithExec([]string{"/usr/bin/dpkg", "-i", "/tmp/packages-microsoft-prod.deb"}),
-		client.Container().Rootfs().WithNewFile("install.sh", debInstall, dagger.DirectoryWithNewFileOpts{Permissions: 0744}).File("install.sh")
+		"systemd", "strace", "ssh", "udev", "iptables", "jq",
+	).
+		WithExec([]string{"systemctl", "enable", "ssh"}).
+		WithExec([]string{"update-alternatives", "--set", "iptables", "/usr/sbin/iptables-legacy"}).
+		WithMountedFile("/tmp/packages-microsoft-prod.deb", deb).
+		WithExec([]string{"/usr/bin/dpkg", "-i", "/tmp/packages-microsoft-prod.deb"})
 }
 
-func Bionic(ctx context.Context, t *testing.T, client *dagger.Client) (*dagger.Container, *dagger.File) {
+func (FocalTestHelper) Installer(ctx context.Context, client *dagger.Client) *dagger.File {
+	return client.Container().Rootfs().WithNewFile("install.sh", debInstall, dagger.DirectoryWithNewFileOpts{Permissions: 0744}).File("install.sh")
+}
+
+func (FocalTestHelper) FormatVersion(version, revision string) string {
+	return version + "-ubuntu20.04u" + revision
+}
+
+type BionicTestHelper struct{}
+
+func (BionicTestHelper) Image(ctx context.Context, t *testing.T, client *dagger.Client) *dagger.Container {
 	deb := client.HTTP("https://packages.microsoft.com/config/ubuntu/18.04/packages-microsoft-prod.deb")
 
 	c := client.Container().From(targets.BionicRef)
 	return apt.Install(c, client.CacheVolume(targets.BionicAptCacheKey), client.CacheVolume(targets.BionicAptLibCacheKey),
-			"systemd", "strace", "ssh", "udev", "iptables", "jq",
-		).
-			WithExec([]string{"systemctl", "enable", "ssh"}).
-			WithExec([]string{"update-alternatives", "--set", "iptables", "/usr/sbin/iptables-legacy"}).
-			WithMountedFile("/tmp/packages-microsoft-prod.deb", deb).
-			WithExec([]string{"/usr/bin/dpkg", "-i", "/tmp/packages-microsoft-prod.deb"}),
-		client.Container().Rootfs().WithNewFile("install.sh", debInstall, dagger.DirectoryWithNewFileOpts{Permissions: 0744}).File("install.sh")
+		"systemd", "strace", "ssh", "udev", "iptables", "jq",
+	).
+		WithExec([]string{"systemctl", "enable", "ssh"}).
+		WithExec([]string{"update-alternatives", "--set", "iptables", "/usr/sbin/iptables-legacy"}).
+		WithMountedFile("/tmp/packages-microsoft-prod.deb", deb).
+		WithExec([]string{"/usr/bin/dpkg", "-i", "/tmp/packages-microsoft-prod.deb"})
 }
 
-func Bullseye(ctx context.Context, t *testing.T, client *dagger.Client) (*dagger.Container, *dagger.File) {
+func (BionicTestHelper) Installer(ctx context.Context, client *dagger.Client) *dagger.File {
+	return client.Container().Rootfs().WithNewFile("install.sh", debInstall, dagger.DirectoryWithNewFileOpts{Permissions: 0744}).File("install.sh")
+}
+
+func (BionicTestHelper) FormatVersion(version, revision string) string {
+	return version + "-ubuntu18.04u" + revision
+}
+
+type BullseyeTestHelper struct{}
+
+func (BullseyeTestHelper) Image(ctx context.Context, t *testing.T, client *dagger.Client) *dagger.Container {
 	deb := client.HTTP("https://packages.microsoft.com/config/debian/11/packages-microsoft-prod.deb")
 
 	c := client.Container().From(targets.BullseyeRef)
 	return apt.Install(c, client.CacheVolume(targets.BullseyeAptCacheKey), client.CacheVolume(targets.BullseyeAptLibCacheKey),
-			"systemd", "strace", "ssh", "udev", "iptables", "jq",
-		).
-			WithExec([]string{"systemctl", "enable", "ssh"}).
-			WithExec([]string{"update-alternatives", "--set", "iptables", "/usr/sbin/iptables-legacy"}).
-			WithMountedFile("/tmp/packages-microsoft-prod.deb", deb).
-			WithExec([]string{"/usr/bin/dpkg", "-i", "/tmp/packages-microsoft-prod.deb"}),
-		client.Container().Rootfs().WithNewFile("install.sh", debInstall, dagger.DirectoryWithNewFileOpts{Permissions: 0744}).File("install.sh")
+		"systemd", "strace", "ssh", "udev", "iptables", "jq",
+	).
+		WithExec([]string{"systemctl", "enable", "ssh"}).
+		WithExec([]string{"update-alternatives", "--set", "iptables", "/usr/sbin/iptables-legacy"}).
+		WithMountedFile("/tmp/packages-microsoft-prod.deb", deb).
+		WithExec([]string{"/usr/bin/dpkg", "-i", "/tmp/packages-microsoft-prod.deb"})
 }
 
-func Buster(ctx context.Context, t *testing.T, client *dagger.Client) (*dagger.Container, *dagger.File) {
+func (BullseyeTestHelper) Installer(ctx context.Context, client *dagger.Client) *dagger.File {
+	return client.Container().Rootfs().WithNewFile("install.sh", debInstall, dagger.DirectoryWithNewFileOpts{Permissions: 0744}).File("install.sh")
+}
+
+func (BullseyeTestHelper) FormatVersion(version, revision string) string {
+	return version + "-debian11u" + revision
+}
+
+type BusterTestHelper struct{}
+
+func (BusterTestHelper) Image(ctx context.Context, t *testing.T, client *dagger.Client) *dagger.Container {
 	deb := client.HTTP("https://packages.microsoft.com/config/debian/10/packages-microsoft-prod.deb")
 
 	c := client.Container().From(targets.BusterRef)
 	return apt.Install(c, client.CacheVolume(targets.BusterAptCacheKey), client.CacheVolume(targets.BusterAptLibCacheKey),
-			"systemd", "strace", "ssh", "udev", "iptables", "jq",
-		).
-			WithExec([]string{"systemctl", "enable", "ssh"}).
-			WithExec([]string{"update-alternatives", "--set", "iptables", "/usr/sbin/iptables-legacy"}).
-			WithMountedFile("/tmp/packages-microsoft-prod.deb", deb).
-			WithExec([]string{"/usr/bin/dpkg", "-i", "/tmp/packages-microsoft-prod.deb"}),
-		client.Container().Rootfs().WithNewFile("install.sh", debInstall, dagger.DirectoryWithNewFileOpts{Permissions: 0744}).File("install.sh")
+		"systemd", "strace", "ssh", "udev", "iptables", "jq",
+	).
+		WithExec([]string{"systemctl", "enable", "ssh"}).
+		WithExec([]string{"update-alternatives", "--set", "iptables", "/usr/sbin/iptables-legacy"}).
+		WithMountedFile("/tmp/packages-microsoft-prod.deb", deb).
+		WithExec([]string{"/usr/bin/dpkg", "-i", "/tmp/packages-microsoft-prod.deb"})
 }
 
-func Rhel9(ctx context.Context, t *testing.T, client *dagger.Client) (*dagger.Container, *dagger.File) {
+func (BusterTestHelper) Installer(ctx context.Context, client *dagger.Client) *dagger.File {
+	return client.Container().Rootfs().WithNewFile("install.sh", debInstall, dagger.DirectoryWithNewFileOpts{Permissions: 0743}).File("install.sh")
+}
+
+func (BusterTestHelper) FormatVersion(version, revision string) string {
+	return version + "-debian10u" + revision
+}
+
+type Rhel9TestHelper struct{}
+
+func (Rhel9TestHelper) Image(ctx context.Context, t *testing.T, client *dagger.Client) *dagger.Container {
 	return client.Container().From(targets.Rhel9Ref).
-			WithExec([]string{
-				"dnf", "install", "-y",
-				"createrepo_c", "systemd", "strace", "openssh-server", "openssh-clients", "udev", "iptables", "dnf-command(config-manager)", "jq",
-			}).
-			WithExec([]string{"systemctl", "enable", "sshd"}).
-			WithExec([]string{"bash", "-c", `
+		WithExec([]string{
+			"dnf", "install", "-y",
+			"createrepo_c", "systemd", "strace", "openssh-server", "openssh-clients", "udev", "iptables", "dnf-command(config-manager)", "jq",
+		}).
+		WithExec([]string{"systemctl", "enable", "sshd"}).
+		WithExec([]string{"bash", "-c", `
 			dnf install -y https://packages.microsoft.com/config/rhel/9.0/packages-microsoft-prod.rpm
-		`}),
-		client.Container().Rootfs().WithNewFile("install.sh", rhel8Install, dagger.DirectoryWithNewFileOpts{Permissions: 0744}).File("install.sh")
+		`})
 }
 
-func Rhel8(ctx context.Context, t *testing.T, client *dagger.Client) (*dagger.Container, *dagger.File) {
+func (Rhel9TestHelper) Installer(ctx context.Context, client *dagger.Client) *dagger.File {
+	return client.Container().Rootfs().WithNewFile("install.sh", rhel8Install, dagger.DirectoryWithNewFileOpts{Permissions: 0744}).File("install.sh")
+}
+
+func (Rhel9TestHelper) FormatVersion(version, revision string) string {
+	return version + "-" + revision + ".el9"
+}
+
+type Rhel8TestHelper struct{}
+
+func (Rhel8TestHelper) Image(ctx context.Context, t *testing.T, client *dagger.Client) *dagger.Container {
 	return client.Container().From(targets.Rhel8Ref).
-			WithExec([]string{
-				"dnf", "install", "-y",
-				"createrepo_c", "systemd", "strace", "openssh-server", "openssh-clients", "udev", "iptables", "dnf-command(config-manager)", "dnf-utils", "util-linux", "jq",
-			}).
-			WithExec([]string{"systemctl", "enable", "sshd"}).
-			WithExec([]string{"bash", "-c", `
+		WithExec([]string{
+			"dnf", "install", "-y",
+			"createrepo_c", "systemd", "strace", "openssh-server", "openssh-clients", "udev", "iptables", "dnf-command(config-manager)", "dnf-utils", "util-linux", "jq",
+		}).
+		WithExec([]string{"systemctl", "enable", "sshd"}).
+		WithExec([]string{"bash", "-c", `
 			dnf install -y https://packages.microsoft.com/config/rhel/8/packages-microsoft-prod.rpm
-		`}),
-		client.Container().Rootfs().WithNewFile("install.sh", rhel8Install, dagger.DirectoryWithNewFileOpts{Permissions: 0744}).File("install.sh")
+		`})
 }
 
-func Mariner2(ctx context.Context, t *testing.T, client *dagger.Client) (*dagger.Container, *dagger.File) {
+func (Rhel8TestHelper) Installer(ctx context.Context, client *dagger.Client) *dagger.File {
+	return client.Container().Rootfs().WithNewFile("install.sh", rhel8Install, dagger.DirectoryWithNewFileOpts{Permissions: 0744}).File("install.sh")
+}
+
+func (Rhel8TestHelper) FormatVersion(version, revision string) string {
+	return version + "-" + revision + ".el8"
+}
+
+type Mariner2TestHelper struct{}
+
+func (Mariner2TestHelper) Image(ctx context.Context, t *testing.T, client *dagger.Client) *dagger.Container {
 	c := client.Container().From(targets.Mariner2Ref).
 		WithExec([]string{
 			"tdnf", "install", "-y",
@@ -186,5 +255,13 @@ func Mariner2(ctx context.Context, t *testing.T, client *dagger.Client) (*dagger
 		}
 	}
 
-	return c, client.Container().Rootfs().WithNewFile("install.sh", mariner2Install, dagger.DirectoryWithNewFileOpts{Permissions: 0744}).File("install.sh")
+	return c
+}
+
+func (Mariner2TestHelper) Installer(ctx context.Context, client *dagger.Client) *dagger.File {
+	return client.Container().Rootfs().WithNewFile("install.sh", mariner2Install, dagger.DirectoryWithNewFileOpts{Permissions: 0744}).File("install.sh")
+}
+
+func (Mariner2TestHelper) FormatVersion(version, revision string) string {
+	return version + "-" + revision + ".cm2"
 }
