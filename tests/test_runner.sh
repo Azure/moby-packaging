@@ -32,6 +32,8 @@ for f in $(
     echo "... Ok" >&2
 done
 
+scpCmd /opt/moby/install.sh ${SSH_HOST}:/opt/moby/install.sh || exit
+
 echo "Installing Moby packages..." >&2
 sshCmd "env -S \"${TEST_EVAL_VARS}\" /opt/moby/install.sh" || exit
 echo "Running tests" >&2

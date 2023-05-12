@@ -54,7 +54,7 @@ func testPackage(ctx context.Context, t *testing.T, client *dagger.Client, spec 
 
 	qemu := testutil.NewQemuImg(ctx, client.Pipeline("Qemu"))
 
-	c := getContainer(ctx, t, client.Pipeline("Setup "+spec.Distro+"/"+spec.Arch))
+	c, installer := getContainer(ctx, t, client.Pipeline("Setup "+spec.Distro+"/"+spec.Arch))
 
 	vmImage := c.Pipeline("Build VM rootfs").
 		WithDirectory("/opt/bats", batsCore).
@@ -128,6 +128,7 @@ func testPackage(ctx context.Context, t *testing.T, client *dagger.Client, spec 
 		WithMountedDirectory("/tmp/pkg", buildOutput).
 		WithNewFile("/usr/local/bin/test_runner.sh", dagger.ContainerWithNewFileOpts{Contents: testRunnerCmd, Permissions: 0774}).
 		WithServiceBinding(svc, runner).
+		WithMountedFile("/opt/moby/install.sh", installer).
 		// TODO: It would be really nice if we could move these tests out of bats and into go tests.
 		//    Gist of it would be to create a go subtest for each test case and use ssh to run the test.
 		//    This would just allow us to more easily integrate with the test framework and get better reporting.
