@@ -50,9 +50,15 @@ func main() {
 		os.Exit(3)
 	}
 
-	if _, err := out.Export(ctx, filepath.Join(*outDir, spec.Distro)); err != nil {
+	dstPath := filepath.Join(*outDir, spec.Distro)
+	if _, err := out.Export(ctx, dstPath); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(4)
+	}
+
+	if err := writeBuildSpec(spec, filepath.Join(dstPath, fmt.Sprintf("%s-spec.json", spec.Pkg))); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(5)
 	}
 }
 
@@ -72,6 +78,23 @@ func readBuildSpec(filename string) (*archive.Spec, error) {
 	}
 
 	return &spec, nil
+}
+
+func writeBuildSpec(spec *archive.Spec, dst string) error {
+	if dst == "" {
+		return fmt.Errorf("no build destination file specified")
+	}
+
+	b, err := json.Marshal(spec)
+	if err != nil {
+		return err
+	}
+
+	if err := os.WriteFile(dst, b, 0o644); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func do(ctx context.Context, client *dagger.Client, cfg *archive.Spec) (*dagger.Directory, error) {
@@ -98,6 +121,7 @@ func do(ctx context.Context, client *dagger.Client, cfg *archive.Spec) (*dagger.
 	if err != nil {
 		return nil, err
 	}
+
 	out := target.Make(cfg)
 	return out, nil
 }
