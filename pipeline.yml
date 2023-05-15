@@ -85,9 +85,9 @@ stages:
                   --max-connections=10 --auth-mode=login \
                   --overwrite \
                   --source ${distro_path} \
-                  --pattern "*/$(package.name)*" \
+                  --pattern "*/${{ parameters.package_name }}*" \
                   --destination "${STORAGE_ACCOUNT_CONTAINER}" \
-                  --destination-path "$(package.name)/${VERSION}/${distro}"
+                  --destination-path "${{ parameters.package_name }}/${VERSION}/${distro}"
               done
             env:
               ARTIFACTS_DIR: "$(Pipeline.Workspace)/bundles"
