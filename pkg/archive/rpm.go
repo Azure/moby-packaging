@@ -72,13 +72,13 @@ func (r *RpmPackager) Package(client *dagger.Client, c *dagger.Container, projec
 	pkgDir := c.Directory(rootDir)
 	fpm := fpmContainer(client, r.mirrorPrefix)
 
-	filename := fmt.Sprintf("%s-%s+azure-%s.%s.%s.rpm", project.Pkg, project.Tag, project.Revision, rpmDistroMap[project.Distro], rpmArchMap[project.Arch])
+	filename := fmt.Sprintf("%s-%s-%s.%s.%s.rpm", project.Pkg, project.Tag, project.Revision, rpmDistroMap[project.Distro], rpmArchMap[project.Arch])
 
 	fpmArgs := []string{"fpm",
 		"-s", "dir",
 		"-t", "rpm",
 		"-n", project.Pkg,
-		"--version", project.Tag + "+azure",
+		"--version", project.Tag,
 		"--iteration", project.Revision,
 		"--rpm-dist", rpmDistroMap[project.Distro],
 		"--architecture", strings.Replace(project.Arch, "/", "", -1),
