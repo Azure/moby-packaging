@@ -2,6 +2,7 @@ deb: runc man/man8
 
 runc:
 	cd src && \
+	echo $(VERSION)-$(REVISION) > VERSION && \
 	$(MAKE) runc BUILDTAGS='seccomp'
 
 man/man8:
