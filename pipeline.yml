@@ -70,7 +70,29 @@ stages:
                   "revision": "${{ coalesce(parameters.revision, '1') }}"
                 }
               ' | go run . --build-spec=/dev/stdin --output="$(Pipeline.Workspace)/bundles"
-          - task: PublishBuildArtifacts@1
-            inputs:
-              pathToPublish: "$(Pipeline.Workspace)/bundles"
-              artifactName: packages
+          - script: |
+              set -o xtrace
+              : ${BLOB_PREFIX:=/}
+              cd "${ARTIFACTS_DIR}"
+
+              az login --identity
+              az storage container create -n "${STORAGE_ACCOUNT_CONTAINER}" --auth-mode=login
+
+              for distro_path in ./*; do
+                [ -d "${distro_path}" ] || continue
+                distro="$(basename ${distro_path})"
+                az storage blob upload-batch \
+                  --max-connections=10 --auth-mode=login \
+                  --overwrite \
+                  --source ${distro_path} \
+                  --pattern "*/$(package.name)*" \
+                  --destination "${STORAGE_ACCOUNT_CONTAINER}" \
+                  --destination-path "$(package.name)/${VERSION}/${distro}"
+              done
+            env:
+              ARTIFACTS_DIR: "$(Pipeline.Workspace)/bundles"
+              STORAGE_ACCOUNT_NAME: moby
+              STORAGE_ACCOUNT_CONTAINER: moby
+              AZURE_STORAGE_ACCOUNT: moby
+              VERSION: ${{ parameters.tag }}
+            displayName: Upload to blob store
