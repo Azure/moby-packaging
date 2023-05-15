@@ -78,6 +78,7 @@ stages:
               az login --identity
               az storage container create -n "${STORAGE_ACCOUNT_CONTAINER}" --auth-mode=login
 
+              tree .
               for distro_path in ./*; do
                 [ -d "${distro_path}" ] || continue
                 distro="$(basename ${distro_path})"
