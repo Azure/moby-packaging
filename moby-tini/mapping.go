@@ -10,17 +10,17 @@ var (
 		},
 		{
 			Source: "/build/legal/LICENSE",
-			Dest:   "/usr/share/doc/moby-init/LICENSE",
+			Dest:   "/usr/share/doc/moby-tini/LICENSE",
 		},
 		{
 			Source:   "/build/legal/NOTICE",
-			Dest:     "/usr/share/doc/moby-init/NOTICE.gz",
+			Dest:     "/usr/share/doc/moby-tini/NOTICE.gz",
 			Compress: true,
 		},
 	}
 
 	Archive = archive.Archive{
-		Name:    "moby-init",
+		Name:    "moby-tini",
 		Webpage: "https://github.com/krallin/tini",
 		Files: []archive.File{
 			{
@@ -29,11 +29,11 @@ var (
 			},
 			{
 				Source: "/build/legal/LICENSE",
-				Dest:   "/usr/share/doc/moby-init/LICENSE",
+				Dest:   "/usr/share/doc/moby-tini/LICENSE",
 			},
 			{
 				Source:   "/build/legal/NOTICE",
-				Dest:     "/usr/share/doc/moby-init/NOTICE.gz",
+				Dest:     "/usr/share/doc/moby-tini/NOTICE.gz",
 				Compress: true,
 			},
 		},
