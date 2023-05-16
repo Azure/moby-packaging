@@ -31,14 +31,14 @@ type DistroTestHelper interface {
 }
 
 var distros = map[string]DistroTestHelper{
-	jammy: JammyTestHelper{},
-	// focal:    FocalTestHelper{},
-	// bionic:   BionicTestHelper{},
-	// bullseye: BullseyeTestHelper{},
-	// buster:   BusterTestHelper{},
-	// rhel9:    Rhel9TestHelper{},
-	// rhel8:    Rhel8TestHelper{},
-	// mariner2: Mariner2TestHelper{},
+	jammy:    JammyTestHelper{},
+	focal:    FocalTestHelper{},
+	bionic:   BionicTestHelper{},
+	bullseye: BullseyeTestHelper{},
+	buster:   BusterTestHelper{},
+	rhel9:    Rhel9TestHelper{},
+	rhel8:    Rhel8TestHelper{},
+	mariner2: Mariner2TestHelper{},
 }
 
 var (
