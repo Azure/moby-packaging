@@ -50,13 +50,13 @@ func main() {
 		os.Exit(3)
 	}
 
-	dstPath := filepath.Join(*outDir, spec.Distro)
+	dstPath := filepath.Join(*outDir, spec.Pkg, spec.Distro)
 	if _, err := out.Export(ctx, dstPath); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(4)
 	}
 
-	if err := writeBuildSpec(spec, filepath.Join(dstPath, fmt.Sprintf("%s-spec.json", spec.Pkg))); err != nil {
+	if err := writeBuildSpec(spec, filepath.Join(dstPath, "spec.json")); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(5)
 	}
