@@ -98,7 +98,6 @@ var (
 	}
 
 	BaseBionicPackages = []string{
-		"bash",
 		"build-essential",
 		"cmake",
 		"dh-make",
@@ -107,6 +106,8 @@ var (
 		"dpkg-dev",
 		"equivs",
 		"fakeroot",
+		"btrfs-progs",
+		"btrfs-tools",
 		"libdevmapper-dev",
 		"libltdl-dev",
 		"libseccomp-dev",
