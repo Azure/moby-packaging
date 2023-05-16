@@ -44,10 +44,12 @@ func testPackage(ctx context.Context, t *testing.T, client *dagger.Client, spec 
 		t.Fatalf("unknown distro: %s", spec.Distro)
 	}
 
-	buildOutput, err := do(ctx, client.Pipeline("Build "+spec.Pkg+" for testing"), spec)
-	if err != nil {
-		t.Fatal(err)
-	}
+	buildOutput := client.Host().Directory(filepath.Join(flInputDir, spec.Pkg, spec.Distro))
+
+	// buildOutput, err := do(ctx, client.Pipeline("Build "+spec.Pkg+" for testing"), spec)
+	// if err != nil {
+	// 	t.Fatal(err)
+	// }
 
 	batsCore, batsHelpers := makeBats(client)
 
