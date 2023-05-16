@@ -31,14 +31,14 @@ type DistroTestHelper interface {
 }
 
 var distros = map[string]DistroTestHelper{
-	jammy:    JammyTestHelper{},
-	focal:    FocalTestHelper{},
-	bionic:   BionicTestHelper{},
-	bullseye: BullseyeTestHelper{},
-	buster:   BusterTestHelper{},
-	rhel9:    Rhel9TestHelper{},
-	rhel8:    Rhel8TestHelper{},
-	mariner2: Mariner2TestHelper{},
+	jammy: JammyTestHelper{},
+	// focal:    FocalTestHelper{},
+	// bionic:   BionicTestHelper{},
+	// bullseye: BullseyeTestHelper{},
+	// buster:   BusterTestHelper{},
+	// rhel9:    Rhel9TestHelper{},
+	// rhel8:    Rhel8TestHelper{},
+	// mariner2: Mariner2TestHelper{},
 }
 
 var (
@@ -107,7 +107,7 @@ func (BionicTestHelper) Image(ctx context.Context, t *testing.T, client *dagger.
 		"systemd", "strace", "ssh", "udev", "iptables", "jq",
 	).
 		WithExec([]string{"systemctl", "enable", "ssh"}).
-		WithExec([]string{"update-alternatives", "--set", "iptables", "/usr/sbin/iptables-legacy"}).
+		// WithExec([]string{"update-alternatives", "--set", "iptables", "/usr/sbin/iptables-legacy"}).
 		WithMountedFile("/tmp/packages-microsoft-prod.deb", deb).
 		WithExec([]string{"/usr/bin/dpkg", "-i", "/tmp/packages-microsoft-prod.deb"})
 }

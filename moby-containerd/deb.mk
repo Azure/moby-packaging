@@ -7,7 +7,7 @@ export GOFLAGS := -trimpath
 export GOGC := off
 .PHONY: deb _binaries _man
 
-SHELL := $(shell which bash)
+SHELL := /usr/bin/env bash
 
 deb: _binaries _man
 
