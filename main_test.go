@@ -12,10 +12,9 @@ import (
 )
 
 var (
-	buildSpec  *archive.Spec
-	flDebug    bool
-	flInputDir string
-	signalCtx  context.Context
+	buildSpec *archive.Spec
+	flDebug   bool
+	signalCtx context.Context
 )
 
 func getClient(ctx context.Context, t *testing.T) *dagger.Client {
@@ -58,7 +57,6 @@ func (d *testWriter) Close() error {
 func TestMain(m *testing.M) {
 	specFile := flag.String("build-spec", "", "distro to test")
 	flag.BoolVar(&flDebug, "debug", false, "enable debug logging")
-	flag.StringVar(&flInputDir, "input-dir", "bundles", "directory containing packages to test")
 	flag.Parse()
 
 	var cancel func()

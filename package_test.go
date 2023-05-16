@@ -44,12 +44,10 @@ func testPackage(ctx context.Context, t *testing.T, client *dagger.Client, spec 
 		t.Fatalf("unknown distro: %s", spec.Distro)
 	}
 
-	buildOutput := client.Host().Directory(filepath.Join(flInputDir, spec.Distro))
-
-	// buildOutput, err := do(ctx, client.Pipeline("Build "+spec.Pkg+" for testing"), spec)
-	// if err != nil {
-	// 	t.Fatal(err)
-	// }
+	buildOutput, err := do(ctx, client.Pipeline("Build "+spec.Pkg+" for testing"), spec)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	batsCore, batsHelpers := makeBats(client)
 
@@ -217,82 +215,21 @@ var testPackages = []archive.Spec{
 	},
 }
 
-type pkgFile struct {
-	arch     string
-	spec     *archive.Spec
-	filename string
-}
-
-var archMap = map[string]string{
-	"amd64":   "amd64",
-	"x86_64":  "amd64",
-	"aarch64": "arm64",
-	"arm64":   "arm64",
-	"armv7":   "arm/v7",
-	"zip":     "amd64",
-}
-
 func TestPackages(t *testing.T) {
 	ctx := signalCtx
 
 	client := getClient(ctx, t)
 
 	// If a build spec was provided, only run that.
-	// if buildSpec != nil {
-	// 	t.Run(filepath.Join(buildSpec.Pkg+"/"+buildSpec.Distro+"/"+buildSpec.Arch), func(t *testing.T) {
-	// 		testPackage(ctx, t, client, buildSpec)
-	// 	})
-	// 	return
-	// }
-
-	// pkgFiles := []pkgFile{}
-	// if flInputDir != "" {
-	// 	return
-	// }
+	if buildSpec != nil {
+		t.Run(filepath.Join(buildSpec.Pkg+"/"+buildSpec.Distro+"/"+buildSpec.Arch), func(t *testing.T) {
+			testPackage(ctx, t, client, buildSpec)
+		})
+		return
+	}
 
 	for distro := range distros {
 		distro := distro
-		// testPackages = []archive.Spec{}
-		// var spec archive.Spec
-		// filepath.WalkDir(filepath.Join(flInputDir, distro), func(path string, d fs.DirEntry, err error) error {
-		// 	if d.IsDir() {
-		// 		return nil
-		// 	}
-
-		// 	archRegex := regexp.MustCompile(`amd64|x86_64|arm64|aarch64|armv7|zip|spec.json`)
-		// 	a := archRegex.FindString(path)
-
-		// 	if a == "spec.json" {
-		// 		s, err := readBuildSpec(path)
-		// 		if err != nil {
-		// 			return err
-		// 		}
-
-		// 		spec = archive.Spec{
-		// 			Pkg:      s.Pkg,
-		// 			Repo:     s.Repo,
-		// 			Revision: s.Revision,
-		// 			Commit:   s.Commit,
-		// 		}
-
-		// 		testPackages = append(testPackages, spec)
-		// 		return nil
-		// 	}
-
-		// 	arch, ok := archMap[a]
-		// 	if !ok {
-		// 		return fmt.Errorf("unknown or missing architecture: %s", a)
-		// 	}
-
-		// 	pkgFiles = append(pkgFiles, pkgFile{
-		// 		spec:     &spec,
-		// 		filename: path,
-		// 		arch:     arch,
-		// 	})
-
-		// 	return nil
-		// })
-
 		t.Run(distro, func(t *testing.T) {
 			t.Parallel()
 			for _, pkg := range testPackages {
