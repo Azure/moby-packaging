@@ -56,7 +56,8 @@ func main() {
 		os.Exit(4)
 	}
 
-	if err := writeBuildSpec(spec, filepath.Join(dstPath, "spec.json")); err != nil {
+	specPath := filepath.Join(dstPath, fmt.Sprintf("%s-%s-%s-spec.json", spec.Pkg, spec.Tag, strings.Replace(spec.Arch, "/", "", -1)))
+	if err := writeBuildSpec(spec, specPath); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(5)
 	}
