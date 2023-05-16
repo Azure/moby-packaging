@@ -78,18 +78,13 @@ stages:
               az login --identity
               az storage container create -n "${STORAGE_ACCOUNT_CONTAINER}" --auth-mode=login
 
-              tree .
-              for distro_path in ./*; do
-                [ -d "${distro_path}" ] || continue
-                distro="$(basename ${distro_path})"
-                az storage blob upload-batch \
-                  --max-connections=10 --auth-mode=login \
-                  --overwrite \
-                  --source ${distro_path} \
-                  --pattern "${{ parameters.package_name }}*" \
-                  --destination "${STORAGE_ACCOUNT_CONTAINER}" \
-                  --destination-path "${{ parameters.package_name }}/${VERSION}/${distro}"
-              done
+              az storage blob upload-batch \
+                --max-connections=10 --auth-mode=login \
+                --overwrite \
+                --source ${{ parameters.package_name }}/${{ parameters.distro }} \
+                --pattern "*" \
+                --destination "${STORAGE_ACCOUNT_CONTAINER}" \
+                --destination-path "peter-test/${{ parameters.tag }}/${{ parameters.package_name }}/${{ parameters.distro }}"
             env:
               ARTIFACTS_DIR: "$(Pipeline.Workspace)/bundles"
               STORAGE_ACCOUNT_NAME: moby
