@@ -52,17 +52,17 @@ In the root of this repository, create a new directory for the project you want
 to build.
 
 ```bash
-mkdir -p moby-init
+mkdir -p moby-tini
 ```
 
 #### Container filesystem layout
 
 moby-packaging will create and manage a pipeline of containers with an
 opinionated filesystem layout. Within the container, anything in the project
-directory (`moby-init` in this example) will be mounted into the `/build`
+directory (`moby-tini` in this example) will be mounted into the `/build`
 directory within the container.
 
-The source for the target package (in this example, `moby-init` which is built
+The source for the target package (in this example, `moby-tini` which is built
 from the upstream repository [krallin/tini](https://github.com/krallin/tini))
 will be mounted into `/build/src`.
 
@@ -70,7 +70,7 @@ This will be important later, when [specifying](#specify-the-package-layout) the
 layout of the package.
 
 Any static files that you want to be in the final package should live in
-the target package's directory (again, `moby-init` in this example).
+the target package's directory (again, `moby-tini` in this example).
 
 ### Add Makefiles to the package directory
 
@@ -78,7 +78,7 @@ Capture the build logic in a Makefile. You will need a Make target for each
 package type you wish to build (currently, `deb`, `rpm`, or `win`).
 
 ```bash
-cat > moby-init/Makefile <<'EOF'
+cat > moby-tini/Makefile <<'EOF'
 
 .PHONY: rpm deb
 
@@ -111,14 +111,14 @@ moby-packaging where to find them in our container, and where they belong on
 the target system. Here is an example for our (admittedly simple) package.
 
 ```bash
-cat > moby-init/mapping.go <<'EOF'
+cat > moby-tini/mapping.go <<'EOF'
 package mobyinit
 
 import "packaging/pkg/archive"
 
 var (
 	Archive = archive.Archive{
-		Name:    "moby-init",
+		Name:    "moby-tini",
 		Webpage: "https://github.com/krallin/tini",
 		Files: []archive.File{
 			{
@@ -155,7 +155,7 @@ The struct here is defined in `pkg/archive/archive.go`.
 The key element here is the `Files` entry: the `Source` file is the location in
 the build container of a file we want to package. The `Dest` file is the final
 location on the target system. Once built and published to a debian repo, one
-would run `apt-get install moby-init`; this would install the `tini-static`
+would run `apt-get install moby-tini`; this would install the `tini-static`
 binary we built at the location `/ur/bin/docker-init`.
 
 The `Conflicts` and `Replaces` entries are used by the consuming package manager
@@ -181,7 +181,7 @@ To enable the packaging system to build this package, update
 ```go
 import (
     // ...
-    mobyinit "packaging/moby-init"
+    mobyinit "packaging/moby-tini"
     // ...
 )
 
@@ -198,7 +198,7 @@ func (t *Target) Packager(projectName string) archive.Interface {
 		"moby-buildx":                  buildx.Archive,
 
          // this references the `Archive` struct created in the previous step
-		"moby-init":                    mobyinit.Archive,
+		"moby-tini":                    mobyinit.Archive,
 	}
 
 	a := mappings[projectName]
@@ -222,19 +222,19 @@ As with the [quick start](#quick-start), we need to supply moby-packaging with
 some information about what to build.
 
 ```bash
-cat > ./moby-init.json <<'EOF'
+cat > ./moby-tini.json <<'EOF'
 {
   "arch": "amd64",
   "commit": "de40ad007797e0dcd8b7126f27bb87401d224240",
   "repo": "https://github.com/krallin/tini.git",
-  "package": "moby-init",
+  "package": "moby-tini",
   "distro": "jammy",
   "tag": "0.19.0",
   "revision": "9"
 }
 EOF
 
-go run packaging --build-spec=./moby-init.json
+go run packaging --build-spec=./moby-tini.json
 ```
 
 This will produce a package under `bundles/jammy` which is ready to deploy.

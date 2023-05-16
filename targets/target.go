@@ -11,8 +11,8 @@ import (
 	containerd "github.com/Azure/moby-packaging/moby-containerd"
 	shim "github.com/Azure/moby-packaging/moby-containerd-shim-systemd"
 	engine "github.com/Azure/moby-packaging/moby-engine"
-	mobyinit "github.com/Azure/moby-packaging/moby-init"
 	runc "github.com/Azure/moby-packaging/moby-runc"
+	tini "github.com/Azure/moby-packaging/moby-tini"
 	"github.com/Azure/moby-packaging/pkg/apt"
 	"github.com/Azure/moby-packaging/pkg/archive"
 
@@ -222,7 +222,7 @@ func (t *Target) Packager(projectName, distro string) Packager {
 		"moby-runc":                    runc.Archives,
 		"moby-compose":                 compose.Archives,
 		"moby-buildx":                  buildx.Archives,
-		"moby-init":                    mobyinit.Archives,
+		"moby-init":                    tini.Archives,
 	}
 
 	as := mappings[projectName]
