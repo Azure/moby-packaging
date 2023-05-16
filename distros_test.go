@@ -41,16 +41,6 @@ var distros = map[string]DistroTestHelper{
 	mariner2: Mariner2TestHelper{},
 }
 
-var packages = []string{
-	// "moby-containerd",
-	"moby-engine",
-	// "moby-runc",
-	// "moby-init",
-	// "moby-cli",
-	// "moby-compose",
-	// "moby-buildx",
-}
-
 var (
 	//go:embed tests/deb/install.sh
 	debInstall string
