@@ -118,8 +118,7 @@ var (
 				Script: debPostRm,
 			},
 		},
-		Description: `Docker container platform (engine package)
-  Moby is an open-source project created by Docker to enable and accelerate software containerization.`,
+		Description: BaseArchive.Description,
 	}
 
 	RPMArchive = archive.Archive{
@@ -163,8 +162,7 @@ var (
 				Script: rpmUpgrade,
 			},
 		},
-		Description: `Docker container platform (engine package)
-  Moby is an open-source project created by Docker to enable and accelerate software containerization.`,
+		Description: BaseArchive.Description,
 	}
 
 	MarinerArchive = func() archive.Archive {
