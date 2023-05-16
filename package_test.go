@@ -6,6 +6,8 @@ import (
 	_ "embed"
 	"encoding/hex"
 	"fmt"
+	"io/fs"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -172,50 +174,7 @@ func testPackage(ctx context.Context, t *testing.T, client *dagger.Client, spec 
 }
 
 // package names to git commit hashes to test with
-var testPackages = []archive.Spec{
-	{
-		Pkg:      "moby-runc",
-		Repo:     "https://github.com/opencontainers/runc.git",
-		Revision: "4",
-		Commit:   "5fd4c4d144137e991c4acebb2146ab1483a97925",
-	},
-	{
-		Pkg:      "moby-containerd",
-		Repo:     "https://github.com/containerd/containerd.git",
-		Revision: "3",
-		Commit:   "1fbd70374134b891f97ce19c70b6e50c7b9f4e0d",
-	},
-	{
-		Pkg:      "moby-engine",
-		Repo:     "https://github.com/moby/moby.git",
-		Revision: "9",
-		Commit:   "d7573ab8672555762688f4c7ab8cc69ae8ec1a47",
-	},
-	{
-		Pkg:      "moby-tini",
-		Repo:     "https://github.com/krallin/tini.git",
-		Revision: "7",
-		Commit:   "de40ad007797e0dcd8b7126f27bb87401d224240",
-	},
-	{
-		Pkg:      "moby-cli",
-		Repo:     "https://github.com/docker/cli.git",
-		Revision: "2",
-		Commit:   "e92dd87c3209361f29b692ab4b8f0f9248779297",
-	},
-	{
-		Pkg:      "moby-buildx",
-		Repo:     "https://github.com/docker/buildx.git",
-		Revision: "3",
-		Commit:   "00ed17df6d20f3ca4553d45789264cdb78506e5f",
-	},
-	{
-		Pkg:      "moby-compose",
-		Repo:     "https://github.com/docker/compose.git",
-		Revision: "13",
-		Commit:   "00c60da331e7a70af922b1afcce5616c8ab6df36",
-	},
-}
+var testPackages = []archive.Spec{}
 
 func TestPackages(t *testing.T) {
 	ctx := signalCtx
@@ -230,6 +189,25 @@ func TestPackages(t *testing.T) {
 		return
 	}
 
+	err := filepath.WalkDir(flInputDir, func(path string, d fs.DirEntry, err error) error {
+		if d.IsDir() || !strings.HasSuffix(path, "spec.json") {
+			return nil
+		}
+
+		spec, err := readBuildSpec(path)
+		if err != nil {
+			return err
+		}
+
+		testPackages = append(testPackages, *spec)
+
+		return nil
+	})
+	if err != nil {
+		t.Errorf("error reading build spec: %s", err)
+		t.Fail()
+	}
+
 	for distro := range distros {
 		distro := distro
 		t.Run(distro, func(t *testing.T) {
@@ -238,10 +216,14 @@ func TestPackages(t *testing.T) {
 				pkg := pkg
 				pkg.Distro = distro
 
-				// Set the tag to a very large number so that we can ensure this
+				// Set the tag to a very large number so that we can ensure thist
 				// is the one that the package manager will install instead of
 				// the one from the distro repos.
 				pkg.Tag = "99.99.99+azure"
+
+				if _, err := os.Stat(filepath.Join(flInputDir, pkg.Pkg, pkg.Distro)); err != nil {
+					continue
+				}
 
 				t.Run(pkg.Pkg, func(t *testing.T) {
 					t.Parallel()
