@@ -49,6 +49,7 @@ resources:
     - repository: repos
       type: git
       name: package-repos
+      ref: refs/heads/peter/moby-tini
 
 variables:
   registry: upstreamk8sci
