@@ -92,6 +92,10 @@ stages:
               AZURE_STORAGE_ACCOUNT: moby
               VERSION: ${{ parameters.tag }}
             displayName: Upload to blob store
+          - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
+            displayName: Generate SBOM
+            inputs:
+              BuildDropPath: $(Pipeline.Workspace)/bundles/${{ parameters.package_name }}/${{ parameters.distro }}
           - task: PublishBuildArtifacts@1
             inputs:
               pathToPublish: "$(Pipeline.Workspace)/bundles"
