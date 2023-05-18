@@ -71,6 +71,7 @@ stages:
         steps:
           - bash: |
               az login --identity
+              az acr login -n ${REGISTRY}
               docker run --rm --privileged --name=azure.dagger.io -d ${{ parameters.dagger_image }}
             displayName: Start Up Dagger Engine
           - bash: |
@@ -88,6 +89,7 @@ stages:
               ' | go run . --build-spec=/dev/stdin --output="$(Pipeline.Workspace)/bundles"
             env:
               _EXPERIMENTAL_DAGGER_RUNNER_HOST: "docker-container://azure.dagger.io"
+              REGISTRY: $(registry)
             displayName: Build ${{ parameters.package_name }} Package for ${{ parameters.distro }} ${{ parameters.arch }}
           - bash: "docker rm -f azure.dagger.io || true"
             displayName: Clean Up Dagger Engine
