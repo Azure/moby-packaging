@@ -78,7 +78,7 @@ stages:
                 --detach \
                 --privileged \
                 --name=azure.dagger.io \
-                -v /var/lib/dagger \
+                -v dagger-engine.dev:/var/lib/dagger \
                 ${{ parameters.dagger_image }}
             displayName: Start Up Dagger Engine
           - bash: |
