@@ -73,6 +73,10 @@ stages:
               az login --identity
               az acr login -n ${REGISTRY}
 
+              az storage blob download --account-name ${STORAGE_ACCOUNT_NAME} -c dagger -n dagger -f "$(Pipeline.Workspace)/dagger"
+              chmod +x "$(Pipeline.Workspace)/dagger"
+              export _EXPERIMENTAL_DAGGER_CLI_BIN="$(Pipeline.Workspace)/dagger"
+
               docker run \
                 --rm \
                 --detach \
@@ -80,9 +84,14 @@ stages:
                 --name=azure.dagger.io \
                 -v dagger-engine.dev:/var/lib/dagger \
                 ${{ parameters.dagger_image }}
+            env:
+              STORAGE_ACCOUNT_NAME: moby
+              STORAGE_ACCOUNT_CONTAINER: moby
+              AZURE_STORAGE_ACCOUNT: moby
             displayName: Start Up Dagger Engine
           - bash: |
               set -x
+
               printf '
                 {
                   "arch": "${{ parameters.arch }}",
@@ -95,6 +104,7 @@ stages:
                 }
               ' | go run . --build-spec=/dev/stdin --output="$(Pipeline.Workspace)/bundles"
             env:
+              _EXPERIMENTAL_DAGGER_CLI_BIN: "$(Pipeline.Workspace)/dagger"
               _EXPERIMENTAL_DAGGER_RUNNER_HOST: "docker-container://azure.dagger.io"
               REGISTRY: $(registry)
             displayName: Build ${{ parameters.package_name }} Package for ${{ parameters.distro }} ${{ parameters.arch }}
