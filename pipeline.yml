@@ -43,6 +43,10 @@ parameters:
     displayName: revision
     type: string
     default: "1"
+  - name: dagger_image
+    displayName: dagger image
+    type: string
+    default: "upstreamk8sci.azurecr.io/dagger/engine@sha256:03cf3d20b486763bff103bcb844bdee7cfa6a5f9ee826cc76f00becc4d24c517"
 
 resources:
   repositories:
@@ -66,6 +70,10 @@ stages:
         timeoutInMinutes: 240
         steps:
           - bash: |
+              az login --identity
+              docker run --rm --privileged --name=azure.dagger.io -d ${{ parameters.dagger_image }}
+            displayName: Start Up Dagger Engine
+          - bash: |
               set -x
               printf '
                 {
@@ -78,6 +86,11 @@ stages:
                   "revision": "${{ coalesce(parameters.revision, '1') }}"
                 }
               ' | go run . --build-spec=/dev/stdin --output="$(Pipeline.Workspace)/bundles"
+            env:
+              _EXPERIMENTAL_DAGGER_RUNNER_HOST: "docker-container://azure.dagger.io"
+            displayName: Build ${{ parameters.package_name }} Package for ${{ parameters.distro }} ${{ parameters.arch }}
+          - bash: "docker rm -f azure.dagger.io || true"
+            displayName: Clean Up Dagger Engine
           - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
             displayName: Generate SBOM
             inputs:
