@@ -72,7 +72,14 @@ stages:
           - bash: |
               az login --identity
               az acr login -n ${REGISTRY}
-              docker run --rm --privileged --name=azure.dagger.io -d ${{ parameters.dagger_image }}
+
+              docker run \
+                --rm \
+                --detach \
+                --privileged \
+                --name=azure.dagger.io \
+                -v /var/lib/dagger \
+                ${{ parameters.dagger_image }}
             displayName: Start Up Dagger Engine
           - bash: |
               set -x
