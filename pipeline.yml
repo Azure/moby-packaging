@@ -156,22 +156,22 @@ stages:
                   displayName: Login to Azure
                 - script: az acr login -n $(registry)
                   displayName: Login to ACR $(registry)
-                - script: |
-                    echo "##vso[task.setvariable variable=buildx.builder]${BUILDER}"
-                    : "${BUILDKIT_VERSION:=0.11.5}"
-                    docker buildx create \
-                      --driver=docker-container \
-                      --name ${BUILDER} \
-                      --driver-opt image=mcr.microsoft.com/oss/moby/buildkit:${BUILDKIT_VERSION} \
-                      ${driver_opts}
-                    if [ $? -gt 0 ]; then
-                      exit 1
-                    fi
-                  displayName: Setup buildx instance
-                  env:
-                    BUILDER: moby-build
-                - script: docker buildx inspect --bootstrap ${BUILDX_BUILDER}
-                  displayName: Start buildx instance
+                # - script: |
+                #     echo "##vso[task.setvariable variable=buildx.builder]${BUILDER}"
+                #     : "${BUILDKIT_VERSION:=0.11.5}"
+                #     docker buildx create \
+                #       --driver=docker-container \
+                #       --name ${BUILDER} \
+                #       --driver-opt image=mcr.microsoft.com/oss/moby/buildkit:${BUILDKIT_VERSION} \
+                #       ${driver_opts}
+                #     if [ $? -gt 0 ]; then
+                #       exit 1
+                #     fi
+                #   displayName: Setup buildx instance
+                #   env:
+                #     BUILDER: moby-build
+                # - script: docker buildx inspect --bootstrap ${BUILDX_BUILDER}
+                #   displayName: Start buildx instance
                 - script: make release
                   displayName: Push Packages
                   continueOnError: true
