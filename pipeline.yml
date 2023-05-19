@@ -70,10 +70,15 @@ stages:
         timeoutInMinutes: 240
         steps:
           - bash: |
+              set -x
+
               az login --identity
               az acr login -n ${REGISTRY}
 
-              ARCH="${{ replace(parameters.arch, '/', '') }}"
+              ARCH=amd64
+              if grep -Eq '.*arm.*' <<<"${{ parameters.arch }}"; then
+                ARCH=arm64
+              fi
 
               az storage blob download --account-name ${STORAGE_ACCOUNT_NAME} -c dagger -n ${ARCH}/dagger -f "$(Pipeline.Workspace)/dagger"
               chmod +x "$(Pipeline.Workspace)/dagger"
