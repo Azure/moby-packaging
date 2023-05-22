@@ -151,6 +151,16 @@ stages:
               STORAGE_ACCOUNT_CONTAINER: moby
               AZURE_STORAGE_ACCOUNT: moby
               VERSION: ${{ parameters.tag }}
+  - stage: Test
+    jobs:
+      - job: TestPackages
+        pool: $(amd64.pool)
+        steps:
+          - download: current
+            artifact: packages
+          - script: |
+              go test -p 1 -v --timeout 86400s --debug --input-dir="$(Pipeline.Workspace)/packages" .
+            displayName: Integration Test
   - stage: Sign
     condition: succeeded()
     jobs:
