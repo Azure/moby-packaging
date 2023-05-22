@@ -15,7 +15,7 @@ func NewQemuImg(ctx context.Context, client *dagger.Client) *dagger.Container {
 		ctr,
 		client.CacheVolume(targets.JammyAptCacheKey),
 		client.CacheVolume(targets.JammyAptLibCacheKey),
-		"qemu", "qemu-system", "qemu-utils", "openssh-client", "iptables", "linux-image-5.15.*-generic", "linux-modules-5.15.*-generic")
+		"qemu", "qemu-system", "qemu-utils", "openssh-client", "iptables", "linux-image-5.15.*-kvm", "linux-modules-5.15.*-kvm")
 }
 
 // QcowFromDir creates a qcow2 image from a dagger directory.
