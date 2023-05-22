@@ -43,8 +43,21 @@ parameters:
     displayName: revision
     type: string
     default: "1"
+  - name: dagger_image
+    displayName: dagger image
+    type: string
+    default: "upstreamk8sci.azurecr.io/dagger/engine@sha256:03cf3d20b486763bff103bcb844bdee7cfa6a5f9ee826cc76f00becc4d24c517"
+
+resources:
+  repositories:
+    - repository: repos
+      type: git
+      name: package-repos
+      ref: refs/heads/peter/moby-tini
 
 variables:
+  registry: upstreamk8sci
+  amd64.pool: staging-pool-amd64-mariner-2
   ${{ if contains(parameters.arch, 'arm') }}:
     build.pool: staging-pool-arm64-mariner-2
   ${{ else }}:
@@ -59,6 +72,35 @@ stages:
         steps:
           - bash: |
               set -x
+
+              az login --identity
+              az acr login -n ${REGISTRY}
+
+              ARCH=amd64
+              if grep -Eq '.*arm.*' <<<"${{ parameters.arch }}"; then
+                ARCH=arm64
+              fi
+
+              az storage blob download --account-name ${STORAGE_ACCOUNT_NAME} -c dagger -n ${ARCH}/dagger -f "$(Pipeline.Workspace)/dagger"
+              chmod +x "$(Pipeline.Workspace)/dagger"
+              export _EXPERIMENTAL_DAGGER_CLI_BIN="$(Pipeline.Workspace)/dagger"
+
+              docker run \
+                --rm \
+                --detach \
+                --privileged \
+                --name=azure.dagger.io \
+                -v dagger-engine.dev:/var/lib/dagger \
+                ${{ parameters.dagger_image }}
+            env:
+              STORAGE_ACCOUNT_NAME: moby
+              STORAGE_ACCOUNT_CONTAINER: moby
+              AZURE_STORAGE_ACCOUNT: moby
+              REGISTRY: $(registry)
+            displayName: Start Up Dagger Engine
+          - bash: |
+              set -x
+
               printf '
                 {
                   "arch": "${{ parameters.arch }}",
@@ -70,6 +112,20 @@ stages:
                   "revision": "${{ coalesce(parameters.revision, '1') }}"
                 }
               ' | go run . --build-spec=/dev/stdin --output="$(Pipeline.Workspace)/bundles"
+            env:
+              _EXPERIMENTAL_DAGGER_CLI_BIN: "$(Pipeline.Workspace)/dagger"
+              _EXPERIMENTAL_DAGGER_RUNNER_HOST: "docker-container://azure.dagger.io"
+            displayName: Build ${{ parameters.package_name }} Package for ${{ parameters.distro }} ${{ parameters.arch }}
+          - bash: "docker rm -f azure.dagger.io || true"
+            displayName: Clean Up Dagger Engine
+          - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
+            displayName: Generate SBOM
+            inputs:
+              BuildDropPath: $(Pipeline.Workspace)/bundles/${{ parameters.package_name }}/${{ parameters.distro }}
+          - task: PublishBuildArtifacts@1
+            inputs:
+              pathToPublish: "$(Pipeline.Workspace)/bundles"
+              artifactName: packages
           - script: |
               set -o xtrace
               : ${BLOB_PREFIX:=/}
@@ -82,13 +138,74 @@ stages:
                 --max-connections=10 --auth-mode=login \
                 --overwrite \
                 --source ${{ parameters.package_name }}/${{ parameters.distro }} \
-                --pattern "*" \
+                --pattern "${{ parameters.package_name }}*" \
                 --destination "${STORAGE_ACCOUNT_CONTAINER}" \
-                --destination-path "peter-test/${{ parameters.tag }}/${{ parameters.package_name }}/${{ parameters.distro }}"
+                --destination-path "${{ parameters.package_name }}/${{ parameters.tag }}/${{ parameters.distro }}"
+            displayName: Upload to blob store
             env:
               ARTIFACTS_DIR: "$(Pipeline.Workspace)/bundles"
               STORAGE_ACCOUNT_NAME: moby
               STORAGE_ACCOUNT_CONTAINER: moby
               AZURE_STORAGE_ACCOUNT: moby
               VERSION: ${{ parameters.tag }}
-            displayName: Upload to blob store
+          - script: |
+              go test --debug -p 1 -v --timeout 86400s .
+            displayName: Integration Test
+  - stage: Sign
+    condition: succeeded()
+    jobs:
+      - job: SignArtifacts
+        pool: $(build.pool)
+        workspace:
+          clean: all
+        steps:
+          - checkout: none
+          - download: current
+            artifact: packages
+          - task: UseDotNet@2
+            displayName: Install .NET Core SDK
+            inputs:
+              packageType: sdk
+              version: 2.2.207
+          - template: templates/sign.steps.${{ parameters.os }}.yml
+            parameters:
+              folderPath: $(Pipeline.Workspace)/packages
+              pattern: '**/**/*'
+          - task: PublishBuildArtifacts@1
+            inputs:
+              pathToPublish: "$(Pipeline.Workspace)/packages"
+              artifactName: packages
+  - stage: PublishPackagesTesting
+    jobs:
+      - deployment: TestingRepo
+        displayName: Testing repo
+        pool: $(amd64.pool)
+        environment: pmc
+        workspace:
+          clean: all
+        variables:
+          - group: pkg-repo-secrets
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: repos
+                  fetchDepth: 1
+                  path: repos
+                - download: current
+                  artifact: packages
+                - script: az login --identity
+                  displayName: Login to Azure
+                - script: az acr login -n $(registry)
+                  displayName: Login to ACR $(registry)
+                - script: make release
+                  displayName: Push Packages
+                  continueOnError: true
+                  env:
+                    PKG_PUSH_REPOS: testing
+                    REPO_PASS: $(packages-microsoft-com-moby)
+                    ARTIFACTS_DIR: $(Pipeline.Workspace)/packages
+                    REPOS_DIR: .
+                - script: make clean
+                  displayName: clean
+                  condition: always()
