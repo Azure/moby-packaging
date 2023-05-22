@@ -118,6 +118,9 @@ stages:
             displayName: Build ${{ parameters.package_name }} Package for ${{ parameters.distro }} ${{ parameters.arch }}
           - bash: "docker rm -f azure.dagger.io || true"
             displayName: Clean Up Dagger Engine
+          - script: |
+              go test -p 1 -v --timeout 86400s --debug --input-dir="$(Pipeline.Workspace)/bundles" .
+            displayName: Integration Test
           - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
             displayName: Generate SBOM
             inputs:
@@ -148,9 +151,6 @@ stages:
               STORAGE_ACCOUNT_CONTAINER: moby
               AZURE_STORAGE_ACCOUNT: moby
               VERSION: ${{ parameters.tag }}
-          - script: |
-              go test -p 1 -v --timeout 86400s . --debug --input-dir="$(Pipeline.Workspace)/bundles"
-            displayName: Integration Test
   - stage: Sign
     condition: succeeded()
     jobs:
