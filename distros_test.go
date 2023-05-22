@@ -179,8 +179,8 @@ func (Rhel9TestHelper) Image(ctx context.Context, t *testing.T, client *dagger.C
 		WithExec([]string{"bash", "-c", `
 			dnf install -y https://packages.microsoft.com/config/rhel/9.0/packages-microsoft-prod.rpm
 		`}).
-		WithFile("/etc/yum.repo.d/rhel-testing.repo", repo).
-		WithExec([]string{`bash`, `-c`, `sed -Ei '/^\[|name=/s#rhel/9/testing#rhel-9-testing#g' /etc/yum.repo.d/rhel-testing.repo`})
+		WithFile("/etc/yum.repos.d/rhel-testing.repo", repo).
+		WithExec([]string{`bash`, `-c`, `sed -Ei '/^\[|name=/s#rhel/9/testing#rhel-9-testing#g' /etc/yum.repos.d/rhel-testing.repo`})
 }
 
 func (Rhel9TestHelper) Installer(ctx context.Context, client *dagger.Client) *dagger.File {
@@ -204,8 +204,8 @@ func (Rhel8TestHelper) Image(ctx context.Context, t *testing.T, client *dagger.C
 		WithExec([]string{"bash", "-c", `
 			dnf install -y https://packages.microsoft.com/config/rhel/8/packages-microsoft-prod.rpm
 		`}).
-		WithFile("/etc/yum.repo.d/rhel-testing.repo", repo).
-		WithExec([]string{`bash`, `-c`, `sed -Ei '/^\[|name=/s#rhel/8.2/testing#rhel-8.2-testing#g' /etc/yum.repo.d/rhel-testing.repo`})
+		WithFile("/etc/yum.repos.d/rhel-testing.repo", repo).
+		WithExec([]string{`bash`, `-c`, `sed -Ei '/^\[|name=/s#rhel/8.2/testing#rhel-8.2-testing#g' /etc/yum.repos.d/rhel-testing.repo`})
 }
 
 func (Rhel8TestHelper) Installer(ctx context.Context, client *dagger.Client) *dagger.File {
