@@ -149,7 +149,7 @@ stages:
               AZURE_STORAGE_ACCOUNT: moby
               VERSION: ${{ parameters.tag }}
           - script: |
-              go test --debug -p 1 -v --timeout 86400s .
+              go test -p 1 -v --timeout 86400s . --debug --input-dir="$(Pipeline.Workspace)/bundles"
             displayName: Integration Test
   - stage: Sign
     condition: succeeded()
