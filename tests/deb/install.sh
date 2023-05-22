@@ -35,6 +35,9 @@ prepare_local_apt() {
     done
 
     echo "deb [trusted=yes arch=amd64,armhf,arm64] http://localhost:8080/ moby-local-testing main" >/etc/apt/sources.list.d/local.list
+    echo 'deb [trusted=yes arch=amd64,armhf,arm64] https://packages.microsoft.com/ubuntu/18.04/prod testing main' > /etc/apt/sources.list.d/testing.list
+
+    curl -sSl https://packages.microsoft.com/keys/microsoft.asc | tee /etc/apt/trusted.gpg.d/microsoft.asc
 }
 
 install() {
