@@ -4,6 +4,7 @@ import (
 	"context"
 	_ "embed"
 	"encoding/json"
+	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -39,6 +40,11 @@ var distros = map[string]DistroTestHelper{
 	rhel9:    Rhel9TestHelper{},
 	rhel8:    Rhel8TestHelper{},
 	mariner2: Mariner2TestHelper{},
+}
+
+var toRhelArch = map[string]string{
+	"arm64": "aarch64",
+	"amd64": "x86_64",
 }
 
 var (
@@ -236,6 +242,13 @@ func (Mariner2TestHelper) Image(ctx context.Context, t *testing.T, client *dagge
 	if !ok {
 		t.Fatalf("failed to get arch from platform: %s", p)
 	}
+
+	marinerArch := toRhelArch[arch]
+	url := fmt.Sprintf("https://moby.blob.core.windows.net/moby/moby-tini/0.19.0/mariner2/moby-tini-0.19.0-1.cm2.%s.rpm", marinerArch)
+	tiniFilename := filepath.Base(url)
+	tini := clientPkg.HTTP(url)
+
+	c = c.WithFile("/var/pkg/"+tiniFilename, tini, dagger.ContainerWithFileOpts{Permissions: 0640})
 
 	// Mariner provides most of our packages but does not currently provide compose, so pull this in ourselves.
 	// TODO: The artifacts API here has a bug where we can't just use the `mariner2/moby-compose/latest/<arch>` endpoint (it gives the wrong package!).
