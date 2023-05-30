@@ -29,6 +29,9 @@ var (
 		"rhel9": {
 			"libcgroup": nothing,
 		},
+		"mariner2": {
+			"container-selinux": nothing,
+		},
 	}
 )
 
