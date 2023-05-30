@@ -228,7 +228,7 @@ func (Mariner2TestHelper) Image(ctx context.Context, t *testing.T, client *dagge
 	c := client.Container().From(targets.Mariner2Ref).
 		WithExec([]string{
 			"tdnf", "install", "-y",
-			"createrepo_c", "systemd", "strace", "openssh-server", "openssh-clients", "udev", "iptables", "dnf-command(config-manager)", "dnf-utils", "util-linux", "jq",
+			"ca-certificates", "createrepo_c", "systemd", "strace", "openssh-server", "openssh-clients", "udev", "iptables", "dnf-command(config-manager)", "dnf-utils", "util-linux", "jq",
 		}).
 		WithExec([]string{"systemctl", "enable", "sshd"}).
 		WithExec([]string{"sed", "-i", "s/PermitRootLogin no/PermitRootLogin yes/", "/etc/ssh/sshd_config"})
