@@ -147,7 +147,7 @@ stages:
   - stage: TestAndSBOM
     jobs:
       - job: TestPackages
-        pool: $(amd64.pool)
+        pool: $(build.pool)
         steps:
           - download: current
             artifact: packages
