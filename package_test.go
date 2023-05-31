@@ -219,7 +219,7 @@ func TestPackages(t *testing.T) {
 				// Set the tag to a very large number so that we can ensure thist
 				// is the one that the package manager will install instead of
 				// the one from the distro repos.
-				pkg.Tag = "99.99.99+azure"
+				// pkg.Tag = "99.99.99+azure"
 
 				if _, err := os.Stat(filepath.Join(flInputDir, pkg.Pkg, pkg.Distro)); err != nil {
 					continue
