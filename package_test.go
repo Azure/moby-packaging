@@ -56,6 +56,15 @@ func testPackage(ctx context.Context, t *testing.T, client *dagger.Client, spec 
 	batsCore, batsHelpers := makeBats(client)
 
 	qemu := testutil.NewQemuImg(ctx, client.Pipeline("Qemu"))
+	p, err := client.DefaultPlatform(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, arch, ok := strings.Cut(string(p), "/")
+	if !ok {
+		t.Fatalf("failed to get default platform: %s", p)
+	}
 
 	c := helper.Image(ctx, t, client.Pipeline("Setup "+spec.Distro+"/"+spec.Arch))
 
@@ -112,6 +121,7 @@ func testPackage(ctx context.Context, t *testing.T, client *dagger.Client, spec 
 		WithNewFile("/usr/local/bin/docker-entrypoint.sh", dagger.ContainerWithNewFileOpts{Contents: entrypointCmd, Permissions: 0744}).
 		WithExec([]string{"/bin/sh", "-c", "chown -R 65534:65534 /tmp/sockets"}).
 		WithEnvVariable("DEBUG", strconv.FormatBool(flDebug)).
+		WithEnvVariable("ARCH", arch).
 		WithExposedPort(22, dagger.ContainerWithExposedPortOpts{Protocol: dagger.Tcp, Description: "VM ssh"}).
 		WithExec([]string{"docker-entrypoint.sh"}, dagger.ContainerWithExecOpts{
 			InsecureRootCapabilities: true,

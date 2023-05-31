@@ -12,4 +12,9 @@ if [ "${DEBUG}" = "true" ]; then
     debug="--debug"
 fi
 
-exec /usr/local/bin/docker-entrypoint --vm-port-forward=22 --uid=65534 --gid=65534 ${debug}
+no_micro=""
+if [[ "${ARCH}" =~ .*arm.* ]]; then
+    no_micro="--no-micro"
+fi
+
+exec /usr/local/bin/docker-entrypoint --vm-port-forward=22 --uid=65534 --gid=65534 ${debug} ${no_micro}
