@@ -51,6 +51,7 @@ prepare_local_apt() {
 }
 
 install() {
+    set -x
     apt-get update
     apt-get install -y \
         moby-engine="${TEST_ENGINE_PACKAGE_VERSION}*" \
@@ -59,6 +60,7 @@ install() {
         moby-runc="${TEST_RUNC_PACKAGE_VERSION}*" \
         moby-buildx="${TEST_BUILDX_PACKAGE_VERSION}*" \
         moby-compose="${TEST_COMPOSE_PACKAGE_VERSION}*"
+    set +x
 }
 
 init() {
