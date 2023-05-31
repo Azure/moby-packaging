@@ -14,6 +14,17 @@ export DEBIAN_FRONTEND
 
 DEFAULT_REPO_DIR=/var/pkg
 
+install_moby_tini() {
+    echo 'deb [trusted=yes arch=amd64,armhf,arm64] https://packages.microsoft.com/ubuntu/18.04/prod testing main' > /etc/apt/sources.list.d/testing.list
+    curl -sSl https://packages.microsoft.com/keys/microsoft.asc | tee /etc/apt/trusted.gpg.d/microsoft.asc
+
+    apt-get update
+    apt-get -y install moby-tini
+
+    rm -rf /etc/apt/sources.list.d/testing.list
+    apt-get update
+}
+
 prepare_local_apt() {
     dir="${DEFAULT_REPO_DIR}"
     if [ -n "${1}" ]; then
@@ -35,9 +46,8 @@ prepare_local_apt() {
     done
 
     echo "deb [trusted=yes arch=amd64,armhf,arm64] http://localhost:8080/ moby-local-testing main" >/etc/apt/sources.list.d/local.list
-    echo 'deb [trusted=yes arch=amd64,armhf,arm64] https://packages.microsoft.com/ubuntu/18.04/prod testing main' > /etc/apt/sources.list.d/testing.list
 
-    curl -sSl https://packages.microsoft.com/keys/microsoft.asc | tee /etc/apt/trusted.gpg.d/microsoft.asc
+    install_moby_tini
 }
 
 install() {
