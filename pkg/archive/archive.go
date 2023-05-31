@@ -36,6 +36,7 @@ type InstallScript struct {
 
 type Archive struct {
 	Name    string
+	Distro  string
 	Webpage string
 	Files   []File
 	Systemd []Systemd

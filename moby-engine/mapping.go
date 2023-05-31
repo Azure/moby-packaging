@@ -25,8 +25,7 @@ var (
 	//go:embed postinstall/deb/postrm
 	debPostRm string
 
-	Mapping2 = []archive.File{}
-	Archive  = archive.Archive{
+	Archive = archive.Archive{
 		Name:    "moby-engine",
 		Webpage: "https://github.com/moby/moby",
 		Files: []archive.File{
@@ -43,103 +42,135 @@ var (
 		Systemd: []archive.Systemd{
 			{Source: "/build/systemd/docker.service", Dest: "/lib/systemd/system/docker.service"},
 		},
-		Postinst:    []string{"/build/debian/moby-engine.postinst"},
 		Binaries:    []string{"/build/bundles/dynbinary-daemon/dockerd", "/build/src/libnetwork/docker-proxy"},
 		WinBinaries: []string{"/build/src/bundles/binary-daemon/dockerd.exe"},
-		RuntimeDeps: map[archive.PkgKind][]string{
-			archive.PkgKindRPM: {
-				"/bin/sh",
-				"container-selinux >= 2:2.95",
-				"device-mapper-libs >= 1.02.90-1",
-				"iptables",
-				"libcgroup",
-				"moby-containerd >= 1.3.9",
-				"moby-runc >= 1.0.2",
-				"systemd-units",
-				"tar",
-				"xz",
-			},
-			archive.PkgKindDeb: {"moby-containerd (>= 1.4.3)", "moby-runc (>= 1.0.2)", "moby-tini (>= 0.19.0)"},
+		Description: `Docker container platform (engine package)
+  Moby is an open-source project created by Docker to enable and accelerate software containerization.`,
+	}
+
+	DebArchive = archive.Archive{
+		Name:     Archive.Name,
+		Webpage:  Archive.Webpage,
+		Files:    Archive.Files,
+		Systemd:  Archive.Systemd,
+		Binaries: Archive.Binaries,
+		RuntimeDeps: []string{
+			"moby-containerd (>= 1.4.3)", "moby-runc (>= 1.0.2)", "moby-init (>= 0.19.0)",
 		},
-		Recommends: archive.PkgKindMap{
-			archive.PkgKindDeb: {
-				"apparmor",
-				"ca-certificates",
-				"iptables",
-				"kmod",
-				"moby-cli",
-				"pigz",
-				"xz-utils",
-			},
+		Recommends: []string{
+			"apparmor",
+			"ca-certificates",
+			"iptables",
+			"kmod",
+			"moby-cli",
+			"pigz",
+			"xz-utils",
 		},
-		Suggests: archive.PkgKindMap{
-			archive.PkgKindDeb: {
-				"aufs-tools",
-				"cgroupfs-mount | cgroup-lite",
-				"git",
-			},
+		Suggests: []string{
+			"aufs-tools",
+			"cgroupfs-mount | cgroup-lite",
+			"git",
 		},
-		Conflicts: archive.PkgKindMap{
-			archive.PkgKindDeb: {
-				"docker",
-				"docker-ce",
-				"docker-ee",
-				"docker-engine",
-				"docker-engine-cs",
-				"docker.io",
-				"lxc-docker",
-				"lxc-docker-virtual-package",
-			},
-			archive.PkgKindRPM: {
-				"docker",
-				"docker-io",
-				"docker-engine-cs",
-				"docker-ee",
-			},
+		Conflicts: []string{
+			"docker",
+			"docker-ce",
+			"docker-ee",
+			"docker-engine",
+			"docker-engine-cs",
+			"docker.io",
+			"lxc-docker",
+			"lxc-docker-virtual-package",
 		},
-		Replaces: archive.PkgKindMap{
-			archive.PkgKindDeb: {
-				"docker",
-				"docker-ce",
-				"docker-ee",
-				"docker-engine",
-				"docker-engine-cs",
-				"docker.io",
-				"lxc-docker",
-				"lxc-docker-virtual-package",
-			},
+		Replaces: []string{
+			"docker",
+			"docker-ce",
+			"docker-ee",
+			"docker-engine",
+			"docker-engine-cs",
+			"docker.io",
+			"lxc-docker",
+			"lxc-docker-virtual-package",
 		},
-		InstallScripts: archive.PkgInstallMap{
-			archive.PkgKindRPM: {
-				{
-					When:   archive.PkgActionPostInstall,
-					Script: rpmPostInstall,
-				},
-				{
-					When:   archive.PkgActionPreRemoval,
-					Script: rpmPreRm,
-				},
-				{
-					When:   archive.PkgActionUpgrade,
-					Script: rpmUpgrade,
-				},
+		InstallScripts: []archive.InstallScript{
+			{
+				When:   archive.PkgActionPostInstall,
+				Script: debPostInstall,
 			},
-			archive.PkgKindDeb: {
-				{
-					When:   archive.PkgActionPostInstall,
-					Script: debPostInstall,
-				},
-				{
-					When:   archive.PkgActionPreRemoval,
-					Script: debPreRm,
-				},
-				{
-					When:   archive.PkgActionPostRemoval,
-					Script: debPostRm,
-				},
+			{
+				When:   archive.PkgActionPreRemoval,
+				Script: debPreRm,
+			},
+			{
+				When:   archive.PkgActionPostRemoval,
+				Script: debPostRm,
 			},
 		},
 		Description: `Docker container platform (engine package)
   Moby is an open-source project created by Docker to enable and accelerate software containerization.`,
 	}
+
+	RPMArchive = archive.Archive{
+		Name:     Archive.Name,
+		Webpage:  Archive.Webpage,
+		Files:    Archive.Files,
+		Systemd:  Archive.Systemd,
+		Binaries: Archive.Binaries,
+		RuntimeDeps: []string{
+			"/bin/sh",
+			"container-selinux >= 2:2.95",
+			"device-mapper-libs >= 1.02.90-1",
+			"iptables",
+			"libcgroup",
+			"moby-containerd >= 1.3.9",
+			"moby-runc >= 1.0.2",
+			"systemd-units",
+			"tar",
+			"xz",
+		},
+		Recommends: []string{},
+		Suggests:   []string{},
+		Conflicts: []string{
+			"docker",
+			"docker-io",
+			"docker-engine-cs",
+			"docker-ee",
+		},
+		Replaces: []string{},
+		InstallScripts: []archive.InstallScript{
+			{
+				When:   archive.PkgActionPostInstall,
+				Script: rpmPostInstall,
+			},
+			{
+				When:   archive.PkgActionPreRemoval,
+				Script: rpmPreRm,
+			},
+			{
+				When:   archive.PkgActionUpgrade,
+				Script: rpmUpgrade,
+			},
+		},
+		Description: `Docker container platform (engine package)
+  Moby is an open-source project created by Docker to enable and accelerate software containerization.`,
+	}
+
+	MarinerArchive = NewMarinerArchive()
 )
+
+func NewMarinerArchive() archive.Archive {
+	ret := RPMArchive
+
+	ret.RuntimeDeps = []string{
+		"/bin/sh",
+		"device-mapper-libs >= 1.02.90-1",
+		"iptables",
+		"libcgroup",
+		"moby-containerd >= 1.3.9",
+		"moby-runc >= 1.0.2",
+		"systemd-units",
+		"tar",
+		"xz",
+	}
+
+	return ret
+}
