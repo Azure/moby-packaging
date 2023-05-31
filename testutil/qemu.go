@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"context"
+	"strings"
 
 	"dagger.io/dagger"
 	"github.com/Azure/moby-packaging/pkg/apt"
@@ -10,6 +11,24 @@ import (
 
 func NewQemuImg(ctx context.Context, client *dagger.Client) *dagger.Container {
 	ctr := client.Container().From(targets.JammyRef)
+
+	platform, err := client.DefaultPlatform(ctx)
+	if err != nil {
+		panic("Can't get platform")
+	}
+
+	_, arch, ok := strings.Cut(string(platform), "/")
+	if !ok {
+		panic("Platform format is wrong: " + platform)
+	}
+
+	if strings.Contains(arch, "arm") {
+		return apt.Install(
+			ctr,
+			client.CacheVolume(targets.JammyAptCacheKey),
+			client.CacheVolume(targets.JammyAptLibCacheKey),
+			"qemu", "qemu-system", "qemu-utils", "qemu-kvm", "openssh-client", "iptables", "linux-image-5.15.*-generic", "linux-modules-5.15.*-generic")
+	}
 
 	return apt.Install(
 		ctr,
