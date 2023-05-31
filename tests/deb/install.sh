@@ -22,7 +22,6 @@ install_moby_tini() {
     apt-get -y install moby-tini
 
     rm -rf /etc/apt/sources.list.d/testing.list
-    apt-get update
 }
 
 prepare_local_apt() {
@@ -48,6 +47,7 @@ prepare_local_apt() {
     echo "deb [trusted=yes arch=amd64,armhf,arm64] http://localhost:8080/ moby-local-testing main" >/etc/apt/sources.list.d/local.list
 
     install_moby_tini
+    apt-get update
 }
 
 get_version_suffix() {
@@ -58,6 +58,7 @@ get_version_suffix() {
 }
 
 install() {
+    set -x
     apt-get update
     apt-get install -y \
         moby-engine"$(get_version_suffix "$TEST_ENGINE_PACKAGE_VERSION")" \
@@ -66,6 +67,7 @@ install() {
         moby-runc"$(get_version_suffix "$TEST_RUNC_PACKAGE_VERSION")" \
         moby-buildx"$(get_version_suffix "$TEST_BUILDX_PACKAGE_VERSION")" \
         moby-compose"$(get_version_suffix "$TEST_COMPOSE_PACKAGE_VERSION")"
+    set +x
 }
 
 init() {
