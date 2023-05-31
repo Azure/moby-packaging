@@ -44,13 +44,13 @@ type Archive struct {
 	// required for debian dependency resolution
 	Binaries       []string
 	WinBinaries    []string
-	Recommends     PkgKindMap
-	Suggests       PkgKindMap
-	Conflicts      PkgKindMap
-	Replaces       PkgKindMap
-	Provides       PkgKindMap
-	BuildDeps      PkgKindMap
-	RuntimeDeps    PkgKindMap
-	InstallScripts PkgInstallMap
+	Recommends     []string
+	Suggests       []string
+	Conflicts      []string
+	Replaces       []string
+	Provides       []string
+	BuildDeps      []string
+	RuntimeDeps    []string
+	InstallScripts []InstallScript
 	Description    string
 }
