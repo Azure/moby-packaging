@@ -3,6 +3,7 @@ package mobyinit
 import "github.com/Azure/moby-packaging/pkg/archive"
 
 var (
+<<<<<<< HEAD:moby-tini/mapping.go
 	Mapping2 = []archive.File{
 		{
 			Source: "/build/src/build/tini-static",
@@ -19,8 +20,8 @@ var (
 		},
 	}
 
-	Archive = archive.Archive{
-		Name:    "moby-tini",
+	BaseArchive = archive.Archive{
+		Name:    "moby-init",
 		Webpage: "https://github.com/krallin/tini",
 		Files: []archive.File{
 			{
@@ -40,16 +41,6 @@ var (
 		Binaries: []string{
 			"/build/src/build/tini-static",
 		},
-		Conflicts: archive.PkgKindMap{
-			archive.PkgKindDeb: {
-				"tini",
-			},
-		},
-		Replaces: archive.PkgKindMap{
-			archive.PkgKindDeb: {
-				"tini",
-			},
-		},
 		Description: `tiny but valid init for containers
  Tini is the simplest init you could think of.
  .
@@ -58,5 +49,31 @@ var (
  performing signal forwarding.`,
 	}
 
-	Dirs = []string{}
+	DebArchive = archive.Archive{
+		Name:    BaseArchive.Name,
+		Webpage: BaseArchive.Webpage,
+		Files:   BaseArchive.Files,
+		Binaries: []string{
+			"/build/src/build/tini-static",
+		},
+		Conflicts: []string{
+			"tini",
+		},
+		Replaces: []string{
+			"tini",
+		},
+		Description: BaseArchive.Description,
+	}
+
+	RPMArchive = archive.Archive{
+		Name:    BaseArchive.Name,
+		Webpage: BaseArchive.Webpage,
+		Files:   BaseArchive.Files,
+		Binaries: []string{
+			"/build/src/build/tini-static",
+		},
+		Description: BaseArchive.Description,
+	}
+
+	MarinerArchive = RPMArchive
 )
