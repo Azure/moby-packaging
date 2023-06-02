@@ -197,19 +197,23 @@ type Packager interface {
 	Package(*dagger.Client, *dagger.Container, *archive.Spec) *dagger.Directory
 }
 
-func (t *Target) Packager(projectName string) Packager {
-	mappings := map[string]archive.Archive{
-		"moby-engine":                  engine.Archive,
-		"moby-cli":                     cli.Archive,
-		"moby-containerd":              containerd.Archive,
-		"moby-containerd-shim-systemd": shim.Archive,
-		"moby-runc":                    runc.Archive,
-		"moby-compose":                 compose.Archive,
-		"moby-buildx":                  buildx.Archive,
-		"moby-init":                    mobyinit.Archive,
+func (t *Target) Packager(projectName, distro string) Packager {
+	mappings := map[string]map[string]archive.Archive{
+		"moby-engine":                  engine.Archives,
+		"moby-cli":                     cli.Archives,
+		"moby-containerd":              containerd.Archives,
+		"moby-containerd-shim-systemd": shim.Archives,
+		"moby-runc":                    runc.Archives,
+		"moby-compose":                 compose.Archives,
+		"moby-buildx":                  buildx.Archives,
+		"moby-init":                    mobyinit.Archives,
 	}
 
-	a := mappings[projectName]
+	as := mappings[projectName]
+	a, ok := as[distro]
+	if !ok {
+		panic("unknown distro: " + distro)
+	}
 
 	switch t.PkgKind() {
 	case "deb":
@@ -263,7 +267,7 @@ func (t *Target) Make(project *archive.Spec) *dagger.Directory {
 
 	//return build.Directory("/out")
 
-	packager := t.Packager(project.Pkg)
+	packager := t.Packager(project.Pkg, project.Distro)
 	return packager.Package(t.client, build, project)
 }
 

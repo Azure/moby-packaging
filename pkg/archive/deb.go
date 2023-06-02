@@ -10,8 +10,8 @@ import (
 	"dagger.io/dagger"
 )
 
-func join(pkgKind PkgKind, m PkgKindMap) string {
-	return strings.Join(m[pkgKind], ", ")
+func join(a []string) string {
+	return strings.Join(a, ", ")
 }
 
 const ControlTemplate = `
@@ -126,8 +126,8 @@ func (d *DebPackager) moveStaticFiles(c *dagger.Container, rootdir string) *dagg
 func (d *DebPackager) withInstallScripts(c *dagger.Container) (*dagger.Container, []string) {
 	newArgs := []string{}
 
-	for i := range d.a.InstallScripts[PkgKindDeb] {
-		script := d.a.InstallScripts[PkgKindDeb][i]
+	for i := range d.a.InstallScripts {
+		script := d.a.InstallScripts[i]
 		var a []string
 		c, a = d.installScript(&script, c)
 		newArgs = append(newArgs, a...)
