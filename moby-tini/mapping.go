@@ -3,21 +3,17 @@ package mobyinit
 import "github.com/Azure/moby-packaging/pkg/archive"
 
 var (
-<<<<<<< HEAD:moby-tini/mapping.go
-	Mapping2 = []archive.File{
-		{
-			Source: "/build/src/build/tini-static",
-			Dest:   "usr/bin/docker-init",
-		},
-		{
-			Source: "/build/legal/LICENSE",
-			Dest:   "/usr/share/doc/moby-tini/LICENSE",
-		},
-		{
-			Source:   "/build/legal/NOTICE",
-			Dest:     "/usr/share/doc/moby-tini/NOTICE.gz",
-			Compress: true,
-		},
+	Archives = map[string]archive.Archive{
+		"buster":   DebArchive,
+		"bullseye": DebArchive,
+		"bionic":   DebArchive,
+		"focal":    DebArchive,
+		"centos7":  RPMArchive,
+		"rhel8":    RPMArchive,
+		"rhel9":    RPMArchive,
+		"windows":  BaseArchive,
+		"jammy":    DebArchive,
+		"mariner2": MarinerArchive,
 	}
 
 	BaseArchive = archive.Archive{
