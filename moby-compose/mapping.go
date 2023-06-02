@@ -3,26 +3,19 @@ package compose
 import "github.com/Azure/moby-packaging/pkg/archive"
 
 var (
-	Mapping = map[string]string{
-		"src/bin/docker-compose": "/usr/libexec/docker/cli-plugins/docker-compose",
-	}
-	Mapping2 = []archive.File{
-		{
-			Source: "/build/src/bin/docker-compose",
-			Dest:   "/usr/libexec/docker/cli-plugins/docker-compose",
-		},
-		{
-			Source: "/build/legal/LICENSE",
-			Dest:   "/usr/share/doc/moby-compose/LICENSE",
-		},
-		{
-			Source:   "/build/legal/NOTICE",
-			Dest:     "/usr/share/doc/moby-compose/NOTICE.gz",
-			Compress: true,
-		},
+	Archives = map[string]archive.Archive{
+		"buster":   DebArchive,
+		"bullseye": DebArchive,
+		"bionic":   DebArchive,
+		"focal":    DebArchive,
+		"centos7":  RPMArchive,
+		"rhel8":    RPMArchive,
+		"windows":  BaseArchive,
+		"jammy":    DebArchive,
+		"mariner2": MarinerArchive,
 	}
 
-	Archive = archive.Archive{
+	BaseArchive = archive.Archive{
 		Name:    "moby-compose",
 		Webpage: "https://github.com/docker/compose-cli",
 		Files: []archive.File{
@@ -40,41 +33,73 @@ var (
 				Compress: true,
 			},
 		},
-		Systemd:  []archive.Systemd{},
-		Postinst: []string{},
+		Description: `A Docker CLI plugin which allows you to run Docker Compose applications from the Docker CLI.`,
+	}
+
+	DebArchive = archive.Archive{
+		Name:        BaseArchive.Name,
+		Webpage:     BaseArchive.Webpage,
+		Files:       BaseArchive.Files,
+		Description: BaseArchive.Description,
 		Binaries: []string{
 			"/build/src/bin/docker-compose",
 		},
-		RuntimeDeps: map[archive.PkgKind][]string{
-			archive.PkgKindRPM: {
-				"/bin/sh",
-				"container-selinux >= 2:2.95",
-				"device-mapper-libs >= 1.02.90-1",
-				"iptables",
-				"libcgroup",
-				"moby-cli",
-				"moby-containerd >= 1.3.9",
-				"moby-runc >= 1.0.2",
-				"systemd-units",
-				"tar",
-				"xz",
-			},
-			archive.PkgKindDeb: {
-				"moby-cli",
-			},
+		RuntimeDeps: []string{
+			"moby-cli",
 		},
-		Conflicts: archive.PkgKindMap{
-			archive.PkgKindDeb: {
-				"docker-ce",
-				"docker-ee",
-				"docker-ce-cli",
-				"docker-ee-cli",
-			},
-			archive.PkgKindRPM: {
-				"docker-ce",
-				"docker-ee",
-			},
+		Conflicts: []string{
+			"docker-ce",
+			"docker-ee",
+			"docker-ce-cli",
+			"docker-ee-cli",
 		},
-		Description: `A Docker CLI plugin which allows you to run Docker Compose applications from the Docker CLI.`,
+	}
+
+	RPMArchive = archive.Archive{
+		Name:    BaseArchive.Name,
+		Webpage: BaseArchive.Webpage,
+		Files:   BaseArchive.Files,
+		Binaries: []string{
+			"/build/src/bin/docker-compose",
+		},
+		RuntimeDeps: []string{
+			"/bin/sh",
+			"container-selinux >= 2:2.95",
+			"device-mapper-libs >= 1.02.90-1",
+			"iptables",
+			"libcgroup",
+			"moby-cli",
+			"moby-containerd >= 1.3.9",
+			"moby-runc >= 1.0.2",
+			"systemd-units",
+			"tar",
+			"xz",
+		},
+		Conflicts: []string{
+			"docker-ce",
+			"docker-ee",
+		},
+		Description: BaseArchive.Description,
+	}
+
+	MarinerArchive = archive.Archive{
+		Name:     RPMArchive.Name,
+		Webpage:  RPMArchive.Webpage,
+		Files:    RPMArchive.Files,
+		Binaries: RPMArchive.Binaries,
+		RuntimeDeps: []string{
+			"/bin/sh",
+			"device-mapper-libs >= 1.02.90-1",
+			"iptables",
+			"libcgroup",
+			"moby-cli",
+			"moby-containerd >= 1.3.9",
+			"moby-runc >= 1.0.2",
+			"systemd-units",
+			"tar",
+			"xz",
+		},
+		Conflicts:   RPMArchive.Conflicts,
+		Description: RPMArchive.Description,
 	}
 )
