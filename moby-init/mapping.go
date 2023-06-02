@@ -10,6 +10,7 @@ var (
 		"focal":    DebArchive,
 		"centos7":  RPMArchive,
 		"rhel8":    RPMArchive,
+		"rhel9":    RPMArchive,
 		"windows":  BaseArchive,
 		"jammy":    DebArchive,
 		"mariner2": MarinerArchive,
