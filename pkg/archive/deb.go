@@ -10,8 +10,8 @@ import (
 	"dagger.io/dagger"
 )
 
-func join(pkgKind PkgKind, m PkgKindMap) string {
-	return strings.Join(m[pkgKind], ", ")
+func join(a []string) string {
+	return strings.Join(a, ", ")
 }
 
 const ControlTemplate = `
@@ -22,17 +22,17 @@ Maintainer: Microsoft <support@microsoft.com>
 Build-Depends: bash-completion,
                go-md2man <!cross>,
                go-md2man:amd64 <cross>,
-               pkg-config, {{ join "deb" .BuildDeps }}
+               pkg-config, {{ join .BuildDeps }}
 Rules-Requires-Root: no
 Homepage: {{ .Webpage }}
 
 Package: {{ .Name }}
 Architecture: linux-any
-Depends: ${misc:Depends}, ${shlibs:Depends}, {{ join "deb" .RuntimeDeps }}
-Recommends: {{ join "deb" .Recommends }}
-Conflicts: {{ join "deb" .Conflicts }}
-Replaces: {{ join "deb" .Replaces }}
-Provides: {{ join "deb" .Provides }}
+Depends: ${misc:Depends}, ${shlibs:Depends}, {{ join .RuntimeDeps }}
+Recommends: {{ join .Recommends }}
+Conflicts: {{ join .Conflicts }}
+Replaces: {{ join .Replaces }}
+Provides: {{ join .Provides }}
 Description: {{ .Description }}
 `
 
@@ -126,8 +126,8 @@ func (d *DebPackager) moveStaticFiles(c *dagger.Container, rootdir string) *dagg
 func (d *DebPackager) withInstallScripts(c *dagger.Container) (*dagger.Container, []string) {
 	newArgs := []string{}
 
-	for i := range d.a.InstallScripts[PkgKindDeb] {
-		script := d.a.InstallScripts[PkgKindDeb][i]
+	for i := range d.a.InstallScripts {
+		script := d.a.InstallScripts[i]
 		var a []string
 		c, a = d.installScript(&script, c)
 		newArgs = append(newArgs, a...)
