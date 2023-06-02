@@ -22,17 +22,17 @@ Maintainer: Microsoft <support@microsoft.com>
 Build-Depends: bash-completion,
                go-md2man <!cross>,
                go-md2man:amd64 <cross>,
-               pkg-config, {{ join "deb" .BuildDeps }}
+               pkg-config, {{ join .BuildDeps }}
 Rules-Requires-Root: no
 Homepage: {{ .Webpage }}
 
 Package: {{ .Name }}
 Architecture: linux-any
-Depends: ${misc:Depends}, ${shlibs:Depends}, {{ join "deb" .RuntimeDeps }}
-Recommends: {{ join "deb" .Recommends }}
-Conflicts: {{ join "deb" .Conflicts }}
-Replaces: {{ join "deb" .Replaces }}
-Provides: {{ join "deb" .Provides }}
+Depends: ${misc:Depends}, ${shlibs:Depends}, {{ join .RuntimeDeps }}
+Recommends: {{ join .Recommends }}
+Conflicts: {{ join .Conflicts }}
+Replaces: {{ join .Replaces }}
+Provides: {{ join .Provides }}
 Description: {{ .Description }}
 `
 

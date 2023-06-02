@@ -22,14 +22,21 @@ prepare_local_yum() {
     dnf config-manager --add-repo "file://${dir}"
 }
 
+get_version_suffix() {
+    var="$1"
+    if [ -n "${var}" ]; then
+        echo "-${var}*"
+    fi
+}
+
 install() {
     yum install -y --nogpgcheck \
-        moby-engine-"${TEST_ENGINE_PACKAGE_VERSION}*" \
-        moby-cli-"${TEST_CLI_PACKAGE_VERSION}*" \
-        moby-containerd-"${TEST_CONTAINERD_PACKAGE_VERSION}*" \
-        moby-runc-"${TEST_RUNC_PACKAGE_VERSION}*" \
-        moby-buildx-"${TEST_BUILDX_PACKAGE_VERSION}*" \
-        moby-compose-"${TEST_COMPOSE_PACKAGE_VERSION}*"
+        moby-engine"$(get_version_suffix "$TEST_ENGINE_PACKAGE_VERSION")" \
+        moby-cli"$(get_version_suffix "$TEST_CLI_PACKAGE_VERSION")" \
+        moby-containerd"$(get_version_suffix "$TEST_CONTAINERD_PACKAGE_VERSION")" \
+        moby-runc"$(get_version_suffix "$TEST_RUNC_PACKAGE_VERSION")" \
+        moby-buildx"$(get_version_suffix "$TEST_BUILDX_PACKAGE_VERSION")" \
+        moby-compose"$(get_version_suffix "$TEST_COMPOSE_PACKAGE_VERSION")"
 }
 
 init() {
