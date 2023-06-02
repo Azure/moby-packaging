@@ -25,7 +25,19 @@ var (
 	//go:embed postinstall/deb/postrm
 	debPostRm string
 
-	Archive = archive.Archive{
+	Archives = map[string]archive.Archive{
+		"buster":   DebArchive,
+		"bullseye": DebArchive,
+		"bionic":   DebArchive,
+		"focal":    DebArchive,
+		"centos7":  RPMArchive,
+		"rhel8":    RPMArchive,
+		"windows":  BaseArchive,
+		"jammy":    DebArchive,
+		"mariner2": MarinerArchive,
+	}
+
+	BaseArchive = archive.Archive{
 		Name:    "moby-engine",
 		Webpage: "https://github.com/moby/moby",
 		Files: []archive.File{
@@ -49,11 +61,11 @@ var (
 	}
 
 	DebArchive = archive.Archive{
-		Name:     Archive.Name,
-		Webpage:  Archive.Webpage,
-		Files:    Archive.Files,
-		Systemd:  Archive.Systemd,
-		Binaries: Archive.Binaries,
+		Name:     BaseArchive.Name,
+		Webpage:  BaseArchive.Webpage,
+		Files:    BaseArchive.Files,
+		Systemd:  BaseArchive.Systemd,
+		Binaries: BaseArchive.Binaries,
 		RuntimeDeps: []string{
 			"moby-containerd (>= 1.4.3)", "moby-runc (>= 1.0.2)", "moby-init (>= 0.19.0)",
 		},
@@ -110,11 +122,11 @@ var (
 	}
 
 	RPMArchive = archive.Archive{
-		Name:     Archive.Name,
-		Webpage:  Archive.Webpage,
-		Files:    Archive.Files,
-		Systemd:  Archive.Systemd,
-		Binaries: Archive.Binaries,
+		Name:     BaseArchive.Name,
+		Webpage:  BaseArchive.Webpage,
+		Files:    BaseArchive.Files,
+		Systemd:  BaseArchive.Systemd,
+		Binaries: BaseArchive.Binaries,
 		RuntimeDeps: []string{
 			"/bin/sh",
 			"container-selinux >= 2:2.95",
@@ -154,23 +166,21 @@ var (
   Moby is an open-source project created by Docker to enable and accelerate software containerization.`,
 	}
 
-	MarinerArchive = NewMarinerArchive()
+	MarinerArchive = func() archive.Archive {
+		m := RPMArchive
+
+		m.RuntimeDeps = []string{
+			"/bin/sh",
+			"device-mapper-libs >= 1.02.90-1",
+			"iptables",
+			"libcgroup",
+			"moby-containerd >= 1.3.9",
+			"moby-runc >= 1.0.2",
+			"systemd-units",
+			"tar",
+			"xz",
+		}
+
+		return m
+	}()
 )
-
-func NewMarinerArchive() archive.Archive {
-	ret := RPMArchive
-
-	ret.RuntimeDeps = []string{
-		"/bin/sh",
-		"device-mapper-libs >= 1.02.90-1",
-		"iptables",
-		"libcgroup",
-		"moby-containerd >= 1.3.9",
-		"moby-runc >= 1.0.2",
-		"systemd-units",
-		"tar",
-		"xz",
-	}
-
-	return ret
-}

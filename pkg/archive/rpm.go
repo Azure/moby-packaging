@@ -86,8 +86,8 @@ func (r *RpmPackager) Package(client *dagger.Client, c *dagger.Container, projec
 		"--url", r.a.Webpage,
 	}
 
-	for i := range r.a.RuntimeDeps[PkgKindRPM] {
-		dep := r.a.RuntimeDeps[PkgKindRPM][i]
+	for i := range r.a.RuntimeDeps {
+		dep := r.a.RuntimeDeps[i]
 		if rpmPkgBlacklist.contains(project.Distro, dep) {
 			continue
 		}
@@ -95,8 +95,8 @@ func (r *RpmPackager) Package(client *dagger.Client, c *dagger.Container, projec
 		fpmArgs = append(fpmArgs, "-d", dep)
 	}
 
-	for i := range r.a.Conflicts[PkgKindRPM] {
-		conf := r.a.Conflicts[PkgKindRPM][i]
+	for i := range r.a.Conflicts {
+		conf := r.a.Conflicts[i]
 		fpmArgs = append(fpmArgs, "--conflicts", conf)
 	}
 
@@ -118,8 +118,8 @@ func (r *RpmPackager) Package(client *dagger.Client, c *dagger.Container, projec
 func (r *RpmPackager) withInstallScripts(c *dagger.Container) (*dagger.Container, []string) {
 	newArgs := []string{}
 
-	for i := range r.a.InstallScripts[PkgKindRPM] {
-		script := r.a.InstallScripts[PkgKindRPM][i]
+	for i := range r.a.InstallScripts {
+		script := r.a.InstallScripts[i]
 		var a []string
 		c, a = r.installScript(&script, c)
 		newArgs = append(newArgs, a...)

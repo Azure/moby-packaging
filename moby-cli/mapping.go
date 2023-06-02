@@ -15,14 +15,19 @@ var (
 	//go:embed postinstall/rpm/postinstall
 	rpmPostInst string
 
-	Mapping = map[string]string{
-		"src/build":                          "/usr/bin",
-		"src/contrib/completion/zsh/_docker": "/usr/share/zsh/vendor-completions/_docker",
-		"src/man/man1":                       "/usr/share/man/man1",
-		"src/man/man8":                       "/usr/share/man/man8",
+	Archives = map[string]archive.Archive{
+		"buster":   DebArchive,
+		"bullseye": DebArchive,
+		"bionic":   DebArchive,
+		"focal":    DebArchive,
+		"centos7":  RPMArchive,
+		"rhel8":    RPMArchive,
+		"windows":  BaseArchive,
+		"jammy":    DebArchive,
+		"mariner2": MarinerArchive,
 	}
-	Mapping2 = []archive.File{}
-	Archive  = archive.Archive{
+
+	BaseArchive = archive.Archive{
 		Name:    "moby-cli",
 		Webpage: "https://github.com/docker/cli",
 		Files: []archive.File{
@@ -55,76 +60,6 @@ var (
 		},
 		Binaries:    []string{"/build/src/build/docker"},
 		WinBinaries: []string{"/build/src/build/docker.exe"},
-		RuntimeDeps: map[archive.PkgKind][]string{
-			archive.PkgKindRPM: {
-				"/bin/sh",
-				"container-selinux >= 2:2.95",
-				"device-mapper-libs >= 1.02.90-1",
-				"iptables",
-				"libcgroup",
-				"moby-containerd >= 1.3.9",
-				"moby-runc >= 1.0.2",
-				"systemd-units",
-				"tar",
-				"xz",
-			},
-		},
-		Recommends: archive.PkgKindMap{
-			archive.PkgKindDeb: {
-				"ca-certificates",
-				"git",
-				"moby-buildx",
-				"pigz",
-				"xz-utils",
-			},
-		},
-		Suggests: archive.PkgKindMap{
-			archive.PkgKindDeb: {
-				"moby-engine",
-			},
-		},
-		Conflicts: archive.PkgKindMap{
-			archive.PkgKindDeb: {
-				"docker",
-				"docker-ce",
-				"docker-ce-cli",
-				"docker-ee",
-				"docker-ee-cli",
-				"docker-engine",
-				"docker-engine-cs",
-				"docker.io",
-				"lxc-docker",
-				"lxc-docker-virtual-package",
-			},
-		},
-		Replaces: archive.PkgKindMap{
-			archive.PkgKindDeb: {
-				"docker",
-				"docker-ce",
-				"docker-ce-cli",
-				"docker-ee",
-				"docker-ee-cli",
-				"docker-engine",
-				"docker-engine-cs",
-				"docker.io",
-				"lxc-docker",
-				"lxc-docker-virtual-package",
-			},
-		},
-		InstallScripts: archive.PkgInstallMap{
-			archive.PkgKindDeb: {
-				{
-					When:   archive.PkgActionPostInstall,
-					Script: debPostInst,
-				},
-			},
-			archive.PkgKindRPM: {
-				{
-					When:   archive.PkgActionPostInstall,
-					Script: rpmPostInst,
-				},
-			},
-		},
 		Description: `Docker container platform (client package)
  Docker is a platform for developers and sysadmins to develop, ship, and run
  applications. Docker lets you quickly assemble applications from components and
@@ -133,4 +68,95 @@ var (
  .
  This package provides the "docker" client binary (and supporting files).`,
 	}
+
+	DebArchive = archive.Archive{
+		Name:        BaseArchive.Name,
+		Webpage:     BaseArchive.Webpage,
+		Files:       BaseArchive.Files,
+		Binaries:    []string{"/build/src/build/docker"},
+		RuntimeDeps: []string{},
+		Recommends: []string{
+			"ca-certificates",
+			"git",
+			"moby-buildx",
+			"pigz",
+			"xz-utils",
+		},
+		Suggests: []string{
+			"moby-engine",
+		},
+		Conflicts: []string{
+			"docker",
+			"docker-ce",
+			"docker-ce-cli",
+			"docker-ee",
+			"docker-ee-cli",
+			"docker-engine",
+			"docker-engine-cs",
+			"docker.io",
+			"lxc-docker",
+			"lxc-docker-virtual-package",
+		},
+		Replaces: []string{
+			"docker",
+			"docker-ce",
+			"docker-ce-cli",
+			"docker-ee",
+			"docker-ee-cli",
+			"docker-engine",
+			"docker-engine-cs",
+			"docker.io",
+			"lxc-docker",
+			"lxc-docker-virtual-package",
+		},
+		InstallScripts: []archive.InstallScript{
+			{
+				When:   archive.PkgActionPostInstall,
+				Script: debPostInst,
+			},
+		},
+		Description: BaseArchive.Description,
+	}
+
+	RPMArchive = archive.Archive{
+		Name:     BaseArchive.Name,
+		Webpage:  BaseArchive.Webpage,
+		Files:    BaseArchive.Files,
+		Binaries: []string{"/build/src/build/docker"},
+		RuntimeDeps: []string{
+			"/bin/sh",
+			"container-selinux >= 2:2.95",
+			"device-mapper-libs >= 1.02.90-1",
+			"iptables",
+			"libcgroup",
+			"moby-containerd >= 1.3.9",
+			"moby-runc >= 1.0.2",
+			"systemd-units",
+			"tar",
+			"xz",
+		},
+		InstallScripts: []archive.InstallScript{
+			{
+				When:   archive.PkgActionPostInstall,
+				Script: rpmPostInst,
+			},
+		},
+		Description: BaseArchive.Description,
+	}
+
+	MarinerArchive = func() archive.Archive {
+		m := RPMArchive
+		m.RuntimeDeps = []string{
+			"/bin/sh",
+			"device-mapper-libs >= 1.02.90-1",
+			"iptables",
+			"libcgroup",
+			"moby-containerd >= 1.3.9",
+			"moby-runc >= 1.0.2",
+			"systemd-units",
+			"tar",
+			"xz",
+		}
+		return m
+	}()
 )
