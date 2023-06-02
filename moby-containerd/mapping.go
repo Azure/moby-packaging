@@ -21,7 +21,19 @@ var (
 	//go:embed postinstall/rpm/upgrade
 	rpmUpgrade string
 
-	Archive = archive.Archive{
+	Archives = map[string]archive.Archive{
+		"buster":   DebArchive,
+		"bullseye": DebArchive,
+		"bionic":   DebArchive,
+		"focal":    DebArchive,
+		"centos7":  RPMArchive,
+		"rhel8":    RPMArchive,
+		"windows":  BaseArchive,
+		"jammy":    DebArchive,
+		"mariner2": MarinerArchive,
+	}
+
+	BaseArchive = archive.Archive{
 		Name:    "moby-containerd",
 		Webpage: "https://github.com/containerd/containerd",
 		Files: []archive.File{
@@ -40,47 +52,6 @@ var (
 			"/build/src/bin/containerd-shim-runc-v2",
 			"/build/src/bin/containerd-stress",
 		},
-		RuntimeDeps: archive.PkgKindMap{
-			archive.PkgKindRPM: {
-				"/bin/sh",
-				"container-selinux >= 2:2.95",
-				"device-mapper-libs >= 1.02.90-1",
-				"iptables",
-				"libcgroup",
-				"libseccomp >= 2.3",
-				"moby-containerd >= 1.3.9",
-				"moby-runc >= 1.0.2",
-				"systemd-units",
-				"tar",
-				"xz",
-			},
-			archive.PkgKindDeb: {"moby-runc (>= 1.0.2)"},
-		},
-		Recommends: archive.PkgKindMap{
-			archive.PkgKindDeb: {"ca-certificates"},
-		},
-		Conflicts: archive.PkgKindMap{
-			archive.PkgKindDeb: {"containerd", "containerd.io", "moby-engine (<= 3.0.12)"},
-			archive.PkgKindRPM: {"containerd", "containerd-io", "moby-engine <= 3.0.11"},
-		},
-		Replaces: archive.PkgKindMap{
-			archive.PkgKindDeb: {"containerd", "containerd.io"},
-		},
-		Provides: archive.PkgKindMap{
-			archive.PkgKindDeb: {"containerd", "containerd.io"},
-		},
-		InstallScripts: archive.PkgInstallMap{
-			archive.PkgKindRPM: {
-				{When: archive.PkgActionPostInstall, Script: rpmPostInstall},
-				{When: archive.PkgActionPreRemoval, Script: rpmPreRm},
-				{When: archive.PkgActionUpgrade, Script: rpmUpgrade},
-			},
-			archive.PkgKindDeb: {
-				{When: archive.PkgActionPostInstall, Script: debPostInstall},
-				{When: archive.PkgActionPreRemoval, Script: debPreRm},
-				{When: archive.PkgActionPostRemoval, Script: debPostRm},
-			},
-		},
 		WinBinaries: []string{
 			"/build/src/bin/containerd.exe",
 			"/build/src/bin/containerd-shim-runhcs-v1.exe",
@@ -96,5 +67,92 @@ var (
  containerd is designed to be embedded into a larger system, rather than being
  used directly by developers or end-users.`,
 	}
-	Dirs = []string{}
+
+	DebArchive = archive.Archive{
+		Name:    BaseArchive.Name,
+		Webpage: BaseArchive.Webpage,
+		Files:   BaseArchive.Files,
+		Systemd: BaseArchive.Systemd,
+		Binaries: []string{
+			"/build/src/bin/containerd",
+			"/build/src/bin/containerd-shim",
+			"/build/src/bin/containerd-shim-runc-v1",
+			"/build/src/bin/containerd-shim-runc-v2",
+			"/build/src/bin/containerd-stress",
+		},
+		RuntimeDeps: []string{
+			"moby-runc (>= 1.0.2)",
+		},
+		Recommends: []string{
+			"ca-certificates",
+		},
+		Conflicts: []string{
+			"containerd", "containerd.io", "moby-engine (<= 3.0.12)",
+		},
+		Replaces: []string{
+			"containerd", "containerd.io",
+		},
+		Provides: []string{
+			"containerd", "containerd.io",
+		},
+		InstallScripts: []archive.InstallScript{
+			{When: archive.PkgActionPostInstall, Script: debPostInstall},
+			{When: archive.PkgActionPreRemoval, Script: debPreRm},
+			{When: archive.PkgActionPostRemoval, Script: debPostRm},
+		},
+		Description: BaseArchive.Description,
+	}
+
+	RPMArchive = archive.Archive{
+		Name:    BaseArchive.Name,
+		Webpage: BaseArchive.Webpage,
+		Files:   BaseArchive.Files,
+		Systemd: BaseArchive.Systemd,
+		Binaries: []string{
+			"/build/src/bin/containerd",
+			"/build/src/bin/containerd-shim",
+			"/build/src/bin/containerd-shim-runc-v1",
+			"/build/src/bin/containerd-shim-runc-v2",
+			"/build/src/bin/containerd-stress",
+		},
+		RuntimeDeps: []string{
+			"/bin/sh",
+			"container-selinux >= 2:2.95",
+			"device-mapper-libs >= 1.02.90-1",
+			"iptables",
+			"libcgroup",
+			"libseccomp >= 2.3",
+			"moby-containerd >= 1.3.9",
+			"moby-runc >= 1.0.2",
+			"systemd-units",
+			"tar",
+			"xz",
+		},
+		Conflicts: []string{
+			"containerd", "containerd-io", "moby-engine <= 3.0.11",
+		},
+		InstallScripts: []archive.InstallScript{
+			{When: archive.PkgActionPostInstall, Script: rpmPostInstall},
+			{When: archive.PkgActionPreRemoval, Script: rpmPreRm},
+			{When: archive.PkgActionUpgrade, Script: rpmUpgrade},
+		},
+		Description: BaseArchive.Description,
+	}
+
+	MarinerArchive = func() archive.Archive {
+		m := RPMArchive
+		m.RuntimeDeps = []string{
+			"/bin/sh",
+			"device-mapper-libs >= 1.02.90-1",
+			"iptables",
+			"libcgroup",
+			"libseccomp >= 2.3",
+			"moby-containerd >= 1.3.9",
+			"moby-runc >= 1.0.2",
+			"systemd-units",
+			"tar",
+			"xz",
+		}
+		return m
+	}()
 )
