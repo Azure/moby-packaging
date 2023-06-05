@@ -3,13 +3,14 @@ module github.com/Azure/moby-packaging
 go 1.19
 
 require (
-	dagger.io/dagger v0.6.2
+	dagger.io/dagger v0.7.1
 	github.com/joshdk/go-junit v1.0.0
 	golang.org/x/sync v0.2.0
 	golang.org/x/sys v0.8.0
 )
 
 require (
+	github.com/99designs/gqlgen v0.17.2 // indirect
 	github.com/Khan/genqlient v0.5.0 // indirect
 	github.com/adrg/xdg v0.4.0 // indirect
 	github.com/iancoleman/strcase v0.2.0 // indirect
