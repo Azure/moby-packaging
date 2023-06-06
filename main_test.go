@@ -5,6 +5,7 @@ import (
 	"flag"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"testing"
 
 	"dagger.io/dagger"
@@ -20,15 +21,20 @@ var (
 
 func getClient(ctx context.Context, t *testing.T) *dagger.Client {
 	t.Helper()
-	wd, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
 
-	opts := []dagger.ClientOpt{dagger.WithWorkdir(wd)}
-	if flDebug {
-		opts = append(opts, dagger.WithLogOutput(&testWriter{t: t, prefix: "dagger"}))
-	}
+	var opts []dagger.ClientOpt
+        if flDebug {
+                opts = append(opts, dagger.WithLogOutput(&testWriter{t: t, prefix: "dagger"}))
+        }
+
+        if os.Getenv("DAGGER_SESSION_TOKEN") == "" {
+                wd, err := os.Getwd()
+                if err != nil {
+                        t.Fatal(err)
+                }
+                opts = append(opts, dagger.WithWorkdir(filepath.Join(wd, "cache")))
+        }
+
 	client, err := dagger.Connect(ctx, opts...)
 	if err != nil {
 		t.Fatal(err)
