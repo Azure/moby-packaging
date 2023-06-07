@@ -1,16 +1,22 @@
 #!/usr/bin/env bash
 
+set -u
+
+printf 'Waiting for ssh agent socket...' >&2
 until [ -S /tmp/sockets/agent.sock ]; do
-    echo Waiting for ssh agent socket >&2
+    printf . >&2
     sleep 1
 done
+echo ...ok >&2
 
-sshOpts="-o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=1 -o ConnectionAttempts=60"
+sshOpts="-o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o ConnectionAttempts=3"
 
-until ssh -q $sshOpts -T ${SSH_HOST} exit 0; do
-    echo Waiting for ssh server to be ready >&2
+printf 'Waiting for ssh server to be ready...' >&2
+until ssh -q ${sshOpts} -T ${SSH_HOST} exit 0; do
+    printf . >&2
     sleep 1
 done
+echo ...ok >&2
 
 sshCmd() {
     ssh -T -n ${sshOpts} ${SSH_HOST} "$@"
@@ -20,6 +26,8 @@ scpCmd() {
     scp ${sshOpts} $@
 }
 
+set -e
+
 sshCmd 'mkdir -p /var/pkg'
 
 for f in $(
@@ -27,7 +35,8 @@ for f in $(
     find . -type f
 ); do
     f="$(basename $f)"
-    printf "Copying ${f} to ${SSH_HOST}:/var/pkg/${f}" >&2
+    printf "Copying /tmp/pkg/${f} to ${SSH_HOST}:/var/pkg/${f}" >&2
+    stat "/tmp/pkg/${f}"
     scpCmd "/tmp/pkg/${f}" "${SSH_HOST}:/var/pkg/${f}" || exit
     echo "... Ok" >&2
 done
