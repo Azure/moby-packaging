@@ -24,18 +24,6 @@ const (
 	mariner2 = "mariner2"
 )
 
-const systemdNetConfig string = `
-[Network]
-DHCP=yes
-Name=en*
-
-[DHCP]
-UseMTU=true
-UseNTP=true
-UseHostname=true
-UseRoutes=true
-`
-
 type DistroTestHelper interface {
 	Image(ctx context.Context, t *testing.T, client *dagger.Client) *dagger.Container
 	Installer(ctx context.Context, client *dagger.Client) *dagger.File
@@ -62,6 +50,9 @@ var (
 
 	//go:embed tests/mariner2/install.sh
 	mariner2Install string
+
+	//go:emebd tests/20-qemu.network
+	systemdNetConfig string
 )
 
 type JammyTestHelper struct{}

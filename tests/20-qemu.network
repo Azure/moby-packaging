@@ -1,0 +1,9 @@
+[Network]
+DHCP=yes
+Name=en*
+
+[DHCP]
+UseMTU=true
+UseNTP=true
+UseHostname=true
+UseRoutes=true
