@@ -25,6 +25,18 @@ const (
 	mariner2 = "mariner2"
 )
 
+const systemdNetConfig string = `
+[Network]
+DHCP=yes
+Name=en*
+
+[DHCP]
+UseMTU=true
+UseNTP=true
+UseHostname=true
+UseRoutes=true
+`
+
 type DistroTestHelper interface {
 	Image(ctx context.Context, t *testing.T, client *dagger.Client) *dagger.Container
 	Installer(ctx context.Context, client *dagger.Client) *dagger.File
@@ -67,6 +79,11 @@ func (JammyTestHelper) Image(ctx context.Context, t *testing.T, client *dagger.C
 		"systemd", "strace", "ssh", "udev", "iptables", "jq",
 	).
 		WithExec([]string{"systemctl", "enable", "ssh"}).
+		WithExec([]string{"systemctl", "enable", "systemd-networkd"}).
+		WithNewFile("/etc/systemd/network/20-qemu.network", dagger.ContainerWithNewFileOpts{
+			Contents:    systemdNetConfig,
+			Permissions: 0644,
+		}).
 		WithExec([]string{"update-alternatives", "--set", "iptables", "/usr/sbin/iptables-legacy"}).
 		WithMountedFile("/tmp/packages-microsoft-prod.deb", deb).
 		WithExec([]string{"/usr/bin/dpkg", "-i", "/tmp/packages-microsoft-prod.deb"})
