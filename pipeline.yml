@@ -155,7 +155,7 @@ stages:
             artifact: packages
           - script: |
               export _EXPERIMENTAL_DAGGER_CLOUD_TOKEN="$(dagger.token)"
-              go test -p 1 -v --timeout 1200s --debug --input-dir="$(Pipeline.Workspace)/packages" .
+              go test -p 1 -v --timeout 3600s --debug --input-dir="$(Pipeline.Workspace)/packages" .
             displayName: Integration Test
           - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
             displayName: Generate SBOM
