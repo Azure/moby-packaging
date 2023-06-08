@@ -48,7 +48,7 @@ parameters:
     type: string
     default: "upstreamk8sci.azurecr.io/dagger/engine@sha256:03cf3d20b486763bff103bcb844bdee7cfa6a5f9ee826cc76f00becc4d24c517"
 
-name: ${{ parameters.package_name }}-${{ parameters.distro }}-${{ parameters.arch }}
+name: ${{ parameters.package_name }}-${{ parameters.distro }}-${{ replace(parameters.arch, '/', '') }}
 
 resources:
   repositories:
