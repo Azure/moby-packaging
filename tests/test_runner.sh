@@ -12,14 +12,18 @@ until ssh -q $sshOpts -T ${SSH_HOST} exit 0; do
     sleep 1
 done
 
-sleep 30
-
 sshCmd() {
-    ssh -T -n ${sshOpts} ${SSH_HOST} "$@"
+    until ssh -T -n ${sshOpts} ${SSH_HOST} "$@"; do
+        echo "ssh command failed: $@, retrying" >&2
+        sleep 1
+    done
 }
 
 scpCmd() {
-    scp ${sshOpts} $@
+    until scp ${sshOpts} $@; do
+        echo "scp command failed: $@, retrying" >&2
+        sleep 1
+    done
 }
 
 sshCmd 'mkdir -p /var/pkg'
