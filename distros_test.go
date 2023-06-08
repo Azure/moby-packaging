@@ -107,6 +107,11 @@ func (FocalTestHelper) Image(ctx context.Context, t *testing.T, client *dagger.C
 		"systemd", "strace", "ssh", "udev", "iptables", "jq",
 	).
 		WithExec([]string{"systemctl", "enable", "ssh"}).
+		WithExec([]string{"systemctl", "enable", "systemd-networkd"}).
+		WithNewFile("/etc/systemd/network/20-qemu.network", dagger.ContainerWithNewFileOpts{
+			Contents:    systemdNetConfig,
+			Permissions: 0644,
+		}).
 		WithExec([]string{"update-alternatives", "--set", "iptables", "/usr/sbin/iptables-legacy"}).
 		WithMountedFile("/tmp/packages-microsoft-prod.deb", deb).
 		WithExec([]string{"/usr/bin/dpkg", "-i", "/tmp/packages-microsoft-prod.deb"})
@@ -130,6 +135,11 @@ func (BionicTestHelper) Image(ctx context.Context, t *testing.T, client *dagger.
 		"systemd", "strace", "ssh", "udev", "iptables", "jq",
 	).
 		WithExec([]string{"systemctl", "enable", "ssh"}).
+		WithExec([]string{"systemctl", "enable", "systemd-networkd"}).
+		WithNewFile("/etc/systemd/network/20-qemu.network", dagger.ContainerWithNewFileOpts{
+			Contents:    systemdNetConfig,
+			Permissions: 0644,
+		}).
 		// WithExec([]string{"update-alternatives", "--set", "iptables", "/usr/sbin/iptables-legacy"}).
 		WithMountedFile("/tmp/packages-microsoft-prod.deb", deb).
 		WithExec([]string{"/usr/bin/dpkg", "-i", "/tmp/packages-microsoft-prod.deb"})
@@ -153,6 +163,11 @@ func (BullseyeTestHelper) Image(ctx context.Context, t *testing.T, client *dagge
 		"systemd", "strace", "ssh", "udev", "iptables", "jq",
 	).
 		WithExec([]string{"systemctl", "enable", "ssh"}).
+		WithExec([]string{"systemctl", "enable", "systemd-networkd"}).
+		WithNewFile("/etc/systemd/network/20-qemu.network", dagger.ContainerWithNewFileOpts{
+			Contents:    systemdNetConfig,
+			Permissions: 0644,
+		}).
 		WithExec([]string{"update-alternatives", "--set", "iptables", "/usr/sbin/iptables-legacy"}).
 		WithMountedFile("/tmp/packages-microsoft-prod.deb", deb).
 		WithExec([]string{"/usr/bin/dpkg", "-i", "/tmp/packages-microsoft-prod.deb"})
@@ -199,6 +214,11 @@ func (Rhel9TestHelper) Image(ctx context.Context, t *testing.T, client *dagger.C
 			"createrepo_c", "systemd", "strace", "openssh-server", "openssh-clients", "udev", "iptables", "dnf-command(config-manager)", "jq",
 		}).
 		WithExec([]string{"systemctl", "enable", "sshd"}).
+		WithExec([]string{"systemctl", "enable", "systemd-networkd"}).
+		WithNewFile("/etc/systemd/network/20-qemu.network", dagger.ContainerWithNewFileOpts{
+			Contents:    systemdNetConfig,
+			Permissions: 0644,
+		}).
 		WithExec([]string{"bash", "-c", `
 			dnf install -y https://packages.microsoft.com/config/rhel/9.0/packages-microsoft-prod.rpm
 		`}).
@@ -224,6 +244,11 @@ func (Rhel8TestHelper) Image(ctx context.Context, t *testing.T, client *dagger.C
 			"createrepo_c", "systemd", "strace", "openssh-server", "openssh-clients", "udev", "iptables", "dnf-command(config-manager)", "dnf-utils", "util-linux", "jq",
 		}).
 		WithExec([]string{"systemctl", "enable", "sshd"}).
+		WithExec([]string{"systemctl", "enable", "systemd-networkd"}).
+		WithNewFile("/etc/systemd/network/20-qemu.network", dagger.ContainerWithNewFileOpts{
+			Contents:    systemdNetConfig,
+			Permissions: 0644,
+		}).
 		WithExec([]string{"bash", "-c", `
 			dnf install -y https://packages.microsoft.com/config/rhel/8/packages-microsoft-prod.rpm
 		`}).
@@ -248,6 +273,11 @@ func (Mariner2TestHelper) Image(ctx context.Context, t *testing.T, client *dagge
 			"ca-certificates", "createrepo_c", "systemd", "strace", "openssh-server", "openssh-clients", "udev", "iptables", "dnf-command(config-manager)", "dnf-utils", "util-linux", "jq",
 		}).
 		WithExec([]string{"systemctl", "enable", "sshd"}).
+		WithExec([]string{"systemctl", "enable", "systemd-networkd"}).
+		WithNewFile("/etc/systemd/network/20-qemu.network", dagger.ContainerWithNewFileOpts{
+			Contents:    systemdNetConfig,
+			Permissions: 0644,
+		}).
 		WithExec([]string{"sed", "-i", "s/PermitRootLogin no/PermitRootLogin yes/", "/etc/ssh/sshd_config"})
 
 	clientPkg := client.Pipeline("Fetch extra mariner packages")
