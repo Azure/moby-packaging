@@ -12,6 +12,8 @@ until ssh -q $sshOpts -T ${SSH_HOST} exit 0; do
     sleep 1
 done
 
+sleep 30
+
 sshCmd() {
     ssh -T -n ${sshOpts} ${SSH_HOST} "$@"
 }

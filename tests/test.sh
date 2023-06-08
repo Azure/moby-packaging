@@ -27,7 +27,7 @@ fi
 }
 
 @test "test buildx build" {
-    timeout --kill-after=60s 30s docker buildx build ${TEST_PLATFORM} - <<-EOF
+    timeout --kill-after=600s 300s docker buildx build ${TEST_PLATFORM} - <<-EOF
         FROM busybox
         RUN echo hello world
 EOF

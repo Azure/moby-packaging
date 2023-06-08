@@ -20,7 +20,7 @@ import (
 	"github.com/joshdk/go-junit"
 )
 
-const entrypointVersion = "6dbfe24704793078cbed935dfff4f2f2ba0ead22"
+const entrypointVersion = "5c0ad35abab4e088d994ca075b71a25f9fe4bb0a"
 
 var (
 	//go:embed tests/setup_ssh.service
