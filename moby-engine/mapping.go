@@ -59,7 +59,7 @@ var (
 				"tar",
 				"xz",
 			},
-			archive.PkgKindDeb: {"moby-containerd (>= 1.4.3)", "moby-runc (>= 1.0.2)", "moby-init (>= 0.19.0)"},
+			archive.PkgKindDeb: {"moby-containerd (>= 1.4.3)", "moby-runc (>= 1.0.2)", "moby-tini (>= 0.19.0)"},
 		},
 		Recommends: archive.PkgKindMap{
 			archive.PkgKindDeb: {

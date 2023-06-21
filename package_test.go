@@ -190,7 +190,7 @@ var testPackages = []archive.Spec{
 		Commit:   "d7573ab8672555762688f4c7ab8cc69ae8ec1a47",
 	},
 	{
-		Pkg:      "moby-init",
+		Pkg:      "moby-tini",
 		Repo:     "https://github.com/krallin/tini.git",
 		Revision: "7",
 		Commit:   "de40ad007797e0dcd8b7126f27bb87401d224240",
