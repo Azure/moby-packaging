@@ -29,7 +29,8 @@ install() {
         moby-containerd-"${TEST_CONTAINERD_PACKAGE_VERSION}*" \
         moby-runc-"${TEST_RUNC_PACKAGE_VERSION}*" \
         moby-buildx-"${TEST_BUILDX_PACKAGE_VERSION}*" \
-        moby-compose-"${TEST_COMPOSE_PACKAGE_VERSION}*"
+        moby-compose-"${TEST_COMPOSE_PACKAGE_VERSION}*" \
+        moby-tini-"${TEST_TINI_PACKAGE_VERSION}*"
 }
 
 init() {
