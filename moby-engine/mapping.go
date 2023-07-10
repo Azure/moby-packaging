@@ -68,7 +68,7 @@ var (
 		Systemd:  BaseArchive.Systemd,
 		Binaries: BaseArchive.Binaries,
 		RuntimeDeps: []string{
-			"moby-containerd (>= 1.4.3)", "moby-runc (>= 1.0.2)", "moby-init (>= 0.19.0)",
+			"moby-containerd (>= 1.4.3)", "moby-runc (>= 1.0.2)", "moby-tini (>= 0.19.0)",
 		},
 		Recommends: []string{
 			"apparmor",

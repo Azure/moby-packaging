@@ -17,7 +17,7 @@ var (
 	}
 
 	BaseArchive = archive.Archive{
-		Name:    "moby-init",
+		Name:    "moby-tini",
 		Webpage: "https://github.com/krallin/tini",
 		Files: []archive.File{
 			{
