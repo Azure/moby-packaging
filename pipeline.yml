@@ -168,6 +168,7 @@ stages:
               package="${package//-/_}"
 
               export DISTRO="$distro"
+              export TARGETARCH="${{ parameters.arch }}"
               export "TEST_${package}_COMMIT=$commit"
               export "TEST_${package}_VERSION=${tag}-${revision}"
               export "TEST_${package}_PACKAGE_VERSION=${tag}-${revision}.${pkgver}"
