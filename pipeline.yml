@@ -44,6 +44,9 @@ parameters:
     type: string
     default: "1"
 
+name: ${{ parameters.package_name }}-${{ parameters.distro }}-${{ replace(parameters.arch, '/', '') }}
+
+
 variables:
   ${{ if contains(parameters.arch, 'arm') }}:
     build.pool: staging-pool-arm64-mariner-2
@@ -78,21 +81,17 @@ stages:
               az login --identity
               az storage container create -n "${STORAGE_ACCOUNT_CONTAINER}" --auth-mode=login
 
-              for distro_path in ./*; do
-                [ -d "${distro_path}" ] || continue
-                distro="$(basename ${distro_path})"
-                az storage blob upload-batch \
-                  --max-connections=10 --auth-mode=login \
-                  --overwrite \
-                  --source ${distro_path} \
-                  --pattern "*/$(package.name)*" \
-                  --destination "${STORAGE_ACCOUNT_CONTAINER}" \
-                  --destination-path "$(package.name)/${VERSION}/${distro}"
-              done
+              az storage blob upload-batch \
+                --max-connections=10 --auth-mode=login \
+                --overwrite \
+                --source ${{ parameters.package_name }}/${{ parameters.distro }} \
+                --pattern "${{ parameters.package_name }}*" \
+                --destination "${STORAGE_ACCOUNT_CONTAINER}" \
+                --destination-path "${{ parameters.package_name }}/${{ parameters.tag }}/${{ parameters.distro }}"
+            displayName: Upload to blob store
             env:
               ARTIFACTS_DIR: "$(Pipeline.Workspace)/bundles"
               STORAGE_ACCOUNT_NAME: moby
               STORAGE_ACCOUNT_CONTAINER: moby
               AZURE_STORAGE_ACCOUNT: moby
               VERSION: ${{ parameters.tag }}
-            displayName: Upload to blob store
