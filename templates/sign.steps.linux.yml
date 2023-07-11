@@ -1,0 +1,23 @@
+parameters:
+  pattern: ''
+  folderPath: ''
+
+steps:
+- task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
+  displayName: "Sign ${{ parameters.folderPath }}/${{ parameters.pattern }}"
+  inputs:
+    ConnectedServiceName: "ESRP Signing service"
+    FolderPath: ${{ parameters.folderPath }}
+    Pattern: ${{ parameters.pattern }}
+    UseMinimatch: true
+    signConfigType: inlineSignParams
+    inlineOperation: |
+      [
+        {
+          "KeyCode" : "CP-450779-Pgp",
+          "OperationCode" : "LinuxSign",
+          "Parameters" : {},
+          "ToolName" : "sign",
+          "ToolVersion" : "1.0"
+        }
+      ]

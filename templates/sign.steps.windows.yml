@@ -1,0 +1,85 @@
+parameters:
+  pattern: ''
+  folderPath: ''
+
+steps:
+- script: |
+    sudo tdnf install -y zip unzip
+  displayName: Install pre-reqs
+- script: |
+    set -o xtrace
+    for i in ${ARTIFACTS_DIR}/windows/*/*; do
+      if [ ! -f "${i}" ]; then
+        continue
+      fi
+      unzip -d $(dirname "$i") $i
+    done
+  displayName: Extract artifacts
+  env:
+    ARTIFACTS_DIR: ${{ parameters.folderPath }}
+- task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
+  displayName: "Sign ${{ parameters.folderPath }}/${{ parameters.pattern }}"
+  inputs:
+    ConnectedServiceName: "ESRP Signing service"
+    FolderPath: ${{ parameters.folderPath }}
+    Pattern: ${{ parameters.pattern }}
+    UseMinimatch: true
+    signConfigType: inlineSignParams
+    inlineOperation: |
+      [
+        {
+            "keyCode": "CP-231522",
+            "operationSetCode": "SigntoolSign",
+            "parameters": [
+            {
+                "parameterName": "OpusName",
+                "parameterValue": "Microsoft"
+            },
+            {
+                "parameterName": "OpusInfo",
+                "parameterValue": "http://www.microsoft.com"
+            },
+            {
+                "parameterName": "Append",
+                "parameterValue": "/as"
+            },
+            {
+                "parameterName": "FileDigest",
+                "parameterValue": "/fd \"SHA256\""
+            },
+            {
+                "parameterName": "PageHash",
+                "parameterValue": "/NPH"
+            },
+            {
+                "parameterName": "TimeStamp",
+                "parameterValue": "/tr \"http://rfc3161.gtm.corp.microsoft.com/TSS/HttpTspServer\" /td sha256"
+            }
+            ],
+            "toolName": "sign",
+            "toolVersion": "1.0"
+        },
+        {
+            "keyCode": "CP-231522",
+            "operationSetCode": "SigntoolVerify",
+            "parameters": [],
+            "toolName": "sign",
+            "toolVersion": "1.0"
+        }
+      ]
+- script: |
+    set -o xtrace
+    for i in ${ARTIFACTS_DIR}/windows/*; do
+      zip_file="$(file ${i}/*.zip | cut -d: -f1)"
+      if [ ! -f "${zip_file}" ]; then
+        continue
+      fi
+
+      zip -j -r "${zip_file}" "${i}" -x *.zip
+      for j in $(ls ${i}/*.exe); do
+          rm ${j}
+      done
+    done
+  displayName: repack artifacts
+  env:
+    ARTIFACTS_DIR: ${{ parameters.folderPath }}
