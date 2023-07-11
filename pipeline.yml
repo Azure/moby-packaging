@@ -164,6 +164,7 @@ stages:
               pkgver="${versions[$distro]}"
 
               package="$(jq -r .package < "$spec")"
+              package="${package#moby-}"
               package="${package^^}"
               package="${package//-/_}"
 
