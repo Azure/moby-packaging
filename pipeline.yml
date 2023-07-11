@@ -145,7 +145,7 @@ stages:
               bundle_dir="$(Pipeline.Workspace)/packages"
 
               readarray -d '' specs < <(find "$bundle_dir" -name 'spec.json' -print0)
-              if ! [ "${#specs}" -eq 1 ]; then
+              if ! [ "${#specs[@]}" -eq 1 ]; then
                 printf "##vso[task.complete result=Failed;]%s\n" "multiple spec files found: ${specs[*]}"
                 exit 1
               fi
