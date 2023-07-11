@@ -85,28 +85,28 @@ stages:
             inputs:
               pathToPublish: "$(Pipeline.Workspace)/bundles"
               artifactName: packages
-          - script: |
-              set -o xtrace
-              : ${BLOB_PREFIX:=/}
-              cd "${ARTIFACTS_DIR}"
+          # - script: |
+          #     set -o xtrace
+          #     : ${BLOB_PREFIX:=/}
+          #     cd "${ARTIFACTS_DIR}"
 
-              az login --identity
-              az storage container create -n "${STORAGE_ACCOUNT_CONTAINER}" --auth-mode=login
+          #     az login --identity
+          #     az storage container create -n "${STORAGE_ACCOUNT_CONTAINER}" --auth-mode=login
 
-              az storage blob upload-batch \
-                --max-connections=10 --auth-mode=login \
-                --overwrite \
-                --source ${{ parameters.package_name }}/${{ parameters.distro }} \
-                --pattern "${{ parameters.package_name }}*" \
-                --destination "${STORAGE_ACCOUNT_CONTAINER}" \
-                --destination-path "${{ parameters.package_name }}/${{ parameters.tag }}/${{ parameters.distro }}"
-            displayName: Upload to blob store
-            env:
-              ARTIFACTS_DIR: "$(Pipeline.Workspace)/bundles"
-              STORAGE_ACCOUNT_NAME: moby
-              STORAGE_ACCOUNT_CONTAINER: moby
-              AZURE_STORAGE_ACCOUNT: moby
-              VERSION: ${{ parameters.tag }}
+          #     az storage blob upload-batch \
+          #       --max-connections=10 --auth-mode=login \
+          #       --overwrite \
+          #       --source ${{ parameters.package_name }}/${{ parameters.distro }} \
+          #       --pattern "${{ parameters.package_name }}*" \
+          #       --destination "${STORAGE_ACCOUNT_CONTAINER}" \
+          #       --destination-path "${{ parameters.package_name }}/${{ parameters.tag }}/${{ parameters.distro }}"
+          #   displayName: Upload to blob store
+          #   env:
+          #     ARTIFACTS_DIR: "$(Pipeline.Workspace)/bundles"
+          #     STORAGE_ACCOUNT_NAME: moby
+          #     STORAGE_ACCOUNT_CONTAINER: moby
+          #     AZURE_STORAGE_ACCOUNT: moby
+          #     VERSION: ${{ parameters.tag }}
   - stage: TestAndSBOM
     jobs:
       - job: TestPackages
