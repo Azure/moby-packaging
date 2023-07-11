@@ -62,6 +62,12 @@ stages:
         steps:
           - bash: |
               set -x
+
+              bundle_dir="$(Pipeline.Workspace)/bundles"
+              bundle_distro_dir="$bundle_dir/${{ parameters.distro }}"
+              mkdir -p "$bundle_distro_dir"
+              spec_file="$bundle_distro_dir/spec.json"
+
               printf '
                 {
                   "arch": "${{ parameters.arch }}",
@@ -72,7 +78,9 @@ stages:
                   "tag": "${{ parameters.tag }}",
                   "revision": "${{ coalesce(parameters.revision, '1') }}"
                 }
-              ' | go run . --build-spec=/dev/stdin --output="$(Pipeline.Workspace)/bundles"
+              ' > $spec_file
+
+              go run . --build-spec="$spec_file" --output="$bundle_dir"
           - script: |
               set -o xtrace
               : ${BLOB_PREFIX:=/}
