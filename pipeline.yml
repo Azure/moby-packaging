@@ -115,8 +115,64 @@ stages:
           - download: current
             artifact: packages
           - script: |
-              export _EXPERIMENTAL_DAGGER_CLOUD_TOKEN="$(dagger.token)"
-              go test -p 1 -v --timeout 3600s --debug --input-dir="$(Pipeline.Workspace)/packages" .
+              set -exu # TODO: remove
+
+              declare -A os
+              os=(
+                  [bullseye]=debian
+                  [buster]=debian
+                  [focal]=ubuntu
+                  [jammy]=ubuntu
+                  [rhel9]=el9
+                  [rhel8]=el8
+                  [centos7]=el7
+                  [mariner2]=cm2
+              )
+
+              declare -A versions
+              versions=(
+                  [bullseye]=11
+                  [buster]=10
+                  [focal]=20.04
+                  [jammy]=22.04
+                  [rhel9]=el9
+                  [rhel8]=el8
+                  [centos7]=el7
+                  [mariner2]=cm2
+              )
+
+              # the bundles directory from the previous stage will be in $(Pipeline.Workspace)/packages
+              bundle_dir="$(Pipeline.Workspace)/packages"
+
+              readarray -d '' specs < <(find "$bundle_dir" -name 'spec.json' -print0)
+              if ! [ "${#specs}" -eq 1 ]; then
+                printf "##vso[task.complete result=Failed;]%s\n" "multiple spec files found: ${specs[*]}"
+                exit 1
+              fi
+
+              spec="${specs[0]}"
+
+              commit="$(jq -r '.commit' < "$spec")"
+              tag="$(jq -r '.tag' < "$spec")"
+              revision="$(jq -r '.revision' < "$spec")"
+              distro="$(jq -r '.distro' < "$spec")"
+              pkgos="${os[$distro]}"
+              pkgver="${versions[$distro]}"
+
+              package="$(jq -r .package < "$spec")"
+              package="${package^^}"
+              package="${package//-/_}"
+
+              export DISTRO="$distro"
+              export "TEST_${package}_COMMIT=$commit"
+              export "TEST_${package}_VERSION=${tag}-${revision}"
+              export "TEST_${package}_PACKAGE_VERSION=${tag}-${revision}.${pkgver}"
+
+              if [ "$pkgos" = debian ] || [ "pkgos" = ubuntu ]; then
+                export "TEST_${package}_PACKAGE_VERSION={tag}-${pkgos}${pkgver}u${revision}
+              fi
+
+              make test
             displayName: Integration Test
           - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
             displayName: Generate SBOM
