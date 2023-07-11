@@ -103,3 +103,42 @@ stages:
               STORAGE_ACCOUNT_CONTAINER: moby
               AZURE_STORAGE_ACCOUNT: moby
               VERSION: ${{ parameters.tag }}
+  - stage: TestAndSBOM
+    jobs:
+      - job: TestPackages
+        pool: $(build.pool)
+        steps:
+          - download: current
+            artifact: packages
+          - script: |
+              export _EXPERIMENTAL_DAGGER_CLOUD_TOKEN="$(dagger.token)"
+              go test -p 1 -v --timeout 3600s --debug --input-dir="$(Pipeline.Workspace)/packages" .
+            displayName: Integration Test
+          - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
+            displayName: Generate SBOM
+            inputs:
+              BuildDropPath: $(Pipeline.Workspace)/bundles/${{ parameters.package_name }}/${{ parameters.distro }}
+  - stage: Sign
+    condition: succeeded()
+    jobs:
+      - job: SignArtifacts
+        pool: $(build.pool)
+        workspace:
+          clean: all
+        steps:
+          - checkout: none
+          - download: current
+            artifact: packages
+          - task: UseDotNet@2
+            displayName: Install .NET Core SDK
+            inputs:
+              packageType: sdk
+              version: 2.2.207
+          - template: templates/sign.steps.${{ parameters.os }}.yml
+            parameters:
+              folderPath: $(Pipeline.Workspace)/packages
+              pattern: '**/**/*'
+          - task: PublishBuildArtifacts@1
+            inputs:
+              pathToPublish: "$(Pipeline.Workspace)/packages"
+              artifactName: packages
