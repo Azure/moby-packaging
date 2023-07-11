@@ -81,6 +81,10 @@ stages:
               ' > $spec_file
 
               go run . --build-spec="$spec_file" --output="$bundle_dir"
+          - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
+            displayName: Generate SBOM
+            inputs:
+              BuildDropPath: $(Pipeline.Workspace)/bundles/${{ parameters.distro }}
           - task: PublishBuildArtifacts@1
             inputs:
               pathToPublish: "$(Pipeline.Workspace)/bundles"
@@ -174,10 +178,6 @@ stages:
 
               make test
             displayName: Integration Test
-          - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
-            displayName: Generate SBOM
-            inputs:
-              BuildDropPath: $(Pipeline.Workspace)/bundles/${{ parameters.distro }}
   - stage: Sign
     condition: succeeded()
     jobs:
