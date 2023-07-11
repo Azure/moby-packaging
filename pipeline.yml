@@ -176,7 +176,7 @@ stages:
                 export "TEST_${package}_PACKAGE_VERSION=${tag}-${pkgos}${pkgver}u${revision}"
               fi
 
-              make test
+              make test OUTPUT="$bundle_dir"
             displayName: Integration Test
   - stage: Sign
     condition: succeeded()
