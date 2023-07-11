@@ -177,7 +177,7 @@ stages:
           - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
             displayName: Generate SBOM
             inputs:
-              BuildDropPath: $(Pipeline.Workspace)/bundles/${{ parameters.package_name }}/${{ parameters.distro }}
+              BuildDropPath: $(Pipeline.Workspace)/bundles/${{ parameters.distro }}
   - stage: Sign
     condition: succeeded()
     jobs:
