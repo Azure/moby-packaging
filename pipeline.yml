@@ -174,7 +174,7 @@ stages:
               export "TEST_${package}_VERSION=${tag}-${revision}"
               export "TEST_${package}_PACKAGE_VERSION=${tag}-${revision}.${pkgver}"
 
-              if [ "$pkgos" = debian ] || [ "pkgos" = ubuntu ]; then
+              if [ "$pkgos" = debian ] || [ "$pkgos" = ubuntu ]; then
                 export "TEST_${package}_PACKAGE_VERSION=${tag}-${pkgos}${pkgver}u${revision}"
               fi
 
