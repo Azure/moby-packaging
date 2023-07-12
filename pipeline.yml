@@ -119,6 +119,29 @@ stages:
           - download: current
             artifact: packages
           - script: |
+              ! [ ${{ parameters.distro }} = mariner2 ] && exit 0
+
+              set -exu
+
+              declare -A rhel_arch
+              rhel_arch=(
+                [arm64]=aarch64
+                [amd64]=x86_64
+              )
+
+              bundle_dir="$(Pipeline.Workspace)/packages"
+              arch=${rhel_arch[${{ parameters.arch }}]}
+              pkg_basename="$(printf "moby-tini-0.19.0-1.cm2.%s.rpm" "$arch")"
+              tini_url="https://moby.blob.core.windows.net/moby/moby-tini/0.19.0/mariner2/$pkg_basename"
+
+              curl -fsSL -o "$bundle_dir/mariner2/$pkg_basename" "$tini_url"
+            condition: |
+              and(
+                eq('${{ parameters.distro }}', 'mariner2'),
+                eq('${{ parameters.package_name }}', 'moby-engine')
+              )
+            displayName: MarinerDownloadTini
+          - script: |
               set -exu # TODO: remove
 
               declare -A os
