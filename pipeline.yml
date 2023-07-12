@@ -135,12 +135,14 @@ stages:
               tini_url="https://moby.blob.core.windows.net/moby/moby-tini/0.19.0/mariner2/$pkg_basename"
 
               curl -fsSL -o "$bundle_dir/mariner2/$pkg_basename" "$tini_url"
+            # Install tini manually on mariner, but not when tini is the
+            # package being built/tested.
             condition: |
               and(
                 eq('${{ parameters.distro }}', 'mariner2'),
-                eq('${{ parameters.package_name }}', 'moby-engine')
+                ne('${{ parameters.package_name }}', 'moby-tini')
               )
-            displayName: MarinerDownloadTini
+            displayName: MarinerInstallTini
           - script: |
               set -exu # TODO: remove
 
