@@ -21,18 +21,22 @@ prepare_local_yum() {
 }
 
 install() {
-    set -x
     # required by bats tests
     dnf install -y awk
 
-    dnf install -y --nogpgcheck --allowerasing \
-        moby-engine-"${TEST_ENGINE_PACKAGE_VERSION}*" \
-        moby-cli-"${TEST_CLI_PACKAGE_VERSION}*" \
-        moby-runc-"${TEST_RUNC_PACKAGE_VERSION}*" \
-        moby-buildx-"${TEST_BUILDX_PACKAGE_VERSION}*" \
-        moby-compose-"${TEST_COMPOSE_PACKAGE_VERSION}*"
+    dnf install -y --nogpgcheck \
+        "moby-engine$(with_glob ${TEST_ENGINE_PACKAGE_VERSION})" \
+        "moby-cli$(with_glob ${TEST_CLI_PACKAGE_VERSION})" \
+        "moby-containerd$(with_glob ${TEST_CONTAINERD_PACKAGE_VERSION})" \
+        "moby-runc$(with_glob ${TEST_RUNC_PACKAGE_VERSION})" \
+        "moby-buildx$(with_glob ${TEST_BUILDX_PACKAGE_VERSION})" \
+        "moby-tini$(with_glob ${TEST_TINI_PACKAGE_VERSION})" \
+        "moby-compose$(with_glob ${TEST_COMPOSE_PACKAGE_VERSION})"
+}
 
-    set +x
+with_glob() {
+    # If $1 is nonempty, expand it with a glob. Otherwise, print nothing.
+    printf "%s" ${1:+"-$1*"}
 }
 
 init() {
