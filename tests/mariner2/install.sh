@@ -24,7 +24,7 @@ install() {
     # required by bats tests
     dnf install -y awk
 
-    dnf install -y --nogpgcheck \
+    dnf install -y --nogpgcheck --allowerasing \
         moby-engine-"${TEST_ENGINE_PACKAGE_VERSION}*" \
         moby-cli-"${TEST_CLI_PACKAGE_VERSION}*" \
         moby-containerd-"${TEST_CONTAINERD_PACKAGE_VERSION}*" \
