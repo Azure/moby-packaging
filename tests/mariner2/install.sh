@@ -21,9 +21,6 @@ prepare_local_yum() {
 }
 
 install() {
-    # required by bats tests
-    dnf install -y awk
-
     local packages=(
         "moby-engine$(with_glob ${TEST_ENGINE_PACKAGE_VERSION})"
         "moby-cli$(with_glob ${TEST_CLI_PACKAGE_VERSION})"
