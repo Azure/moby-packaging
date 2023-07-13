@@ -24,14 +24,28 @@ prepare_local_yum() {
 
 
 install() {
-    yum install -y --nogpgcheck \
-        moby-engine-"${TEST_ENGINE_PACKAGE_VERSION}*" \
-        moby-cli-"${TEST_CLI_PACKAGE_VERSION}*" \
-        moby-containerd-"${TEST_CONTAINERD_PACKAGE_VERSION}*" \
-        moby-runc-"${TEST_RUNC_PACKAGE_VERSION}*" \
-        moby-buildx-"${TEST_BUILDX_PACKAGE_VERSION}*" \
-        moby-compose-"${TEST_COMPOSE_PACKAGE_VERSION}*" \
-        moby-tini-"${TEST_TINI_PACKAGE_VERSION}*"
+    local packages=(
+        "moby-engine$(with_glob ${TEST_ENGINE_PACKAGE_VERSION})"
+        "moby-cli$(with_glob ${TEST_CLI_PACKAGE_VERSION})"
+        "moby-containerd$(with_glob ${TEST_CONTAINERD_PACKAGE_VERSION})"
+        "moby-runc$(with_glob ${TEST_RUNC_PACKAGE_VERSION})"
+        "moby-buildx$(with_glob ${TEST_BUILDX_PACKAGE_VERSION})"
+        "moby-compose$(with_glob ${TEST_COMPOSE_PACKAGE_VERSION})"
+    )
+
+    # Until the "default" package installed by the repo is the new
+    # `moby-engine` *without* `docker-init` packaged in, `moby-tini` will
+    # conflict with packages other than itself and `moby-engine`.
+    if [ -n "$TEST_ENGINE_PACKAGE_VERSION" ] || [ -n "$TEST_TINI_PACKAGE_VERSION" ]; then
+        packages+=("moby-tini$(with_glob ${TEST_TINI_PACKAGE_VERSION})")
+    fi
+
+    yum install -y --nogpgcheck "${packages[@]}"
+}
+
+with_glob() {
+    # If $1 is nonempty, expand it with a glob. Otherwise, print nothing.
+    printf "%s" ${1:+"-$1*"}
 }
 
 init() {
