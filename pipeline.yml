@@ -206,6 +206,14 @@ stages:
 
               make test OUTPUT="$bundle_dir"
             displayName: Integration Test
+          - task: PublishBuildArtifacts@1
+            inputs:
+              pathToPublish: "$(Pipeline.Workspace)/packages"
+              artifactName: packages
+          - task: PublishBuildArtifacts@1
+            inputs:
+              pathToPublish: "tests/.test"
+              artifactName: testresults
   - stage: Sign
     condition: succeeded()
     jobs:
