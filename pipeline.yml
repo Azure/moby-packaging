@@ -211,6 +211,7 @@ stages:
               pathToPublish: "$(Pipeline.Workspace)/packages"
               artifactName: packages
           - task: PublishBuildArtifacts@1
+            condition: always()
             inputs:
               pathToPublish: "tests/.test"
               artifactName: testresults
