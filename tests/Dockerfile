@@ -181,6 +181,15 @@ RUN if [ "${INCLUDE_TESTING}" = "1" ]; then \
     cd /opt/bats && ./install.sh /usr/local
 RUN ln -s /lib/systemd/systemd /sbin/init
 
+FROM ${CENTOS7_IMG} AS centos7-jq
+WORKDIR /jq
+ARG BUILDPLATFORM
+ARG TARGETPLATFORM
+ARG TARGETARCH
+ARG TARGETVARIANT
+RUN yum install -y epel-release
+RUN yum install --downloadonly --downloaddir=. jq
+
 FROM ${CENTOS7_IMG} AS centos7
 ARG BUILDPLATFORM
 ARG TARGETPLATFORM
@@ -193,6 +202,8 @@ COPY entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 STOPSIGNAL SIGRTMIN+3
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 COPY --from=bats / /opt/bats
+COPY --from=centos7-jq /jq /opt/jq
+RUN cd /opt/jq && yum install -y ./*.rpm
 RUN if [ "${INCLUDE_TESTING}" = "1" ]; then \
     yum-config-manager --add-repo https://packages.microsoft.com/yumrepos/microsoft-centos7-testing-prod || exit 1; \
     fi; \
