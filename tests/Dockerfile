@@ -210,7 +210,7 @@ ARG BUILDPLATFORM
 ARG TARGETPLATFORM
 ARG TARGETARCH
 ARG TARGETVARIANT
-RUN tdnf install -y systemd ca-certificates util-linux dnf-utils libcgroup tar libseccomp iptables
+RUN tdnf install -y systemd ca-certificates util-linux dnf-utils libcgroup tar libseccomp iptables awk
 ARG INCLUDE_TESTING
 COPY entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 STOPSIGNAL SIGRTMIN+3
