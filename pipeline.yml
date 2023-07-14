@@ -114,6 +114,7 @@ stages:
   - stage: TestAndSBOM
     jobs:
       - job: TestPackages
+        condition: ne('${{ parameters.distro }}', 'windows')
         pool: $(build.pool)
         steps:
           - download: current
