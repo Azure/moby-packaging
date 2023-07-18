@@ -8,10 +8,17 @@ steps:
   displayName: Install pre-reqs
 - script: |
     set -o xtrace
-    for i in ${ARTIFACTS_DIR}/windows/*/*; do
-      if [ ! -f "${i}" ]; then
+
+    tree ${ARTIFACTS_DIR}
+    num_magic_bytes=4
+    zip_magic_bytes=$'PK\x03\x04'
+
+    readarray -d '' artifacts < <(find ${ARTIFACTS_DIR} -mindepth 2 -type f)
+    for i in "${artifacts[@]}"; do
+      if ! head -c $num_magic_bytes < "$i" | grep -aq "$zip_magic_bytes"; then
         continue
       fi
+
       unzip -d $(dirname "$i") $i
     done
   displayName: Extract artifacts
