@@ -13,7 +13,7 @@ steps:
     num_magic_bytes=4
     zip_magic_bytes=$'PK\x03\x04'
 
-    readarray -d '' artifacts < <(find ${ARTIFACTS_DIR} -mindepth 2 -type f)
+    readarray -d '' artifacts < <(find ${ARTIFACTS_DIR} -mindepth 2 -type f -print0)
     for i in "${artifacts[@]}"; do
       if ! head -c $num_magic_bytes < "$i" | grep -aq "$zip_magic_bytes"; then
         continue
