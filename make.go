@@ -50,7 +50,12 @@ func main() {
 		os.Exit(3)
 	}
 
-	if _, err := out.Export(ctx, filepath.Join(*outDir, spec.Distro)); err != nil {
+	targetOS := "linux"
+	if spec.Distro == "windows" {
+		targetOS = "windows"
+	}
+	subDir := fmt.Sprintf("%s_%s", targetOS, strings.ReplaceAll(spec.Arch, "/", ""))
+	if _, err := out.Export(ctx, filepath.Join(*outDir, spec.Distro, subDir)); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(4)
 	}
