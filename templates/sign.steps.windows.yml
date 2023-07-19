@@ -32,7 +32,6 @@ steps:
     Pattern: ${{ parameters.pattern }}
     UseMinimatch: true
     signConfigType: inlineSignParams
-    SessionTimeout: 86400
     inlineOperation: |
       [
         {

@@ -236,7 +236,7 @@ stages:
             parameters:
               folderPath: $(Pipeline.Workspace)/packages
               ${{ if eq(parameters.os, 'windows') }}:
-                pattern: '**/**/*.exe'
+                pattern: '**/*.exe'
               ${{ else }}:
                 pattern: '**/**/*'
           - task: PublishBuildArtifacts@1
