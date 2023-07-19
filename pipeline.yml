@@ -235,7 +235,10 @@ stages:
           - template: templates/sign.steps.${{ parameters.os }}.yml
             parameters:
               folderPath: $(Pipeline.Workspace)/packages
-              pattern: '**/**/*'
+              ${{ if eq(parameters.os, 'windows') }}:
+                pattern: '**/**/*.exe'
+              ${{ else }}:
+                pattern: '**/**/*'
           - task: PublishBuildArtifacts@1
             inputs:
               pathToPublish: "$(Pipeline.Workspace)/packages"
