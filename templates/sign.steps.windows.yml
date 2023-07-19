@@ -15,7 +15,6 @@ steps:
 
     readarray -d '' artifacts < <(find ${ARTIFACTS_DIR} -mindepth 2 -type f -print0)
     for i in "${artifacts[@]}"; do
-      : "${i}"
       if ! head -c $num_magic_bytes < "$i" | grep -aq "$zip_magic_bytes"; then
         continue
       fi
