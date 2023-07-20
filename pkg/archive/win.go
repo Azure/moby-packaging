@@ -1,6 +1,8 @@
 package archive
 
 import (
+	"strings"
+
 	"dagger.io/dagger"
 )
 
@@ -23,6 +25,7 @@ func NewWinPackager(a *Archive, mp string) *WinPackager {
 func (w *WinPackager) Package(client *dagger.Client, c *dagger.Container, project *Spec) *dagger.Directory {
 	dir := client.Directory()
 	rootDir := "/package"
+	sanitizedArch := strings.ReplaceAll(project.Arch, "/", "")
 
 	c = c.WithDirectory(rootDir, dir)
 	c = w.moveStaticFiles(c, rootDir)
@@ -30,13 +33,15 @@ func (w *WinPackager) Package(client *dagger.Client, c *dagger.Container, projec
 	c = c.
 		WithEnvVariable("PROJECT", project.Pkg).
 		WithEnvVariable("VERSION", project.Tag).
+		WithEnvVariable("REVISION", project.Revision).
+		WithEnvVariable("ARCH", sanitizedArch).
 		WithExec([]string{"bash", "-xuec", `
         : ${PROJECT}
         : ${VERSION}
 
         mkdir -p "/out"
         cd /package
-        zip "/out/${PROJECT}-${VERSION}.zip" *
+        zip "/out/${PROJECT}-${VERSION}+azure-u${REVISION}.${ARCH}.zip" *
         `})
 
 	return c.Directory("/out")

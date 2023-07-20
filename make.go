@@ -54,7 +54,10 @@ func main() {
 	if spec.Distro == "windows" {
 		targetOS = "windows"
 	}
-	subDir := fmt.Sprintf("%s_%s", targetOS, strings.ReplaceAll(spec.Arch, "/", ""))
+
+	sanitizedArch := strings.ReplaceAll(spec.Arch, "/", "")
+	subDir := fmt.Sprintf("%s_%s", targetOS, sanitizedArch)
+
 	if _, err := out.Export(ctx, filepath.Join(*outDir, spec.Distro, subDir)); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(4)
