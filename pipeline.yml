@@ -44,7 +44,7 @@ parameters:
     type: string
     default: "1"
 
-name: ${{ parameters.package_name }}-${{ parameters.distro }}-${{ replace(parameters.arch, '/', '') }}
+name: $(Date:yyyyMMdd).$(Rev:r)-${{ parameters.package_name }}-${{ parameters.distro }}-${{ replace(parameters.arch, '/', '') }}
 
 
 variables:
