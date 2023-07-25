@@ -48,6 +48,7 @@ name: $(Date:yyyyMMdd).$(Rev:r)-${{ parameters.package_name }}-${{ parameters.di
 
 
 variables:
+  prod.pool: production-pool-amd64-mariner-2
   ${{ if contains(parameters.arch, 'arm') }}:
     build.pool: staging-pool-arm64-mariner-2
   ${{ else }}:
@@ -198,7 +199,7 @@ stages:
     condition: succeeded()
     jobs:
       - job: SignArtifacts
-        pool: $(build.pool)
+        pool: $(prod.pool)
         workspace:
           clean: all
         steps:
@@ -222,13 +223,13 @@ stages:
               pathToPublish: "$(Pipeline.Workspace)/packages"
               artifactName: packages
   - stage: PublishStaging
+    dependsOn: ["Sign"]
     condition: succeeded()
     jobs:
       - deployment: publishstoragestaging
         pool: $(build.pool)
         displayName: staging storage
         environment: staging
-        dependsOn: []
         workspace:
           clean: all
         variables:
@@ -279,12 +280,11 @@ stages:
                   PACKAGE_VERSION: ${{ parameters.tag }}+azure
                 displayName: Upload to blob store
   - stage: PublishProduction
-    # dependsOn: ["Sign", "PublishStaging"]
-    dependsOn: ["PublishStaging"]
+    dependsOn: ["Sign", "PublishStaging"]
     condition: succeeded()
     jobs:
       - deployment: publishstorageproduction
-        pool: $(build.pool)
+        pool: $(prod.pool)
         displayName: production storage
         environment: production
         workspace:
