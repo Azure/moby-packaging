@@ -43,8 +43,12 @@ parameters:
     displayName: revision
     type: string
     default: "1"
+  - name: build_id
+    displayName: build id
+    type: string
+    default: $(Date:yyyyMMdd:Rev:r)
 
-name: $(Date:yyyyMMdd).$(Rev:r)-${{ parameters.package_name }}-${{ parameters.distro }}-${{ replace(parameters.arch, '/', '') }}
+name: ${{ parameters.build_id }}-${{ parameters.package_name }}-${{ parameters.distro }}-${{ replace(parameters.arch, '/', '') }}
 
 
 variables:
