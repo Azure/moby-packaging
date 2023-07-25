@@ -46,9 +46,9 @@ parameters:
   - name: build_id
     displayName: build id
     type: string
-    default: $(Date:yyyyMMdd:Rev:r)
+    default: "__not_supplied"
 
-name: ${{ parameters.build_id }}-${{ parameters.package_name }}-${{ parameters.distro }}-${{ replace(parameters.arch, '/', '') }}
+name: ${{ replace(parameters.build_id, '__not_supplied', '$(Date:yyyyMMdd).$(Rev:r)') }}-${{ parameters.package_name }}-${{ parameters.distro }}-${{ replace(parameters.arch, '/', '') }}
 
 
 variables:
