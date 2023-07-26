@@ -214,113 +214,123 @@ stages:
           - name: storage.account.container
             value: moby
         steps:
-          - checkout: none
           - download: current
             artifact: packages
           - script: |
-              set -o xtrace
+              set -exu
               : ${BLOB_PREFIX:=/}
-              cd "${ARTIFACTS_DIR}"
 
-              VERSION="${PACKAGE_VERSION}"
-              if [ -z "${VERSION}" ]; then
-                echo skipping blob upload since the version was not defined in the artifacts output
-                exit 0
+              readarray -d '' artifacts < <(find "$ARTIFACTS_DIR" -regextype posix-egrep -regex '.*\.(deb|rpm|zip)$' -print0)
+              if ! [ "${#artifacts[@]}" -eq 1 ]; then
+                echo "##vso[task.logissue type=error;]finding artifacts failed, either none or too many: ${artifacts[@]}"
               fi
+
+              artifact="${artifacts[0]}"
+              source_dir="$(dirname "$artifact")"
+
+              readarray -d '' specs < <(find "$ARTIFACTS_DIR" -name '${{ parameters.package_name }}-spec.json' -print0)
+              if ! [ "${#specs[@]}" -eq 1 ]; then
+                printf "##vso[task.complete result=Failed;]%s\n" "multiple spec files found: ${specs[*]}"
+                exit 1
+              fi
+
+              spec="${specs[0]}"
 
               az login --identity
               az storage container create -n "${STORAGE_ACCOUNT_CONTAINER}" --auth-mode=login
 
-              for distro_path in ./*; do
-                [ -d "${distro_path}" ] || continue
-                distro="$(basename ${distro_path})"
-                az storage blob upload-batch \
-                  --max-connections=10 --auth-mode=login \
-                  --overwrite \
-                  --source ${distro_path} \
-                  --pattern "*/${PACKAGE_NAME}*" \
-                  --destination "${STORAGE_ACCOUNT_CONTAINER}" \
-                  --destination-path "${PACKAGE_NAME}/${VERSION}/${distro}"
-              done
+              # push package and spec file to staging storage account
+              az storage blob upload-batch \
+                --max-connections=10 --auth-mode=login \
+                --overwrite \
+                --source "$source_dir" \
+                --pattern "${PACKAGE_NAME}*" \
+                --destination "${STORAGE_ACCOUNT_CONTAINER}" \
+                --destination-path "${PACKAGE_NAME}/${VERSION}/${DISTRO}" > ./blobs.json
+
+              go run ./cmd/msg --blobs-file="./blobs.json" --artifact-filename="$artifact" --spec-filename="$spec" > queue_message
+              az storage message put --queue-name moby-packaging-signing-and-publishing --content @/dev/stdin < queue_message
             env:
               ARTIFACTS_DIR: $(Pipeline.Workspace)/packages
               AZURE_STORAGE_ACCOUNT: $(storage.account.name)
               PACKAGE_NAME: ${{ parameters.package_name }}
               PACKAGE_VERSION: ${{ parameters.tag }}+azure
-            displayName: Upload to blob store
-  - stage: Sign
-    dependsOn: ["PublishStaging"]
-    condition: succeeded()
-    jobs:
-      - job: SignArtifacts
-        pool: production-pool-amd64-mariner-2
-        workspace:
-          clean: all
-        steps:
-          - checkout: none
-          - download: current
-            artifact: packages
-          - task: UseDotNet@2
-            displayName: Install .NET Core SDK
-            inputs:
-              packageType: sdk
-              version: 2.2.207
-          - template: templates/sign.steps.${{ parameters.os }}.yml
-            parameters:
-              folderPath: $(Pipeline.Workspace)/packages
-              ${{ if eq(parameters.os, 'windows') }}:
-                pattern: '**/**/*.exe'
-              ${{ else }}:
-                pattern: '**/**/*'
-          - task: PublishBuildArtifacts@1
-            inputs:
-              pathToPublish: "$(Pipeline.Workspace)/packages"
-              artifactName: packages
-  - stage: PublishProduction
-    dependsOn: ["Sign"]
-    condition: succeeded()
-    jobs:
-      - job: PublishProduction
-        pool: production-pool-amd64-mariner-2
-        workspace:
-          clean: all
-        variables:
-          - name: storage.account.name
-            value: mobyreleases
-          - name: storage.account.container
-            value: moby
-        steps:
-        - checkout: none
-        - download: current
-          artifact: packages
-        - script: |
-            set -o xtrace
-            : ${BLOB_PREFIX:=/}
-            cd "${ARTIFACTS_DIR}"
+              DISTRO: ${{ parameters.distro }}
+            displayName: Upload to Staging, Queue Signing Job
+  # - stage: Sign
+  #   dependsOn: ["PublishStaging"]
+  #   condition: succeeded()
+  #   jobs:
+  #     - job: SignArtifacts
+  #       pool: production-pool-amd64-mariner-2
+  #       workspace:
+  #         clean: all
+  #       steps:
+  #         - checkout: none
+  #         - download: current
+  #           artifact: packages
+  #         - task: UseDotNet@2
+  #           displayName: Install .NET Core SDK
+  #           inputs:
+  #             packageType: sdk
+  #             version: 2.2.207
+  #         - template: templates/sign.steps.${{ parameters.os }}.yml
+  #           parameters:
+  #             folderPath: $(Pipeline.Workspace)/packages
+  #             ${{ if eq(parameters.os, 'windows') }}:
+  #               pattern: '**/**/*.exe'
+  #             ${{ else }}:
+  #               pattern: '**/**/*'
+  #         - task: PublishBuildArtifacts@1
+  #           inputs:
+  #             pathToPublish: "$(Pipeline.Workspace)/packages"
+  #             artifactName: packages
+  # - stage: PublishProduction
+  #   dependsOn: ["Sign"]
+  #   condition: succeeded()
+  #   jobs:
+  #     - job: PublishProduction
+  #       pool: production-pool-amd64-mariner-2
+  #       workspace:
+  #         clean: all
+  #       variables:
+  #         - name: storage.account.name
+  #           value: mobyreleases
+  #         - name: storage.account.container
+  #           value: moby
+  #       steps:
+  #       - checkout: none
+  #       - download: current
+  #         artifact: packages
+  #       - script: |
+  #           set -o xtrace
+  #           : ${BLOB_PREFIX:=/}
+  #           cd "${ARTIFACTS_DIR}"
 
-            VERSION="${PACKAGE_VERSION}"
-            if [ -z "${VERSION}" ]; then
-              echo skipping blob upload since the version was not defined in the artifacts output
-              exit 0
-            fi
+  #           VERSION="${PACKAGE_VERSION}"
+  #           if [ -z "${VERSION}" ]; then
+  #             echo skipping blob upload since the version was not defined in the artifacts output
+  #             exit 0
+  #           fi
 
-            az login --identity
-            az storage container create -n "${STORAGE_ACCOUNT_CONTAINER}" --auth-mode=login
+  #           az login --identity
+  #           az storage container create -n "${STORAGE_ACCOUNT_CONTAINER}" --auth-mode=login
 
-            for distro_path in ./*; do
-              [ -d "${distro_path}" ] || continue
-              distro="$(basename ${distro_path})"
-              az storage blob upload-batch \
-                --max-connections=10 --auth-mode=login \
-                --overwrite \
-                --source ${distro_path} \
-                --pattern "*/${PACKAGE_NAME}*" \
-                --destination "${STORAGE_ACCOUNT_CONTAINER}" \
-                --destination-path "${PACKAGE_NAME}/${VERSION}/${distro}"
-            done
-          env:
-            ARTIFACTS_DIR: $(Pipeline.Workspace)/packages
-            AZURE_STORAGE_ACCOUNT: $(storage.account.name)
-            PACKAGE_NAME: ${{ parameters.package_name }}
-            PACKAGE_VERSION: ${{ parameters.tag }}+azure
-          displayName: Upload to blob store
+  #           for distro_path in ./*; do
+  #             [ -d "${distro_path}" ] || continue
+  #             distro="$(basename ${distro_path})"
+  #             az storage blob upload-batch \
+  #               --max-connections=10 --auth-mode=login \
+  #               --overwrite \
+  #               --source ${distro_path} \
+  #               --pattern "*/${PACKAGE_NAME}*" \
+  #               --destination "${STORAGE_ACCOUNT_CONTAINER}" \
+  #               --destination-path "${PACKAGE_NAME}/${VERSION}/${distro}"
+
+  #           done
+  #         env:
+  #           ARTIFACTS_DIR: $(Pipeline.Workspace)/packages
+  #           AZURE_STORAGE_ACCOUNT: $(storage.account.name)
+  #           PACKAGE_NAME: ${{ parameters.package_name }}
+  #           PACKAGE_VERSION: ${{ parameters.tag }}+azure
+  #         displayName: Upload to blob store
