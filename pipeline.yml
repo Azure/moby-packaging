@@ -246,9 +246,9 @@ stages:
                 --source "$source_dir" \
                 --pattern "${PACKAGE_NAME}*" \
                 --destination "${STORAGE_ACCOUNT_CONTAINER}" \
-                --destination-path "${PACKAGE_NAME}/${VERSION}/${DISTRO}" > ./blobs.json
+                --destination-path "${PACKAGE_NAME}/${PACKAGE_VERSION}/${DISTRO}" | tee ./blobs.json
 
-              go run ./cmd/msg --blobs-file="./blobs.json" --artifact-filename="$artifact" --spec-filename="$spec" > queue_message
+              go run ./cmd/msg --blobs-file="./blobs.json" --artifact-filename="$artifact" --spec-filename="$spec" | tee queue_message
               az storage message put --queue-name moby-packaging-signing-and-publishing --content @/dev/stdin < queue_message
             env:
               ARTIFACTS_DIR: $(Pipeline.Workspace)/packages
