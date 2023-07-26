@@ -68,9 +68,9 @@ stages:
               set -x
 
               bundle_dir="$(Pipeline.Workspace)/bundles"
-              bundle_distro_dir="$bundle_dir/${{ parameters.distro }}"
+              bundle_distro_dir="$bundle_dir/${{ parameters.distro }}/$OS_ARCH_DIR"
               mkdir -p "$bundle_distro_dir"
-              spec_file="$bundle_distro_dir/spec.json"
+              spec_file="$bundle_distro_dir/${{ parameters.package_name }}-spec.json"
 
               printf '
                 {
@@ -85,6 +85,8 @@ stages:
               ' > $spec_file
 
               go run . --build-spec="$spec_file" --output="$bundle_dir"
+            env:
+              OS_ARCH_DIR: "${{ parameters.os }}_${{ replace(parameters.arch, '/', '') }}"
           - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
             displayName: Generate SBOM
             inputs:
@@ -156,7 +158,7 @@ stages:
               # the bundles directory from the previous stage will be in $(Pipeline.Workspace)/packages
               bundle_dir="$(Pipeline.Workspace)/packages"
 
-              readarray -d '' specs < <(find "$bundle_dir" -name 'spec.json' -print0)
+              readarray -d '' specs < <(find "$bundle_dir" -name '${{ parameters.package_name }}-spec.json' -print0)
               if ! [ "${#specs[@]}" -eq 1 ]; then
                 printf "##vso[task.complete result=Failed;]%s\n" "multiple spec files found: ${specs[*]}"
                 exit 1
