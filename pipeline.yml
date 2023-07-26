@@ -52,7 +52,6 @@ name: ${{ replace(parameters.build_id, '__not_supplied', '$(Date:yyyyMMdd).$(Rev
 
 
 variables:
-  prod.pool: production-pool-amd64-mariner-2
   ${{ if contains(parameters.arch, 'arm') }}:
     build.pool: staging-pool-arm64-mariner-2
   ${{ else }}:
@@ -203,7 +202,7 @@ stages:
     condition: succeeded()
     jobs:
       - job: SignArtifacts
-        pool: $(prod.pool)
+        pool: production-pool-amd64-mariner-2
         workspace:
           clean: all
         steps:
@@ -288,7 +287,7 @@ stages:
     condition: succeeded()
     jobs:
       - deployment: publishstorageproduction
-        pool: $(prod.pool)
+        pool: production-pool-amd64-mariner-2
         displayName: production storage
         environment: production
         workspace:
