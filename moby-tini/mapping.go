@@ -53,10 +53,7 @@ var (
 			"/build/src/build/tini-static",
 		},
 		Conflicts: []string{
-			"tini",
-		},
-		Replaces: []string{
-			"tini",
+			"moby-engine (<< 24.0.0)",
 		},
 		Description: BaseArchive.Description,
 	}
