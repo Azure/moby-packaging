@@ -198,35 +198,8 @@ stages:
             inputs:
               pathToPublish: "tests/.test"
               artifactName: testresults
-  - stage: Sign
-    condition: succeeded()
-    jobs:
-      - job: SignArtifacts
-        pool: production-pool-amd64-mariner-2
-        workspace:
-          clean: all
-        steps:
-          - checkout: none
-          - download: current
-            artifact: packages
-          - task: UseDotNet@2
-            displayName: Install .NET Core SDK
-            inputs:
-              packageType: sdk
-              version: 2.2.207
-          - template: templates/sign.steps.${{ parameters.os }}.yml
-            parameters:
-              folderPath: $(Pipeline.Workspace)/packages
-              ${{ if eq(parameters.os, 'windows') }}:
-                pattern: '**/**/*.exe'
-              ${{ else }}:
-                pattern: '**/**/*'
-          - task: PublishBuildArtifacts@1
-            inputs:
-              pathToPublish: "$(Pipeline.Workspace)/packages"
-              artifactName: packages
   - stage: PublishStaging
-    dependsOn: ["Sign"]
+    dependsOn: []
     condition: succeeded()
     jobs:
       - deployment: publishstoragestaging
@@ -282,6 +255,33 @@ stages:
                   PACKAGE_NAME: ${{ parameters.package_name }}
                   PACKAGE_VERSION: ${{ parameters.tag }}+azure
                 displayName: Upload to blob store
+  - stage: Sign
+    condition: succeeded()
+    jobs:
+      - job: SignArtifacts
+        pool: production-pool-amd64-mariner-2
+        workspace:
+          clean: all
+        steps:
+          - checkout: none
+          - download: current
+            artifact: packages
+          - task: UseDotNet@2
+            displayName: Install .NET Core SDK
+            inputs:
+              packageType: sdk
+              version: 2.2.207
+          - template: templates/sign.steps.${{ parameters.os }}.yml
+            parameters:
+              folderPath: $(Pipeline.Workspace)/packages
+              ${{ if eq(parameters.os, 'windows') }}:
+                pattern: '**/**/*.exe'
+              ${{ else }}:
+                pattern: '**/**/*'
+          - task: PublishBuildArtifacts@1
+            inputs:
+              pathToPublish: "$(Pipeline.Workspace)/packages"
+              artifactName: packages
   - stage: PublishProduction
     dependsOn: ["Sign", "PublishStaging"]
     condition: succeeded()
