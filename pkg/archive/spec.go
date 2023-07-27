@@ -9,3 +9,11 @@ type Spec struct {
 	Tag      string `json:"tag"`
 	Revision string `json:"revision"`
 }
+
+func (s *Spec) OS() string {
+	if s.Distro == "windows" {
+		return "windows"
+	}
+
+	return "linux"
+}
