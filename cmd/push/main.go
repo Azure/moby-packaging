@@ -7,17 +7,16 @@ import (
 	"flag"
 	"fmt"
 	"io/fs"
-	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
-	"github.com/Azure/azure-storage-queue-go/azqueue"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azqueue"
 	"github.com/Azure/moby-packaging/pkg/archive"
 )
 
@@ -83,6 +82,7 @@ func main() {
 	var blobFile string
 	var specFile string
 	r := regexp.MustCompile(`^.*\.(deb|rpm|zip)$`)
+
 	if err := filepath.WalkDir(f.ArtifactDir, func(path string, d fs.DirEntry, err error) error {
 		if d.IsDir() {
 			return nil
@@ -168,27 +168,21 @@ func main() {
 		panic(err)
 	}
 
-	tkn, err := credential.GetToken(ctx, policy.TokenRequestOptions{})
+	serviceURL := fmt.Sprintf("https://%s.queue.core.windows.net", accountName)
+
+	sClient, err := azqueue.NewServiceClient(serviceURL, credential, nil)
 	if err != nil {
 		panic(err)
 	}
 
-	qCred := azqueue.NewTokenCredential(tkn.Token, nil)
-	p := azqueue.NewPipeline(qCred, azqueue.PipelineOptions{})
-	u, err := url.Parse(fmt.Sprintf("https://%s.queue.core.windows.net", accountName))
+	qClient := sClient.NewQueueClient(queueName)
+	resp, err := qClient.EnqueueMessage(ctx, string(final), &azqueue.EnqueueMessageOptions{TimeToLive: to.Ptr(int32(60) * 60 * 24 * 7)})
 	if err != nil {
-		panic(err)
-	}
-
-	serviceURL := azqueue.NewServiceURL(*u, p)
-	queueURL := serviceURL.NewQueueURL(queueName)
-	messagesURL := queueURL.NewMessagesURL()
-
-	if _, err := messagesURL.Enqueue(ctx, string(final), 0, time.Hour*24*7); err != nil {
 		panic(err)
 	}
 
 	fmt.Println(string(final))
+	fmt.Println(resp)
 }
 
 func getArtifactDigest(blobFile string) (string, error) {
