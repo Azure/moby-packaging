@@ -144,10 +144,12 @@ func main() {
 	if _, err := client.UploadFile(ctx, containerName, storagePathBlob, blob, &azblob.UploadFileOptions{}); err != nil {
 		panic(err)
 	}
+	fmt.Println("file uploaded:", storagePathBlob)
 
 	if _, err := client.UploadFile(ctx, containerName, storagePathSpec, specGoFile, &azblob.UploadFileOptions{}); err != nil {
 		panic(err)
 	}
+	fmt.Println("file uploaded:", storagePathSpec)
 
 	sum, err := getArtifactDigest(blobFile)
 	if err != nil {
@@ -170,12 +172,7 @@ func main() {
 
 	serviceURL := fmt.Sprintf("https://%s.queue.core.windows.net", accountName)
 
-	sCredential, err := azidentity.NewDefaultAzureCredential(nil)
-	if err != nil {
-		panic(err)
-	}
-
-	sClient, err := azqueue.NewServiceClient(serviceURL, sCredential, nil)
+	sClient, err := azqueue.NewServiceClient(serviceURL, credential, nil)
 	if err != nil {
 		panic(err)
 	}
