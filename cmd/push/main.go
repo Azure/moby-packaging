@@ -170,7 +170,12 @@ func main() {
 
 	serviceURL := fmt.Sprintf("https://%s.queue.core.windows.net", accountName)
 
-	sClient, err := azqueue.NewServiceClient(serviceURL, credential, nil)
+	sCredential, err := azidentity.NewDefaultAzureCredential(nil)
+	if err != nil {
+		panic(err)
+	}
+
+	sClient, err := azqueue.NewServiceClient(serviceURL, sCredential, nil)
 	if err != nil {
 		panic(err)
 	}
