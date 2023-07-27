@@ -22,7 +22,7 @@ var (
 		Files: []archive.File{
 			{
 				Source: "/build/src/build/tini-static",
-				Dest:   "usr/bin/docker-init",
+				Dest:   "usr/libexec/docker/docker-init",
 			},
 			{
 				Source: "/build/legal/LICENSE",
@@ -54,7 +54,6 @@ var (
 		},
 		Conflicts: []string{
 			"tini",
-			"moby-engine (<< 24.0.0)",
 		},
 		Replaces: []string{
 			"tini",
@@ -70,9 +69,7 @@ var (
 			"/build/src/build/tini-static",
 		},
 		Description: BaseArchive.Description,
-		Conflicts: []string{
-			"moby-engine < 24.0.0",
-		},
+		Conflicts:   []string{},
 	}
 
 	MarinerArchive = RPMArchive

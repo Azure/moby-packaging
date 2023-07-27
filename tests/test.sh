@@ -11,12 +11,14 @@ fi
 @test "test docker run hello world" {
     run timeout --kill-after=60s 30s docker run ${TEST_PLATFORM} --rm hello-world
     assert_output --partial "This message shows that your installation appears to be working correctly"
+
+    # Make sure --init works which has an extra binary
+    run timeout --kill-after=60s 30s docker run --init --rm ${TEST_PLATFORM} docker.io/library/hello-world:latest
+    assert_output --partial "This message shows that your installation appears to be working correctly"
 }
 
 @test "extra docker binaries exists" {
     run command -v docker-proxy
-    assert_success
-    run command -v docker-init
     assert_success
 }
 
