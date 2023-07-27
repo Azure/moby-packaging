@@ -81,6 +81,7 @@ func perform() error {
 	if containerName == "" {
 		containerName = fmt.Sprintf("%d", time.Now().Unix())
 	}
+	// containerName = sanitizeContainerName(containerName)
 
 	if _, err := client.CreateContainer(ctx, containerName, nil); err != nil {
 		if !strings.Contains(err.Error(), containerExistsError) {
@@ -226,4 +227,9 @@ func getArtifactDigest(blobFile string) (string, error) {
 
 	sha := fmt.Sprintf("%x", sha256.Sum256(b))
 	return sha, nil
+}
+
+func sanitizeContainerName(containerName string) string {
+	r := regexp.MustCompile("[^a-z0-9-]")
+	return r.ReplaceAllString(containerName, "")
 }
