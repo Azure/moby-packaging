@@ -18,6 +18,7 @@ const (
 	focal    = "focal"
 	bionic   = "bionic"
 	bullseye = "bullseye"
+	bookworm = "bookworm"
 	buster   = "buster"
 	rhel9    = "rhel9"
 	rhel8    = "rhel8"
@@ -35,6 +36,7 @@ var distros = map[string]DistroTestHelper{
 	focal:    FocalTestHelper{},
 	bionic:   BionicTestHelper{},
 	bullseye: BullseyeTestHelper{},
+	bookworm: BookwormTestHelper{},
 	buster:   BusterTestHelper{},
 	rhel9:    Rhel9TestHelper{},
 	rhel8:    Rhel8TestHelper{},
@@ -141,6 +143,29 @@ func (BullseyeTestHelper) Installer(ctx context.Context, client *dagger.Client) 
 
 func (BullseyeTestHelper) FormatVersion(version, revision string) string {
 	return version + "-debian11u" + revision
+}
+
+type BookwormTestHelper struct{}
+
+func (BookwormTestHelper) Image(ctx context.Context, t *testing.T, client *dagger.Client) *dagger.Container {
+	deb := client.HTTP("https://packages.microsoft.com/config/debian/12/packages-microsoft-prod.deb")
+
+	c := client.Container().From(targets.BullseyeRef)
+	return apt.Install(c, client.CacheVolume(targets.BullseyeAptCacheKey), client.CacheVolume(targets.BullseyeAptLibCacheKey),
+		"systemd", "strace", "ssh", "udev", "iptables", "jq",
+	).
+		WithExec([]string{"systemctl", "enable", "ssh"}).
+		WithExec([]string{"update-alternatives", "--set", "iptables", "/usr/sbin/iptables-legacy"}).
+		WithMountedFile("/tmp/packages-microsoft-prod.deb", deb).
+		WithExec([]string{"/usr/bin/dpkg", "-i", "/tmp/packages-microsoft-prod.deb"})
+}
+
+func (BookwormTestHelper) Installer(ctx context.Context, client *dagger.Client) *dagger.File {
+	return client.Container().Rootfs().WithNewFile("install.sh", debInstall, dagger.DirectoryWithNewFileOpts{Permissions: 0744}).File("install.sh")
+}
+
+func (BookwormTestHelper) FormatVersion(version, revision string) string {
+	return version + "-debian12u" + revision
 }
 
 type BusterTestHelper struct{}
