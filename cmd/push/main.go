@@ -49,6 +49,12 @@ var (
 )
 
 func main() {
+	if err := perform(); err != nil {
+		panic(err)
+	}
+}
+
+func perform() error {
 	f := Flags{}
 	flag.StringVar(&f.ArtifactDir, "artifact-dir", "", "path to directory of artifacts to upload")
 	flag.StringVar(&f.BuildID, "build-id", "", "build id")
@@ -63,12 +69,12 @@ func main() {
 	ctx := context.Background()
 	credential, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	client, err := azblob.NewClient(blobBucketURL, credential, nil)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	containerName := f.BuildID
@@ -78,18 +84,18 @@ func main() {
 
 	if _, err := client.CreateContainer(ctx, containerName, nil); err != nil {
 		if !strings.Contains(err.Error(), containerExistsError) {
-			panic(err)
+			return err
 		}
 	}
 
 	blobFile, specFile, err := findBlobAndSpec(f)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	spec, err := unmarshalSpec(specFile)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	pkgOS := spec.OS()
@@ -101,27 +107,27 @@ func main() {
 
 	blobGoFile, err := os.Open(blobFile)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	specGoFile, err := os.Open(specFile)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	if _, err := client.UploadFile(ctx, containerName, storagePathBlob, blobGoFile, &azblob.UploadFileOptions{}); err != nil {
-		panic(err)
+		return err
 	}
 	fmt.Println("file uploaded:", storagePathBlob)
 
 	if _, err := client.UploadFile(ctx, containerName, storagePathSpec, specGoFile, &azblob.UploadFileOptions{}); err != nil {
-		panic(err)
+		return err
 	}
 	fmt.Println("file uploaded:", storagePathSpec)
 
 	sum, err := getArtifactDigest(blobFile)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	qm := QueueMessage{
@@ -133,22 +139,39 @@ func main() {
 		},
 	}
 
-	final, err := json.Marshal(&qm)
+	queueMessageCompact, err := json.Marshal(&qm)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	serviceURL := fmt.Sprintf("https://%s.queue.core.windows.net", accountName)
 
 	sClient, err := azqueue.NewServiceClient(serviceURL, credential, nil)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	qClient := sClient.NewQueueClient(queueName)
-	if _, err := qClient.EnqueueMessage(ctx, string(final), &azqueue.EnqueueMessageOptions{TimeToLive: &sevenDaysInSeconds}); err != nil {
-		panic(err)
+
+	resp, err := qClient.EnqueueMessage(ctx, string(queueMessageCompact), &azqueue.EnqueueMessageOptions{TimeToLive: &sevenDaysInSeconds})
+	if err != nil {
+		return err
 	}
+
+	if !f.Debug {
+		return nil
+	}
+
+	// debug output
+	queueMessageHuman, err := json.MarshalIndent(&qm, "", "    ")
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(queueMessageHuman)
+	fmt.Printf("%#v\n", resp)
+
+	return nil
 }
 
 func unmarshalSpec(specFile string) (archive.Spec, error) {
