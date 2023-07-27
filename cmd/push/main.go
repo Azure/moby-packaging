@@ -126,13 +126,11 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("opened blob")
 
 	specGoFile, err := os.Open(specFile)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("opened spec")
 
 	if _, err := client.UploadFile(ctx, containerName, storagePathBlob, blob, &azblob.UploadFileOptions{}); err != nil {
 		panic(err)
@@ -142,16 +140,19 @@ func main() {
 		panic(err)
 	}
 
-	qm := QueueMessage{}
-	qm.Spec = spec
-	qm.Artifact.Name = filepath.Base(f.ArtifactDir)
-
-	qm.Artifact.Sha256Sum, err = getArtifactDigest(f)
+	sum, err := getArtifactDigest(f)
 	if err != nil {
 		panic(err)
 	}
-	artifactURI := fmt.Sprintf("%s%s/%s", url, containerName, storagePathBlob)
-	qm.Artifact.URI = artifactURI
+
+	qm := QueueMessage{
+		Spec: spec,
+		Artifact: ArtifactInfo{
+			Name:      filepath.Base(blobFile),
+			URI:       fmt.Sprintf("%s%s/%s", url, containerName, storagePathBlob),
+			Sha256Sum: sum,
+		},
+	}
 
 	final, err := json.MarshalIndent(&qm, "", "    ")
 	if err != nil {
