@@ -39,7 +39,7 @@ type BlobKV struct {
 }
 
 const (
-	url                  = "https://moby.blob.core.windows.net/"
+	blobBucketURL        = "https://moby.blob.core.windows.net/"
 	containerName        = "moby"
 	containerExistsError = "RESPONSE 409"
 )
@@ -60,7 +60,7 @@ func main() {
 		panic(err)
 	}
 
-	client, err := azblob.NewClient(url, credential, nil)
+	client, err := azblob.NewClient(blobBucketURL, credential, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -140,7 +140,7 @@ func main() {
 		panic(err)
 	}
 
-	sum, err := getArtifactDigest(f)
+	sum, err := getArtifactDigest(blobFile)
 	if err != nil {
 		panic(err)
 	}
@@ -149,7 +149,7 @@ func main() {
 		Spec: spec,
 		Artifact: ArtifactInfo{
 			Name:      filepath.Base(blobFile),
-			URI:       fmt.Sprintf("%s%s/%s", url, containerName, storagePathBlob),
+			URI:       fmt.Sprintf("%s%s/%s", blobBucketURL, containerName, storagePathBlob),
 			Sha256Sum: sum,
 		},
 	}
@@ -159,11 +159,26 @@ func main() {
 		panic(err)
 	}
 
+	// qCred := azqueue.New
+	p := azqueue.NewPipeline(credential, azqueue.PipelineOptions{})
+	u, err := url.Parse(fmt.Sprintf("https://%s.queue.core.windows.net", accountName))
+	if err != nil {
+		panic(err)
+	}
+
+	serviceURL := azqueue.NewServiceURL(*u, p)
+	queueURL := serviceURL.NewQueueURL(queueName)
+	messagesURL := queueURL.NewMessagesURL()
+
+	if _, err := messagesURL.Enqueue(ctx, string(final), 0, time.Hour*24*7); err != nil {
+		panic(err)
+	}
+
 	fmt.Println(string(final))
 }
 
-func getArtifactDigest(f Flags) (string, error) {
-	b, err := os.ReadFile(f.ArtifactDir)
+func getArtifactDigest(blobFile string) (string, error) {
+	b, err := os.ReadFile(blobFile)
 	if err != nil {
 		return "", err
 	}
