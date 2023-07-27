@@ -53,6 +53,7 @@ var targets = map[string]MakeTargetFunc{
 	"buster":   Buster,
 	"bionic":   Bionic,
 	"bullseye": Bullseye,
+	"bookworm": Bookworm,
 	"focal":    Focal,
 	"rhel8":    Rhel8,
 	"rhel9":    Rhel9,
