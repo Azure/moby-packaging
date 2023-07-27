@@ -84,13 +84,21 @@ func main() {
 			return nil
 		}
 
-		if strings.HasSuffix(specFile, "spec.json") {
+		if strings.HasSuffix(d.Name(), "spec.json") {
 			specFile = path
 		}
 
 		return nil
 	}); err != nil {
 		panic(err)
+	}
+
+	if blobFile == "" {
+		panic("no artifact found")
+	}
+
+	if specFile == "" {
+		panic("no spec file found")
 	}
 
 	specBytes, err := os.ReadFile(specFile)
@@ -118,11 +126,13 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	fmt.Println("opened blob")
 
 	specGoFile, err := os.Open(specFile)
 	if err != nil {
 		panic(err)
 	}
+	fmt.Println("opened spec")
 
 	if _, err := client.UploadFile(ctx, containerName, storagePathBlob, blob, &azblob.UploadFileOptions{}); err != nil {
 		panic(err)
