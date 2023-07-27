@@ -220,13 +220,9 @@ stages:
               set -exu
               : ${BLOB_PREFIX:=/}
 
-              go run ./cmd/push --artifact-dir="$ARTIFACTS_DIR"
+              go run ./cmd/push --artifact-dir="$ARTIFACTS_DIR" --build-id="${{ parameters.build_id }}"
             env:
               ARTIFACTS_DIR: $(Pipeline.Workspace)/packages
-              AZURE_STORAGE_ACCOUNT: $(storage.account.name)
-              PACKAGE_NAME: ${{ parameters.package_name }}
-              PACKAGE_VERSION: ${{ parameters.tag }}+azure
-              DISTRO: ${{ parameters.distro }}
             displayName: Upload to Staging, Queue Signing Job
   # - stage: Sign
   #   dependsOn: ["PublishStaging"]
