@@ -220,35 +220,7 @@ stages:
               set -exu
               : ${BLOB_PREFIX:=/}
 
-              readarray -d '' artifacts < <(find "$ARTIFACTS_DIR" -regextype posix-egrep -regex '.*\.(deb|rpm|zip)$' -print0)
-              if ! [ "${#artifacts[@]}" -eq 1 ]; then
-                echo "##vso[task.logissue type=error;]finding artifacts failed, either none or too many: ${artifacts[@]}"
-              fi
-
-              artifact="${artifacts[0]}"
-              source_dir="$(dirname "$artifact")"
-
-              readarray -d '' specs < <(find "$ARTIFACTS_DIR" -name '${{ parameters.package_name }}-spec.json' -print0)
-              if ! [ "${#specs[@]}" -eq 1 ]; then
-                printf "##vso[task.complete result=Failed;]%s\n" "multiple spec files found: ${specs[*]}"
-                exit 1
-              fi
-
-              spec="${specs[0]}"
-
-              az login --identity
-              az storage container create -n "${STORAGE_ACCOUNT_CONTAINER}" --auth-mode=login
-
-              # push package and spec file to staging storage account
-              az storage blob upload-batch \
-                --max-connections=10 --auth-mode=login \
-                --overwrite \
-                --source "$source_dir" \
-                --pattern "${PACKAGE_NAME}*" \
-                --destination "${STORAGE_ACCOUNT_CONTAINER}" \
-                --destination-path "${PACKAGE_NAME}/${PACKAGE_VERSION}/${DISTRO}" | tee ./blobs.json
-
-              go run ./cmd/msg --blobs-file="./blobs.json" --artifact-filename="$artifact" --spec-filename="$spec" | tee queue_message
+              go run ./cmd/push --artifact-dir="$ARTIFACTS_DIR" | tee queue_message
               az storage message put --queue-name moby-packaging-signing-and-publishing --content @/dev/stdin < queue_message
             env:
               ARTIFACTS_DIR: $(Pipeline.Workspace)/packages
