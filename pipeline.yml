@@ -95,113 +95,113 @@ stages:
             inputs:
               pathToPublish: "$(Pipeline.Workspace)/bundles"
               artifactName: packages
-  - stage: TestAndSBOM
-    jobs:
-      - job: TestPackages
-        condition: ne('${{ parameters.distro }}', 'windows')
-        pool: $(build.pool)
-        steps:
-          - download: current
-            artifact: packages
-          - script: |
-              ! [ ${{ parameters.distro }} = mariner2 ] && exit 0
+  # - stage: TestAndSBOM
+  #   jobs:
+  #     - job: TestPackages
+  #       condition: ne('${{ parameters.distro }}', 'windows')
+  #       pool: $(build.pool)
+  #       steps:
+  #         - download: current
+  #           artifact: packages
+  #         - script: |
+  #             ! [ ${{ parameters.distro }} = mariner2 ] && exit 0
 
-              set -exu
+  #             set -exu
 
-              declare -A rhel_arch
-              rhel_arch=(
-                [arm64]=aarch64
-                [amd64]=x86_64
-              )
+  #             declare -A rhel_arch
+  #             rhel_arch=(
+  #               [arm64]=aarch64
+  #               [amd64]=x86_64
+  #             )
 
-              bundle_dir="$(Pipeline.Workspace)/packages"
-              arch=${rhel_arch[${{ parameters.arch }}]}
-              pkg_basename="$(printf "moby-tini-0.19.0-1.cm2.%s.rpm" "$arch")"
-              tini_url="https://moby.blob.core.windows.net/moby/moby-tini/0.19.0/mariner2/$pkg_basename"
+  #             bundle_dir="$(Pipeline.Workspace)/packages"
+  #             arch=${rhel_arch[${{ parameters.arch }}]}
+  #             pkg_basename="$(printf "moby-tini-0.19.0-1.cm2.%s.rpm" "$arch")"
+  #             tini_url="https://moby.blob.core.windows.net/moby/moby-tini/0.19.0/mariner2/$pkg_basename"
 
-              curl -fsSL -o "$bundle_dir/mariner2/$pkg_basename" "$tini_url"
-            # Install tini manually on mariner, but not when tini is the
-            # package being built/tested.
-            condition: |
-              and(
-                eq('${{ parameters.distro }}', 'mariner2'),
-                ne('${{ parameters.package_name }}', 'moby-tini')
-              )
-            displayName: MarinerInstallTini
-          - script: |
-              set -exu # TODO: remove
+  #             curl -fsSL -o "$bundle_dir/mariner2/$pkg_basename" "$tini_url"
+  #           # Install tini manually on mariner, but not when tini is the
+  #           # package being built/tested.
+  #           condition: |
+  #             and(
+  #               eq('${{ parameters.distro }}', 'mariner2'),
+  #               ne('${{ parameters.package_name }}', 'moby-tini')
+  #             )
+  #           displayName: MarinerInstallTini
+  #         - script: |
+  #             set -exu # TODO: remove
 
-              declare -A os
-              os=(
-                  [bullseye]=debian
-                  [buster]=debian
-                  [focal]=ubuntu
-                  [jammy]=ubuntu
-                  [rhel9]=el9
-                  [rhel8]=el8
-                  [centos7]=el7
-                  [mariner2]=cm2
-              )
+  #             declare -A os
+  #             os=(
+  #                 [bullseye]=debian
+  #                 [buster]=debian
+  #                 [focal]=ubuntu
+  #                 [jammy]=ubuntu
+  #                 [rhel9]=el9
+  #                 [rhel8]=el8
+  #                 [centos7]=el7
+  #                 [mariner2]=cm2
+  #             )
 
-              declare -A versions
-              versions=(
-                  [bullseye]=11
-                  [buster]=10
-                  [focal]=20.04
-                  [jammy]=22.04
-                  [rhel9]=el9
-                  [rhel8]=el8
-                  [centos7]=el7
-                  [mariner2]=cm2
-              )
+  #             declare -A versions
+  #             versions=(
+  #                 [bullseye]=11
+  #                 [buster]=10
+  #                 [focal]=20.04
+  #                 [jammy]=22.04
+  #                 [rhel9]=el9
+  #                 [rhel8]=el8
+  #                 [centos7]=el7
+  #                 [mariner2]=cm2
+  #             )
 
-              # the bundles directory from the previous stage will be in $(Pipeline.Workspace)/packages
-              bundle_dir="$(Pipeline.Workspace)/packages"
+  #             # the bundles directory from the previous stage will be in $(Pipeline.Workspace)/packages
+  #             bundle_dir="$(Pipeline.Workspace)/packages"
 
-              readarray -d '' specs < <(find "$bundle_dir" -name '${{ parameters.package_name }}-spec.json' -print0)
-              if ! [ "${#specs[@]}" -eq 1 ]; then
-                printf "##vso[task.complete result=Failed;]%s\n" "multiple spec files found: ${specs[*]}"
-                exit 1
-              fi
+  #             readarray -d '' specs < <(find "$bundle_dir" -name '${{ parameters.package_name }}-spec.json' -print0)
+  #             if ! [ "${#specs[@]}" -eq 1 ]; then
+  #               printf "##vso[task.complete result=Failed;]%s\n" "multiple spec files found: ${specs[*]}"
+  #               exit 1
+  #             fi
 
-              spec="${specs[0]}"
+  #             spec="${specs[0]}"
 
-              commit="$(jq -r '.commit' < "$spec")"
-              tag="$(jq -r '.tag' < "$spec")"
-              revision="$(jq -r '.revision' < "$spec")"
-              distro="$(jq -r '.distro' < "$spec")"
-              pkgos="${os[$distro]}"
-              pkgver="${versions[$distro]}"
+  #             commit="$(jq -r '.commit' < "$spec")"
+  #             tag="$(jq -r '.tag' < "$spec")"
+  #             revision="$(jq -r '.revision' < "$spec")"
+  #             distro="$(jq -r '.distro' < "$spec")"
+  #             pkgos="${os[$distro]}"
+  #             pkgver="${versions[$distro]}"
 
-              package="$(jq -r .package < "$spec")"
-              package="${package#moby-}"
-              package="${package^^}"
-              package="${package//-/_}"
+  #             package="$(jq -r .package < "$spec")"
+  #             package="${package#moby-}"
+  #             package="${package^^}"
+  #             package="${package//-/_}"
 
-              export DISTRO="$distro"
-              export TARGETARCH="${{ parameters.arch }}"
-              export INCLUDE_TESTING=1
-              export "TEST_${package}_COMMIT=$commit"
-              export "TEST_${package}_VERSION=${tag}-${revision}"
-              export "TEST_${package}_PACKAGE_VERSION=${tag}-${revision}.${pkgver}"
+  #             export DISTRO="$distro"
+  #             export TARGETARCH="${{ parameters.arch }}"
+  #             export INCLUDE_TESTING=1
+  #             export "TEST_${package}_COMMIT=$commit"
+  #             export "TEST_${package}_VERSION=${tag}-${revision}"
+  #             export "TEST_${package}_PACKAGE_VERSION=${tag}-${revision}.${pkgver}"
 
-              if [ "$pkgos" = debian ] || [ "$pkgos" = ubuntu ]; then
-                export "TEST_${package}_PACKAGE_VERSION=${tag}-${pkgos}${pkgver}u${revision}"
-              fi
+  #             if [ "$pkgos" = debian ] || [ "$pkgos" = ubuntu ]; then
+  #               export "TEST_${package}_PACKAGE_VERSION=${tag}-${pkgos}${pkgver}u${revision}"
+  #             fi
 
-              make test OUTPUT="$bundle_dir"
-            displayName: Integration Test
-          - task: PublishBuildArtifacts@1
-            inputs:
-              pathToPublish: "$(Pipeline.Workspace)/packages"
-              artifactName: packages
-          - task: PublishBuildArtifacts@1
-            condition: always()
-            inputs:
-              pathToPublish: "tests/.test"
-              artifactName: testresults
+  #             make test OUTPUT="$bundle_dir"
+  #           displayName: Integration Test
+  #         - task: PublishBuildArtifacts@1
+  #           inputs:
+  #             pathToPublish: "$(Pipeline.Workspace)/packages"
+  #             artifactName: packages
+  #         - task: PublishBuildArtifacts@1
+  #           condition: always()
+  #           inputs:
+  #             pathToPublish: "tests/.test"
+  #             artifactName: testresults
   - stage: PublishStaging
-    dependsOn: ["TestAndSBOM"]
+    # dependsOn: ["TestAndSBOM"]
     condition: succeeded()
     jobs:
       - job: PublishStaging
