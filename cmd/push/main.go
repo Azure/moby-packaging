@@ -13,22 +13,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Azure/moby-packaging/pkg/queue"
+
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azqueue"
 	"github.com/Azure/moby-packaging/pkg/archive"
 )
-
-type QueueMessage struct {
-	Artifact ArtifactInfo `json:"artifact"`
-	Spec     archive.Spec `json:"spec"`
-}
-
-type ArtifactInfo struct {
-	Name      string `json:"name"`
-	URI       string `json:"uri"`
-	Sha256Sum string `json:"sha256sum"`
-}
 
 type Flags struct {
 	ArtifactDir string
@@ -81,7 +72,7 @@ func perform() error {
 	if containerName == "" {
 		containerName = fmt.Sprintf("%d", time.Now().Unix())
 	}
-	// containerName = sanitizeContainerName(containerName)
+	containerName = sanitizeContainerName(containerName)
 
 	if _, err := client.CreateContainer(ctx, containerName, nil); err != nil {
 		if !strings.Contains(err.Error(), containerExistsError) {
@@ -131,9 +122,9 @@ func perform() error {
 		return err
 	}
 
-	qm := QueueMessage{
+	qm := queue.Message{
 		Spec: spec,
-		Artifact: ArtifactInfo{
+		Artifact: queue.ArtifactInfo{
 			Name:      filepath.Base(blobFile),
 			URI:       fmt.Sprintf("%s%s/%s", blobBucketURL, containerName, storagePathBlob),
 			Sha256Sum: sum,
