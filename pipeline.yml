@@ -220,8 +220,7 @@ stages:
               set -exu
               : ${BLOB_PREFIX:=/}
 
-              go run ./cmd/push --artifact-dir="$ARTIFACTS_DIR" | tee queue_message
-              az storage message put --queue-name moby-packaging-signing-and-publishing --content @./queue_message
+              go run ./cmd/push --artifact-dir="$ARTIFACTS_DIR"
             env:
               ARTIFACTS_DIR: $(Pipeline.Workspace)/packages
               AZURE_STORAGE_ACCOUNT: $(storage.account.name)

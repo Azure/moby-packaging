@@ -7,13 +7,17 @@ import (
 	"flag"
 	"fmt"
 	"io/fs"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
+	"github.com/Azure/azure-storage-queue-go/azqueue"
 	"github.com/Azure/moby-packaging/pkg/archive"
 )
 
@@ -40,8 +44,13 @@ type BlobKV struct {
 
 const (
 	blobBucketURL        = "https://moby.blob.core.windows.net/"
-	containerName        = "moby"
 	containerExistsError = "RESPONSE 409"
+	accountName          = "moby"
+	queueName            = "moby-packaging-signing-and-publishing"
+)
+
+var (
+	containerName = fmt.Sprintf("%d", time.Now().Unix())
 )
 
 func main() {
@@ -159,8 +168,13 @@ func main() {
 		panic(err)
 	}
 
-	// qCred := azqueue.New
-	p := azqueue.NewPipeline(credential, azqueue.PipelineOptions{})
+	tkn, err := credential.GetToken(ctx, policy.TokenRequestOptions{})
+	if err != nil {
+		panic(err)
+	}
+
+	qCred := azqueue.NewTokenCredential(tkn.Token, nil)
+	p := azqueue.NewPipeline(qCred, azqueue.PipelineOptions{})
 	u, err := url.Parse(fmt.Sprintf("https://%s.queue.core.windows.net", accountName))
 	if err != nil {
 		panic(err)
