@@ -39,8 +39,9 @@ type BlobKV struct {
 }
 
 const (
-	url           = "https://moby.blob.core.windows.net/"
-	containerName = "moby"
+	url                  = "https://moby.blob.core.windows.net/"
+	containerName        = "moby"
+	containerExistsError = "RESPONSE 409"
 )
 
 func main() {
@@ -65,7 +66,9 @@ func main() {
 	}
 
 	if _, err := client.CreateContainer(ctx, containerName, nil); err != nil {
-		panic(err)
+		if !strings.Contains(err.Error(), containerExistsError) {
+			panic(err)
+		}
 	}
 
 	var blobFile string
