@@ -13,7 +13,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azqueue"
@@ -33,12 +32,8 @@ type ArtifactInfo struct {
 
 type Flags struct {
 	ArtifactDir string
-}
-
-type BlobsJSON []BlobKV
-
-type BlobKV struct {
-	Blob string
+	BuildID     string
+	Debug       bool
 }
 
 const (
@@ -49,12 +44,15 @@ const (
 )
 
 var (
-	containerName = fmt.Sprintf("%d", time.Now().Unix())
+	// containerName            = fmt.Sprintf("%d", time.Now().Unix())
+	sevenDaysInSeconds int32 = 60 * 60 * 24 * 7
 )
 
 func main() {
 	f := Flags{}
 	flag.StringVar(&f.ArtifactDir, "artifact-dir", "", "path to directory of artifacts to upload")
+	flag.StringVar(&f.BuildID, "build-id", "", "build id")
+	flag.BoolVar(&f.Debug, "debug", false, "enable debug output")
 	flag.Parse()
 
 	if f.ArtifactDir == "" {
@@ -73,65 +71,35 @@ func main() {
 		panic(err)
 	}
 
+	containerName := f.BuildID
+	if containerName == "" {
+		containerName = fmt.Sprintf("%d", time.Now().Unix())
+	}
+
 	if _, err := client.CreateContainer(ctx, containerName, nil); err != nil {
 		if !strings.Contains(err.Error(), containerExistsError) {
 			panic(err)
 		}
 	}
 
-	var blobFile string
-	var specFile string
-	r := regexp.MustCompile(`^.*\.(deb|rpm|zip)$`)
-
-	if err := filepath.WalkDir(f.ArtifactDir, func(path string, d fs.DirEntry, err error) error {
-		if d.IsDir() {
-			return nil
-		}
-
-		if r.MatchString(d.Name()) {
-			blobFile = path
-			return nil
-		}
-
-		if strings.HasSuffix(d.Name(), "spec.json") {
-			specFile = path
-		}
-
-		return nil
-	}); err != nil {
-		panic(err)
-	}
-
-	if blobFile == "" {
-		panic("no artifact found")
-	}
-
-	if specFile == "" {
-		panic("no spec file found")
-	}
-
-	specBytes, err := os.ReadFile(specFile)
+	blobFile, specFile, err := findBlobAndSpec(f)
 	if err != nil {
 		panic(err)
 	}
 
-	var spec archive.Spec
-	if err := json.Unmarshal(specBytes, &spec); err != nil {
+	spec, err := unmarshalSpec(specFile)
+	if err != nil {
 		panic(err)
 	}
 
-	pkgOS := "linux"
-	if spec.Distro == "windows" {
-		pkgOS = "windows"
-	}
-
+	pkgOS := spec.OS()
 	sanitizedArch := strings.ReplaceAll(spec.Arch, "/", "")
 	blobBasename := filepath.Base(blobFile)
 	specBasename := filepath.Base(specFile)
 	storagePathBlob := fmt.Sprintf("%s/%s+azure/%s/%s_%s/%s", spec.Pkg, spec.Tag, spec.Distro, pkgOS, sanitizedArch, blobBasename)
 	storagePathSpec := fmt.Sprintf("%s/%s+azure/%s/%s_%s/%s", spec.Pkg, spec.Tag, spec.Distro, pkgOS, sanitizedArch, specBasename)
 
-	blob, err := os.Open(blobFile)
+	blobGoFile, err := os.Open(blobFile)
 	if err != nil {
 		panic(err)
 	}
@@ -141,7 +109,7 @@ func main() {
 		panic(err)
 	}
 
-	if _, err := client.UploadFile(ctx, containerName, storagePathBlob, blob, &azblob.UploadFileOptions{}); err != nil {
+	if _, err := client.UploadFile(ctx, containerName, storagePathBlob, blobGoFile, &azblob.UploadFileOptions{}); err != nil {
 		panic(err)
 	}
 	fmt.Println("file uploaded:", storagePathBlob)
@@ -165,7 +133,7 @@ func main() {
 		},
 	}
 
-	final, err := json.MarshalIndent(&qm, "", "    ")
+	final, err := json.Marshal(&qm)
 	if err != nil {
 		panic(err)
 	}
@@ -178,13 +146,53 @@ func main() {
 	}
 
 	qClient := sClient.NewQueueClient(queueName)
-	resp, err := qClient.EnqueueMessage(ctx, string(final), &azqueue.EnqueueMessageOptions{TimeToLive: to.Ptr(int32(60) * 60 * 24 * 7)})
-	if err != nil {
+	if _, err := qClient.EnqueueMessage(ctx, string(final), &azqueue.EnqueueMessageOptions{TimeToLive: &sevenDaysInSeconds}); err != nil {
 		panic(err)
 	}
+}
 
-	fmt.Println(string(final))
-	fmt.Println(resp)
+func unmarshalSpec(specFile string) (archive.Spec, error) {
+	specBytes, err := os.ReadFile(specFile)
+	if err != nil {
+		return archive.Spec{}, err
+	}
+
+	var spec archive.Spec
+	if err := json.Unmarshal(specBytes, &spec); err != nil {
+		return archive.Spec{}, err
+	}
+	return spec, nil
+}
+
+func findBlobAndSpec(f Flags) (string, string, error) {
+	var blobFile string
+	var specFile string
+	r := regexp.MustCompile(`^.*\.(deb|rpm|zip)$`)
+
+	if err := filepath.WalkDir(f.ArtifactDir, func(path string, d fs.DirEntry, err error) error {
+		if d.IsDir() {
+			return nil
+		}
+
+		if r.MatchString(d.Name()) {
+			blobFile = path
+			return nil
+		}
+
+		if strings.HasSuffix(d.Name(), "spec.json") {
+			specFile = path
+		}
+
+		return nil
+	}); err != nil {
+		return "", "", err
+	}
+
+	if blobFile == "" || specFile == "" {
+		return "", "", fmt.Errorf("blob file and spec file must be present in artifact dir\nblob: %s\nspec:%s\n", blobFile, specFile)
+	}
+
+	return blobFile, specFile, nil
 }
 
 func getArtifactDigest(blobFile string) (string, error) {
