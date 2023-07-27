@@ -59,6 +59,9 @@ $(COMPONENT_TARGETS):
 	$(DOCKER_BUILDX) bake $(PROGRESS) $@
 
 _LOCAL_PKG_DIR := $(OUTPUT)/$(DISTRO)
+ifneq ($(wildcard $(_LOCAL_PKG_DIR)/linux_*),)
+	_LOCAL_PKG_DIR := $(wildcard $(_LOCAL_PKG_DIR)/linux_*)
+endif
 ifneq ($(wildcard $(_LOCAL_PKG_DIR)/*),)
 export LOCAL_PKG_DIR ?= $(_LOCAL_PKG_DIR)
 endif
