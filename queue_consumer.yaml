@@ -45,7 +45,6 @@ stages:
           - bash: |
               set -exu
               # downloads all packages, puts them in out-dir, logs successful downloads to stdout (put in 'downloaded' file)
-              mkdir -vp "$MSG_DIR"
               go run ./cmd/pop download --out-dir="$OUT_DIR" --messages-file="$MSG_DIR/message" | tee "$MSG_DIR/downloaded"
             env:
               MSG_DIR: "$(Pipeline.Workspace)/messages"
