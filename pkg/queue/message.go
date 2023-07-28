@@ -1,6 +1,8 @@
 package queue
 
-import "github.com/Azure/moby-packaging/pkg/archive"
+import (
+	"github.com/Azure/moby-packaging/pkg/archive"
+)
 
 type Message struct {
 	Artifact ArtifactInfo `json:"artifact"`
