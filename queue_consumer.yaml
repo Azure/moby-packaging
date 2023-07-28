@@ -31,11 +31,17 @@ stages:
             env:
               NUM_MESSAGES: "${{ parameters.num_messages }}"
               MSG_DIR: "$(Pipeline.Workspace)/messages"
+          - task: PublishBuildArtifacts@1
+            inputs:
+              pathToPublish: "$(Pipeline.Workspace)/messages"
+              artifactName: messages
   - stage: FetchPackages
     jobs:
       - job: Read_Queue
         pool: production-pool-amd64-mariner-2
         steps:
+          - download: current
+            artifact: messages
           - bash: |
               set -exu
               # downloads all packages, puts them in out-dir, logs successful downloads to stdout (put in 'downloaded' file)
