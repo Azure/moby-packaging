@@ -1,9 +1,12 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
+
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azqueue"
 )
 
 func main() {
@@ -67,8 +70,18 @@ func run() error {
 }
 
 func runDownload(args downloadArgs) error {
+	msgs := []azqueue.DequeuedMessage{}
 
-	fmt.Printf("%#v\n", args)
+	b, err := os.ReadFile(args.messagesFile)
+	if err != nil {
+		return err
+	}
+
+	if err := json.Unmarshal(b, &msgs); err != nil {
+		return err
+	}
+
+	fmt.Printf("%#v\n", msgs)
 	return nil
 }
 
