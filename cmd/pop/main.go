@@ -168,6 +168,7 @@ func runDownload(args downloadArgs) error {
 
 		actualSum := fmt.Sprintf("%x", sha256.Sum256(b))
 		if actualSum != expectedSum {
+			err := fmt.Errorf("wrong sum for artifact %s\n\texpected: %s\n\tactual:%s", msg.Content.Artifact.Name, expectedSum, actualSum)
 			errs = errors.Join(errs, err)
 			continue
 		}
@@ -181,13 +182,17 @@ func runDownload(args downloadArgs) error {
 		downloaded = append(downloaded, msg)
 	}
 
+	if errs != nil {
+		fmt.Println(errs)
+	}
+
 	// After completion, print the downloaded array to stdout as JSON
 	s, err := json.MarshalIndent(&downloaded, "", "    ")
 	if err != nil {
 		return err
 	}
 
-	fmt.Println(s)
+	fmt.Println(string(s))
 	return nil
 }
 
