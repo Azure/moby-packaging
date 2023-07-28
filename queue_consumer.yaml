@@ -27,6 +27,7 @@ stages:
                 --auth-mode login \
                 --account-name moby \
                 --queue-name moby-packaging-signing-and-publishing \
+                --visibility-timeout 1 \
                 --num-messages "$NUM_MESSAGES" |
                 tee "$MSG_DIR/message"
             env:
