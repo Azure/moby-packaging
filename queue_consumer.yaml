@@ -8,7 +8,7 @@ parameters:
     type: string
     default: "__not_supplied"
 
-name: ${{ replace(parameters.build_id, '__not_supplied', '$(Date:yyyyMMdd).$(Rev:r)') }}
+name: ${{ replace(parameters.build_id, '__not_supplied', '$(Date:yyyyMMdd)') }}.$(Rev:r)
 
 variables:
   build.pool: staging-pool-amd64-mariner-2
