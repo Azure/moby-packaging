@@ -16,7 +16,8 @@ import (
 )
 
 const (
-	accountName = "moby"
+	stagingAccountName = "moby"
+	prodAccountName    = "mobyartifacts"
 )
 
 func main() {
@@ -132,6 +133,10 @@ func runDownload(args downloadArgs) error {
 		return fmt.Errorf("you must specify a directory to download into")
 	}
 
+	if err := os.MkdirAll(args.outDir, 0o700); err != nil {
+		return err
+	}
+
 	msgs := []QueueMessageDeserialize{}
 	downloaded := []QueueMessageDeserialize{}
 
@@ -195,16 +200,6 @@ func runDownload(args downloadArgs) error {
 	fmt.Println(string(s))
 	return nil
 }
-
-// msgContents := []queue.Message{}
-// for _, msg := range msgs {
-// 	msgContents = append(msgContents, msg.Content)
-// }
-
-//
-
-// x, err := json.MarshalIndent(msgContents, "", "    ")
-// fmt.Println(string(x))
 
 func runUpload(args uploadArgs) error {
 	_ = args
