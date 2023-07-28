@@ -24,6 +24,7 @@ stages:
               mkdir "$MSG_DIR"
               az login --identity
               az storage message get \
+                --auth-mode login \
                 --account-name moby \
                 --queue-name moby-packaging-signing-and-publishing \
                 --num-messages "$NUM_MESSAGES" |
