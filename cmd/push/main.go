@@ -15,8 +15,10 @@ import (
 
 	"github.com/Azure/moby-packaging/pkg/queue"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azqueue"
 	"github.com/Azure/moby-packaging/pkg/archive"
 )
@@ -74,7 +76,8 @@ func perform() error {
 	}
 	containerName = sanitizeContainerName(containerName)
 
-	if _, err := client.CreateContainer(ctx, containerName, nil); err != nil {
+	opts := container.CreateOptions{Access: to.Ptr(container.PublicAccessTypeBlob)}
+	if _, err := client.CreateContainer(ctx, containerName, &opts); err != nil {
 		if !strings.Contains(err.Error(), containerExistsError) {
 			return err
 		}
