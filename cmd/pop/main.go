@@ -139,6 +139,7 @@ func runDownload(args downloadArgs) error {
 
 	msgs := []QueueMessageDeserialize{}
 	downloaded := []QueueMessageDeserialize{}
+	failed := []QueueMessageDeserialize{}
 
 	b, err := os.ReadFile(args.messagesFile)
 	if err != nil {
@@ -157,15 +158,20 @@ func runDownload(args downloadArgs) error {
 		uri := msg.Content.Artifact.URI
 		expectedSum := msg.Content.Artifact.Sha256Sum
 
+		fail := func(f QueueMessageDeserialize, e error) {
+			failed = append(failed, f)
+			errs = errors.Join(errs, err)
+		}
+
 		resp, err := c.Get(uri)
 		if err != nil {
-			errs = errors.Join(errs, err)
+			fail(msg, err)
 			continue
 		}
 
 		blobContents := new(bytes.Buffer)
 		if _, err := io.Copy(blobContents, resp.Body); err != nil {
-			errs = errors.Join(errs, err)
+			fail(msg, err)
 			continue
 		}
 
@@ -173,14 +179,13 @@ func runDownload(args downloadArgs) error {
 
 		actualSum := fmt.Sprintf("%x", sha256.Sum256(b))
 		if actualSum != expectedSum {
-			err := fmt.Errorf("wrong sum for artifact %s\n\texpected: %s\n\tactual:%s", msg.Content.Artifact.Name, expectedSum, actualSum)
-			errs = errors.Join(errs, err)
+			fail(msg, fmt.Errorf("wrong sum for artifact %s\n\texpected: %s\n\tactual:%s", msg.Content.Artifact.Name, expectedSum, actualSum))
 			continue
 		}
 
 		dstFile := filepath.Join(args.outDir, msg.Content.Artifact.Name)
 		if err := os.WriteFile(dstFile, b, 0o600); err != nil {
-			errs = errors.Join(errs, err)
+			fail(msg, err)
 			continue
 		}
 
@@ -196,6 +201,16 @@ func runDownload(args downloadArgs) error {
 	if err != nil {
 		return err
 	}
+
+	msgDir := filepath.Dir(args.messagesFile)
+	failedFile := filepath.Join(msgDir, "failed")
+	failedJSON, err := json.MarshalIndent(&failed, "", "    ")
+	if err != nil {
+		return err
+	}
+
+	// This is not a failure condition, since the failed ones may be retried
+	_ = os.WriteFile(failedFile, failedJSON, 0o600)
 
 	fmt.Println(string(s))
 	return nil
