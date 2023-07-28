@@ -54,6 +54,10 @@ stages:
             inputs:
               pathToPublish: "$(Pipeline.Workspace)/messages"
               artifactName: messages
+          - task: PublishBuildArtifacts@1
+            inputs:
+              pathToPublish: "$(Pipeline.Workspace)/signed"
+              artifactName: signed
   # - stage: Sign
   #   jobs:
   #     - job: SignPackages
