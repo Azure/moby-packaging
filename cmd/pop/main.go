@@ -183,7 +183,7 @@ func runDownload(args downloadArgs) error {
 	}
 
 	if errs != nil {
-		fmt.Println(errs)
+		fmt.Fprintln(os.Stderr, errs)
 	}
 
 	// After completion, print the downloaded array to stdout as JSON
