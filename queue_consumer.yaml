@@ -37,7 +37,7 @@ stages:
             inputs:
               pathToPublish: "$(Pipeline.Workspace)/messages"
               artifactName: messages
-  - stage: FetchPackages
+  - stage: SignAndPublish
     jobs:
       - job: Read_Queue
         pool: production-pool-amd64-mariner-2
@@ -50,15 +50,65 @@ stages:
               go run ./cmd/pop download --out-dir="$OUT_DIR" --messages-file="$MSG_DIR/message" | tee "$MSG_DIR/downloaded"
             env:
               MSG_DIR: "$(Pipeline.Workspace)/messages"
-              OUT_DIR: "$(Pipeline.Workspace)/signed"
+              OUT_DIR: "$(Pipeline.Workspace)/downloaded"
+          - bash: |
+              readarray -t failed < <(jq -r '.[] | .content | fromjson.artifact.name' < "$MSG_DIR/failed_downloading")
+              for f in "${failed[@]}"; do
+                printf '##vso[task.logissue type=error;]failed downloading:  %s\n' "$f"
+              done
+            env:
+              MSG_DIR: "$(Pipeline.Workspace)/messages"
+            displayName: Surface failed downloads
+          - bash: |
+              cp -r $(Pipeline.Workspace)/downloaded $(Pipeline.Workspace)/signed
+            displayName: Copy downloaded files to sign
+          - template: templates/sign.steps.windows.yml
+            parameters:
+              folderPath: $(Pipeline.Workspace)/signed
+              pattern: '*.exe'
+          - template: templates/sign.steps.linux.yml
+            parameters:
+              folderPath: $(Pipeline.Workspace)/signed
+              pattern: '*'
+          - bash: |
+              # uploads signed files to prod bucket, removes unsigned / failed uploads, writes output to stdout
+              go run ./cmd/pop upload \
+                --signed-dir="$SIGNED_DIR" \
+                --messages-file="$MSG_DIR/downloaded" |
+                tee "$MSG_DIR/succeeded"
+            env:
+              DOWNLOAD_DIR: "$(Pipeline.Workspace)/downloaded"
+              SIGNED_DIR: "$(Pipeline.Workspace)/signed"
+              MSG_DIR: "$(Pipeline.Workspace)/messages"
+          - bash: |
+              readarray -t failed < <(jq -r '.[] | .content | fromjson.artifact.name' < "$MSG_DIR/failed_singing_or_publishing")
+              for f in "${failed[@]}"; do
+                printf '##vso[task.logissue type=error;]failed signing or uploading:  %s\n' "$f"
+              done
+            env:
+              MSG_DIR: "$(Pipeline.Workspace)/messages"
+            displayName: Surface failed uploads
           - task: PublishBuildArtifacts@1
             inputs:
               pathToPublish: "$(Pipeline.Workspace)/messages"
               artifactName: messages
-          - task: PublishBuildArtifacts@1
-            inputs:
-              pathToPublish: "$(Pipeline.Workspace)/signed"
-              artifactName: signed
+  # - stage: FixupQueue
+  #   jobs:
+  #     - job: SignPackages
+  #       pool: $(build.pool)
+  #       steps:
+  #         - download: current
+  #           artifact: messages
+  #         - bash: |
+  #             cp -r $(Pipeline.Workspace)/downloaded $(Pipeline.Workspace)/signed
+  #         - template: templates/sign.steps.windows.yml
+  #           parameters:
+  #             folderPath: $(Pipeline.Workspace)/signed
+  #             pattern: '*.exe'
+  #         - template: templates/sign.steps.linux.yml
+  #           parameters:
+  #             folderPath: $(Pipeline.Workspace)/signed
+  #             pattern: '*'
   # - stage: Sign
   #   jobs:
   #     - job: SignPackages
