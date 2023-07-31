@@ -90,6 +90,35 @@ func (m *QueueMessageDeserialize) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+func (m *QueueMessageDeserialize) MarshalJSON() ([]byte, error) {
+	b, err := json.Marshal(m.Content)
+	if err != nil {
+		return nil, err
+	}
+
+	type Aux struct {
+		Content         string `json:"content"`
+		DequeueCount    int    `json:"dequeueCount"`
+		ExpirationTime  string `json:"expirationTime"`
+		ID              string `json:"id"`
+		InsertionTime   string `json:"insertionTime"`
+		PopReceipt      string `json:"popReceipt"`
+		TimeNextVisible string `json:"timeNextVisible"`
+	}
+
+	aux := Aux{
+		Content:         string(b),
+		DequeueCount:    m.DequeueCount,
+		ExpirationTime:  m.ExpirationTime,
+		ID:              m.ID,
+		InsertionTime:   m.InsertionTime,
+		PopReceipt:      m.PopReceipt,
+		TimeNextVisible: m.TimeNextVisible,
+	}
+
+	return json.Marshal(aux)
+}
+
 func run() error {
 	if len(os.Args) < 2 {
 		return fmt.Errorf("available arguments are download, upload, and delete")
