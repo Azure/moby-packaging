@@ -127,7 +127,7 @@ func run() error {
 
 	dlArgs := downloadArgs{}
 	upArgs := uploadArgs{}
-	dtArgs := fixupQueueArgs{}
+	fqArgs := fixupQueueArgs{}
 	var messagesFile string
 
 	fs := flag.NewFlagSet("", flag.ExitOnError)
@@ -138,7 +138,7 @@ func run() error {
 
 	dlArgs.messagesFile = messagesFile
 	upArgs.messagesFile = messagesFile
-	dtArgs.messagesFile = messagesFile
+	fqArgs.messagesFile = messagesFile
 
 	switch os.Args[1] {
 	case "download":
@@ -150,7 +150,7 @@ func run() error {
 			return err
 		}
 	case "fixup-queue":
-		if err := runFixupQueue(dtArgs); err != nil {
+		if err := runFixupQueue(fqArgs); err != nil {
 			return err
 		}
 	default:
