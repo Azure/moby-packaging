@@ -99,6 +99,8 @@ stages:
           - download: current
             artifact: messages
           - bash: |
+              set -exu
+
               # removes successfully signed & published artifacts from the queue
               go run ./cmd/pop fixup-queue \
                 --messages-file="$MSG_DIR/succeeded" |
@@ -118,13 +120,3 @@ stages:
             inputs:
               pathToPublish: "$(Pipeline.Workspace)/messages"
               artifactName: messages
-          - bash: |
-              go run ./cmd/pop fixup-queue
-          - template: templates/sign.steps.windows.yml
-            parameters:
-              folderPath: $(Pipeline.Workspace)/signed
-              pattern: '*.exe'
-          - template: templates/sign.steps.linux.yml
-            parameters:
-              folderPath: $(Pipeline.Workspace)/signed
-              pattern: '*'
