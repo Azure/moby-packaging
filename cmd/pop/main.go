@@ -16,6 +16,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azqueue"
 	"github.com/Azure/moby-packaging/pkg/queue"
 )
 
@@ -42,7 +43,7 @@ type uploadArgs struct {
 	messagesFile string
 }
 
-type deleteArgs struct {
+type fixupQueueArgs struct {
 	messagesFile string
 }
 
@@ -126,7 +127,7 @@ func run() error {
 
 	dlArgs := downloadArgs{}
 	upArgs := uploadArgs{}
-	dtArgs := deleteArgs{}
+	dtArgs := fixupQueueArgs{}
 	var messagesFile string
 
 	fs := flag.NewFlagSet("", flag.ExitOnError)
@@ -148,8 +149,8 @@ func run() error {
 		if err := runUpload(upArgs); err != nil {
 			return err
 		}
-	case "delete":
-		if err := runDelete(dtArgs); err != nil {
+	case "fixup-queue":
+		if err := runFixupQueue(dtArgs); err != nil {
 			return err
 		}
 	default:
@@ -342,7 +343,7 @@ outer:
 		// 	continue
 		// }
 
-		successful = append(successful, msg)
+		successful = append(successful, messages...)
 	}
 
 	if errs != nil {
@@ -369,40 +370,63 @@ outer:
 	return nil
 }
 
-func runDelete(args deleteArgs) error {
-	_ = args
+func runFixupQueue(args fixupQueueArgs) error {
+	if args.messagesFile == "" {
+		return fmt.Errorf("you must provide a messages file")
+	}
 
-	fmt.Println(args)
+	ctx := context.Background()
+	_ = ctx
+	cred, err := azidentity.NewDefaultAzureCredential(nil)
+	_ = cred
+
+	if err != nil {
+		return err
+	}
+
+	serviceURL := fmt.Sprintf("https://%s.queue.core.windows.net", stagingAccountName)
+
+	sClient, err := azqueue.NewServiceClient(serviceURL, cred, nil)
+	if err != nil {
+		return err
+	}
+
+	qClient := sClient.NewQueueClient(queueName)
+
+	msgBytes, err := os.ReadFile(args.messagesFile)
+	if err != nil {
+		return err
+	}
+
+	messages := []QueueMessageDeserialize{}
+	if err := json.Unmarshal(msgBytes, &messages); err != nil {
+		return err
+	}
+
+	failed := []azqueue.DeleteMessageResponse{}
+	succeeded := []azqueue.DeleteMessageResponse{}
+
+	var errs error
+	for _, msg := range messages {
+		resp, err := qClient.DeleteMessage(ctx, msg.ID, msg.PopReceipt, &azqueue.DeleteMessageOptions{})
+		if err != nil {
+			errs = errors.Join(errs, err)
+			failed = append(failed, resp)
+			continue
+		}
+
+		succeeded = append(succeeded, resp)
+	}
+
+	msgDir := filepath.Dir(args.messagesFile)
+	failedFile := filepath.Join(msgDir, "failed_deleting_from_queue")
+	failedJSON, err := json.MarshalIndent(&failed, "", "    ")
+	if err != nil {
+		return err
+	}
+
+	// This is not a failure condition, since the failed ones may be retried
+	_ = os.WriteFile(failedFile, failedJSON, 0o600)
+
 	return nil
 }
-
-// func findBlobAndSpec(f Flags) (string, string, error) {
-// 	var blobFile string
-// 	var specFile string
-// 	r := regexp.MustCompile(`^.*\.(deb|rpm|zip)$`)
-
-// 	if err := filepath.WalkDir(f.ArtifactDir, func(path string, d fs.DirEntry, err error) error {
-// 		if d.IsDir() {
-// 			return nil
-// 		}
-
-// 		if r.MatchString(d.Name()) {
-// 			blobFile = path
-// 			return nil
-// 		}
-
-// 		if strings.HasSuffix(d.Name(), "spec.json") {
-// 			specFile = path
-// 		}
-
-// 		return nil
-// 	}); err != nil {
-// 		return "", "", err
-// 	}
-
-// 	if blobFile == "" || specFile == "" {
-// 		return "", "", fmt.Errorf("blob file and spec file must be present in artifact dir\nblob: %s\nspec:%s\n", blobFile, specFile)
-// 	}
-
-// 	return blobFile, specFile, nil
-// }
