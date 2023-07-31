@@ -5,8 +5,8 @@ steps:
 - template: sign.steps.windows.yml
   parameters:
     folderPath: ${{ parameters.folderPath }}
-    pattern: '**/windows_**/*.exe'
+    pattern: '*.exe'
 - template: sign.steps.linux.yml
   parameters:
     folderPath: ${{ parameters.folderPath }}
-    pattern: '**/linux_**/*'
+    pattern: '*'
