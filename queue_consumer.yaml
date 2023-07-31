@@ -62,14 +62,14 @@ stages:
           - bash: |
               cp -r $(Pipeline.Workspace)/downloaded $(Pipeline.Workspace)/signed
             displayName: Copy downloaded files to sign
-          - template: templates/sign.steps.windows.yml
+          - task: UseDotNet@2
+            displayName: Install .NET Core SDK
+            inputs:
+              packageType: sdk
+              version: 2.2.207
+          - template: templates/sign.steps.yml
             parameters:
-              folderPath: $(Pipeline.Workspace)/signed
-              pattern: '*.exe'
-          - template: templates/sign.steps.linux.yml
-            parameters:
-              folderPath: $(Pipeline.Workspace)/signed
-              pattern: '*'
+              folderPath: "$(Pipeline.Workspace)/signed"
           - bash: |
               # uploads signed files to prod bucket, removes unsigned / failed uploads, writes output to stdout
               go run ./cmd/pop upload \
