@@ -93,7 +93,7 @@ stages:
               artifactName: messages
   - stage: FixupQueue
     jobs:
-      - job: SignPackages
+      - job: FixupQueue
         pool: $(build.pool)
         steps:
           - download: current
@@ -102,9 +102,10 @@ stages:
               # removes successfully signed & published artifacts from the queue
               go run ./cmd/pop fixup-queue \
                 --messages-file="$MSG_DIR/succeeded" |
-                tee "$MSG_DIR/removed_from_queue
+                tee "$MSG_DIR/removed_from_queue"
             env:
               MSG_DIR: "$(Pipeline.Workspace)/messages"
+            displayName: Remove successful items from the queue
           - bash: |
               readarray -t failed < <(jq -r '.[] | .content | fromjson.artifact.name' < "$MSG_DIR/failed_deleting_from_queue")
               for f in "${failed[@]}"; do
