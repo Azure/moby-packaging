@@ -95,113 +95,113 @@ stages:
             inputs:
               pathToPublish: "$(Pipeline.Workspace)/bundles"
               artifactName: packages
-  # - stage: TestAndSBOM
-  #   jobs:
-  #     - job: TestPackages
-  #       condition: ne('${{ parameters.distro }}', 'windows')
-  #       pool: $(build.pool)
-  #       steps:
-  #         - download: current
-  #           artifact: packages
-  #         - script: |
-  #             ! [ ${{ parameters.distro }} = mariner2 ] && exit 0
+  - stage: TestAndSBOM
+    jobs:
+      - job: TestPackages
+        condition: ne('${{ parameters.distro }}', 'windows')
+        pool: $(build.pool)
+        steps:
+          - download: current
+            artifact: packages
+          - script: |
+              ! [ ${{ parameters.distro }} = mariner2 ] && exit 0
 
-  #             set -exu
+              set -exu
 
-  #             declare -A rhel_arch
-  #             rhel_arch=(
-  #               [arm64]=aarch64
-  #               [amd64]=x86_64
-  #             )
+              declare -A rhel_arch
+              rhel_arch=(
+                [arm64]=aarch64
+                [amd64]=x86_64
+              )
 
-  #             bundle_dir="$(Pipeline.Workspace)/packages"
-  #             arch=${rhel_arch[${{ parameters.arch }}]}
-  #             pkg_basename="$(printf "moby-tini-0.19.0-1.cm2.%s.rpm" "$arch")"
-  #             tini_url="https://moby.blob.core.windows.net/moby/moby-tini/0.19.0/mariner2/$pkg_basename"
+              bundle_dir="$(Pipeline.Workspace)/packages"
+              arch=${rhel_arch[${{ parameters.arch }}]}
+              pkg_basename="$(printf "moby-tini-0.19.0-1.cm2.%s.rpm" "$arch")"
+              tini_url="https://moby.blob.core.windows.net/moby/moby-tini/0.19.0/mariner2/$pkg_basename"
 
-  #             curl -fsSL -o "$bundle_dir/mariner2/$pkg_basename" "$tini_url"
-  #           # Install tini manually on mariner, but not when tini is the
-  #           # package being built/tested.
-  #           condition: |
-  #             and(
-  #               eq('${{ parameters.distro }}', 'mariner2'),
-  #               ne('${{ parameters.package_name }}', 'moby-tini')
-  #             )
-  #           displayName: MarinerInstallTini
-  #         - script: |
-  #             set -exu # TODO: remove
+              curl -fsSL -o "$bundle_dir/mariner2/$pkg_basename" "$tini_url"
+            # Install tini manually on mariner, but not when tini is the
+            # package being built/tested.
+            condition: |
+              and(
+                eq('${{ parameters.distro }}', 'mariner2'),
+                ne('${{ parameters.package_name }}', 'moby-tini')
+              )
+            displayName: MarinerInstallTini
+          - script: |
+              set -exu # TODO: remove
 
-  #             declare -A os
-  #             os=(
-  #                 [bullseye]=debian
-  #                 [buster]=debian
-  #                 [focal]=ubuntu
-  #                 [jammy]=ubuntu
-  #                 [rhel9]=el9
-  #                 [rhel8]=el8
-  #                 [centos7]=el7
-  #                 [mariner2]=cm2
-  #             )
+              declare -A os
+              os=(
+                  [bullseye]=debian
+                  [buster]=debian
+                  [focal]=ubuntu
+                  [jammy]=ubuntu
+                  [rhel9]=el9
+                  [rhel8]=el8
+                  [centos7]=el7
+                  [mariner2]=cm2
+              )
 
-  #             declare -A versions
-  #             versions=(
-  #                 [bullseye]=11
-  #                 [buster]=10
-  #                 [focal]=20.04
-  #                 [jammy]=22.04
-  #                 [rhel9]=el9
-  #                 [rhel8]=el8
-  #                 [centos7]=el7
-  #                 [mariner2]=cm2
-  #             )
+              declare -A versions
+              versions=(
+                  [bullseye]=11
+                  [buster]=10
+                  [focal]=20.04
+                  [jammy]=22.04
+                  [rhel9]=el9
+                  [rhel8]=el8
+                  [centos7]=el7
+                  [mariner2]=cm2
+              )
 
-  #             # the bundles directory from the previous stage will be in $(Pipeline.Workspace)/packages
-  #             bundle_dir="$(Pipeline.Workspace)/packages"
+              # the bundles directory from the previous stage will be in $(Pipeline.Workspace)/packages
+              bundle_dir="$(Pipeline.Workspace)/packages"
 
-  #             readarray -d '' specs < <(find "$bundle_dir" -name '${{ parameters.package_name }}-spec.json' -print0)
-  #             if ! [ "${#specs[@]}" -eq 1 ]; then
-  #               printf "##vso[task.complete result=Failed;]%s\n" "multiple spec files found: ${specs[*]}"
-  #               exit 1
-  #             fi
+              readarray -d '' specs < <(find "$bundle_dir" -name '${{ parameters.package_name }}-spec.json' -print0)
+              if ! [ "${#specs[@]}" -eq 1 ]; then
+                printf "##vso[task.complete result=Failed;]%s\n" "multiple spec files found: ${specs[*]}"
+                exit 1
+              fi
 
-  #             spec="${specs[0]}"
+              spec="${specs[0]}"
 
-  #             commit="$(jq -r '.commit' < "$spec")"
-  #             tag="$(jq -r '.tag' < "$spec")"
-  #             revision="$(jq -r '.revision' < "$spec")"
-  #             distro="$(jq -r '.distro' < "$spec")"
-  #             pkgos="${os[$distro]}"
-  #             pkgver="${versions[$distro]}"
+              commit="$(jq -r '.commit' < "$spec")"
+              tag="$(jq -r '.tag' < "$spec")"
+              revision="$(jq -r '.revision' < "$spec")"
+              distro="$(jq -r '.distro' < "$spec")"
+              pkgos="${os[$distro]}"
+              pkgver="${versions[$distro]}"
 
-  #             package="$(jq -r .package < "$spec")"
-  #             package="${package#moby-}"
-  #             package="${package^^}"
-  #             package="${package//-/_}"
+              package="$(jq -r .package < "$spec")"
+              package="${package#moby-}"
+              package="${package^^}"
+              package="${package//-/_}"
 
-  #             export DISTRO="$distro"
-  #             export TARGETARCH="${{ parameters.arch }}"
-  #             export INCLUDE_TESTING=1
-  #             export "TEST_${package}_COMMIT=$commit"
-  #             export "TEST_${package}_VERSION=${tag}-${revision}"
-  #             export "TEST_${package}_PACKAGE_VERSION=${tag}-${revision}.${pkgver}"
+              export DISTRO="$distro"
+              export TARGETARCH="${{ parameters.arch }}"
+              export INCLUDE_TESTING=1
+              export "TEST_${package}_COMMIT=$commit"
+              export "TEST_${package}_VERSION=${tag}-${revision}"
+              export "TEST_${package}_PACKAGE_VERSION=${tag}-${revision}.${pkgver}"
 
-  #             if [ "$pkgos" = debian ] || [ "$pkgos" = ubuntu ]; then
-  #               export "TEST_${package}_PACKAGE_VERSION=${tag}-${pkgos}${pkgver}u${revision}"
-  #             fi
+              if [ "$pkgos" = debian ] || [ "$pkgos" = ubuntu ]; then
+                export "TEST_${package}_PACKAGE_VERSION=${tag}-${pkgos}${pkgver}u${revision}"
+              fi
 
-  #             make test OUTPUT="$bundle_dir"
-  #           displayName: Integration Test
-  #         - task: PublishBuildArtifacts@1
-  #           inputs:
-  #             pathToPublish: "$(Pipeline.Workspace)/packages"
-  #             artifactName: packages
-  #         - task: PublishBuildArtifacts@1
-  #           condition: always()
-  #           inputs:
-  #             pathToPublish: "tests/.test"
-  #             artifactName: testresults
+              make test OUTPUT="$bundle_dir"
+            displayName: Integration Test
+          - task: PublishBuildArtifacts@1
+            inputs:
+              pathToPublish: "$(Pipeline.Workspace)/packages"
+              artifactName: packages
+          - task: PublishBuildArtifacts@1
+            condition: always()
+            inputs:
+              pathToPublish: "tests/.test"
+              artifactName: testresults
   - stage: PublishStaging
-    # dependsOn: ["TestAndSBOM"]
+    dependsOn: ["TestAndSBOM"]
     condition: succeeded()
     jobs:
       - job: PublishStaging
@@ -224,80 +224,3 @@ stages:
             env:
               ARTIFACTS_DIR: $(Pipeline.Workspace)/packages
             displayName: Upload to Staging, Queue Signing Job
-  # - stage: Sign
-  #   dependsOn: ["PublishStaging"]
-  #   condition: succeeded()
-  #   jobs:
-  #     - job: SignArtifacts
-  #       pool: production-pool-amd64-mariner-2
-  #       workspace:
-  #         clean: all
-  #       steps:
-  #         - checkout: none
-  #         - download: current
-  #           artifact: packages
-  #         - task: UseDotNet@2
-  #           displayName: Install .NET Core SDK
-  #           inputs:
-  #             packageType: sdk
-  #             version: 2.2.207
-  #         - template: templates/sign.steps.${{ parameters.os }}.yml
-  #           parameters:
-  #             folderPath: $(Pipeline.Workspace)/packages
-  #             ${{ if eq(parameters.os, 'windows') }}:
-  #               pattern: '**/**/*.exe'
-  #             ${{ else }}:
-  #               pattern: '**/**/*'
-  #         - task: PublishBuildArtifacts@1
-  #           inputs:
-  #             pathToPublish: "$(Pipeline.Workspace)/packages"
-  #             artifactName: packages
-  # - stage: PublishProduction
-  #   dependsOn: ["Sign"]
-  #   condition: succeeded()
-  #   jobs:
-  #     - job: PublishProduction
-  #       pool: production-pool-amd64-mariner-2
-  #       workspace:
-  #         clean: all
-  #       variables:
-  #         - name: storage.account.name
-  #           value: mobyreleases
-  #         - name: storage.account.container
-  #           value: moby
-  #       steps:
-  #       - checkout: none
-  #       - download: current
-  #         artifact: packages
-  #       - script: |
-  #           set -o xtrace
-  #           : ${BLOB_PREFIX:=/}
-  #           cd "${ARTIFACTS_DIR}"
-
-  #           VERSION="${PACKAGE_VERSION}"
-  #           if [ -z "${VERSION}" ]; then
-  #             echo skipping blob upload since the version was not defined in the artifacts output
-  #             exit 0
-  #           fi
-
-  #           az login --identity
-  #           az storage container create -n "${STORAGE_ACCOUNT_CONTAINER}" --auth-mode=login
-
-  #           for distro_path in ./*; do
-  #             [ -d "${distro_path}" ] || continue
-  #             distro="$(basename ${distro_path})"
-  #             az storage blob upload-batch \
-  #               --max-connections=10 --auth-mode=login \
-  #               --overwrite \
-  #               --source ${distro_path} \
-  #               --pattern "*/${PACKAGE_NAME}*" \
-  #               --destination "${STORAGE_ACCOUNT_CONTAINER}" \
-  #               --destination-path "${PACKAGE_NAME}/${VERSION}/${distro}"
-
-  #           done
-  #         env:
-  #           ARTIFACTS_DIR: $(Pipeline.Workspace)/packages
-  #           AZURE_STORAGE_ACCOUNT: $(storage.account.name)
-  #           PACKAGE_NAME: ${{ parameters.package_name }}
-  #           PACKAGE_VERSION: ${{ parameters.tag }}+azure
-  #         displayName: Upload to blob store
