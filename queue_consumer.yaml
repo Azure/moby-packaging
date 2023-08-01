@@ -8,6 +8,16 @@ parameters:
     type: string
     default: "__not_supplied"
 
+# trigger: none
+
+# schedules:
+#  - cron: "0 2,10,18 * * *"
+#    displayName: "Process Queue"
+#    always: true
+#    branches:
+#      include:
+#        - main
+
 name: ${{ replace(parameters.build_id, '__not_supplied', '$(Date:yyyyMMdd)') }}.$(Rev:r)
 
 variables:
