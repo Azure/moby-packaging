@@ -43,7 +43,8 @@ var (
 
 func main() {
 	if err := perform(); err != nil {
-		panic(err)
+		fmt.Fprintf(os.Stderr, "##vso[task.logissue type=error;]%s\n", err)
+		os.Exit(1)
 	}
 }
 

@@ -29,7 +29,8 @@ const (
 
 func main() {
 	if err := run(); err != nil {
-		panic(err)
+		fmt.Fprintf(os.Stderr, "##vso[task.logissue type=error;]%s\n", err)
+		os.Exit(1)
 	}
 }
 
@@ -225,7 +226,10 @@ func runDownload(args downloadArgs) error {
 	}
 
 	if errs != nil {
-		fmt.Fprintln(os.Stderr, errs)
+		errStrs := strings.Split(errs.Error(), "\n")
+		for _, e := range errStrs {
+			fmt.Fprintf(os.Stderr, "##vso[task.logissue type=error;]%s\n", e)
+		}
 	}
 
 	// After completion, print the downloaded array to stdout as JSON
@@ -343,7 +347,10 @@ outer:
 	}
 
 	if errs != nil {
-		fmt.Fprintln(os.Stderr, errs)
+		errStrs := strings.Split(errs.Error(), "\n")
+		for _, e := range errStrs {
+			fmt.Fprintf(os.Stderr, "##vso[task.logissue type=error;]%s\n", e)
+		}
 	}
 
 	// After completion, print the downloaded array to stdout as JSON
