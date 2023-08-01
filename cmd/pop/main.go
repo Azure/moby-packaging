@@ -258,7 +258,6 @@ func runUpload(args uploadArgs) error {
 	}
 
 	ctx := context.Background()
-	_ = ctx
 	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
 		return err
@@ -291,7 +290,6 @@ func runUpload(args uploadArgs) error {
 	}
 
 	client, err := azblob.NewClient(prodAccountName, cred, nil)
-	_ = client
 	if err != nil {
 		return err
 	}
@@ -336,12 +334,10 @@ outer:
 			continue
 		}
 
-		_ = f
-
-		// if _, err := client.UploadFile(ctx, prodContainerName, storagePath, f, &azblob.UploadFileOptions{}); err != nil {
-		// 	fail(err, msg)
-		// 	continue
-		// }
+		if _, err := client.UploadFile(ctx, prodContainerName, storagePath, f, &azblob.UploadFileOptions{}); err != nil {
+			fail(err, msg)
+			continue
+		}
 
 		successful = append(successful, messages...)
 	}
