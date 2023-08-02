@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -135,7 +137,7 @@ func perform() error {
 		},
 	}
 
-	queueMessageCompact, err := json.Marshal(&qm)
+	content, err := encodeMessage(&qm)
 	if err != nil {
 		return err
 	}
@@ -149,7 +151,7 @@ func perform() error {
 
 	qClient := sClient.NewQueueClient(queueName)
 
-	resp, err := qClient.EnqueueMessage(ctx, string(queueMessageCompact), &azqueue.EnqueueMessageOptions{TimeToLive: &sevenDaysInSeconds})
+	resp, err := qClient.EnqueueMessage(ctx, content, &azqueue.EnqueueMessageOptions{TimeToLive: &sevenDaysInSeconds})
 	if err != nil {
 		return err
 	}
@@ -168,6 +170,22 @@ func perform() error {
 	fmt.Printf("%#v\n", resp)
 
 	return nil
+}
+
+func encodeMessage(msg *queue.Message) (string, error) {
+	buf := new(bytes.Buffer)
+	wc := base64.NewEncoder(base64.StdEncoding, buf)
+	enc := json.NewEncoder(wc)
+
+	if err := enc.Encode(msg); err != nil {
+		return "", err
+	}
+
+	if err := wc.Close(); err != nil {
+		return "", err
+	}
+
+	return buf.String(), nil
 }
 
 func unmarshalSpec(specFile string) (archive.Spec, error) {

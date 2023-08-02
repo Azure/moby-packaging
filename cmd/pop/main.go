@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -25,6 +26,8 @@ const (
 	prodAccountName    = "mobyreleases"
 	prodContainerName  = "moby"
 	queueName          = "moby-packaging-signing-and-publishing"
+
+	sha256Key = "sha256"
 )
 
 func main() {
@@ -32,6 +35,30 @@ func main() {
 		fmt.Fprintf(os.Stderr, "##vso[task.logissue type=error;]%s\n", err)
 		os.Exit(1)
 	}
+}
+
+type Envelope struct {
+	Content         string `json:"content"`
+	DequeueCount    int    `json:"dequeueCount"`
+	ExpirationTime  string `json:"expirationTime"`
+	ID              string `json:"id"`
+	InsertionTime   string `json:"insertionTime"`
+	PopReceipt      string `json:"popReceipt"`
+	TimeNextVisible string `json:"timeNextVisible"`
+}
+
+func (e *Envelope) GetMessageContent() (queue.Message, error) {
+	b, err := base64.StdEncoding.DecodeString(e.Content)
+	if err != nil {
+		return queue.Message{}, err
+	}
+
+	var msg queue.Message
+	if err := json.Unmarshal(b, &msg); err != nil {
+		return queue.Message{}, err
+	}
+
+	return msg, nil
 }
 
 type downloadArgs struct {
@@ -46,79 +73,6 @@ type uploadArgs struct {
 
 type fixupQueueArgs struct {
 	messagesFile string
-}
-
-type QueueMessageDeserialize struct {
-	Content         queue.Message `json:"content"`
-	DequeueCount    int           `json:"dequeueCount"`
-	ExpirationTime  string        `json:"expirationTime"`
-	ID              string        `json:"id"`
-	InsertionTime   string        `json:"insertionTime"`
-	PopReceipt      string        `json:"popReceipt"`
-	TimeNextVisible string        `json:"timeNextVisible"`
-}
-
-func (m *QueueMessageDeserialize) UnmarshalJSON(data []byte) error {
-	// we have to do this to keep from exploding the call stack
-	// see - https://medium.com/@turgon/json-in-go-is-magical-c5b71505a937
-
-	type Aux struct {
-		Content         string `json:"content"`
-		DequeueCount    int    `json:"dequeueCount"`
-		ExpirationTime  string `json:"expirationTime"`
-		ID              string `json:"id"`
-		InsertionTime   string `json:"insertionTime"`
-		PopReceipt      string `json:"popReceipt"`
-		TimeNextVisible string `json:"timeNextVisible"`
-	}
-
-	var aux Aux
-	if err := json.Unmarshal(data, &aux); err != nil {
-		return err
-	}
-
-	m.DequeueCount = aux.DequeueCount
-	m.ExpirationTime = aux.ExpirationTime
-	m.ID = aux.ID
-	m.InsertionTime = aux.InsertionTime
-	m.PopReceipt = aux.PopReceipt
-	m.TimeNextVisible = aux.TimeNextVisible
-
-	// return json.Unmarshal(aux.Content, &m.Content)
-	if err := json.Unmarshal([]byte(aux.Content), &m.Content); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m *QueueMessageDeserialize) MarshalJSON() ([]byte, error) {
-	b, err := json.Marshal(m.Content)
-	if err != nil {
-		return nil, err
-	}
-
-	type Aux struct {
-		Content         string `json:"content"`
-		DequeueCount    int    `json:"dequeueCount"`
-		ExpirationTime  string `json:"expirationTime"`
-		ID              string `json:"id"`
-		InsertionTime   string `json:"insertionTime"`
-		PopReceipt      string `json:"popReceipt"`
-		TimeNextVisible string `json:"timeNextVisible"`
-	}
-
-	aux := Aux{
-		Content:         string(b),
-		DequeueCount:    m.DequeueCount,
-		ExpirationTime:  m.ExpirationTime,
-		ID:              m.ID,
-		InsertionTime:   m.InsertionTime,
-		PopReceipt:      m.PopReceipt,
-		TimeNextVisible: m.TimeNextVisible,
-	}
-
-	return json.Marshal(aux)
 }
 
 func run() error {
@@ -170,41 +124,45 @@ func runDownload(args downloadArgs) error {
 		return err
 	}
 
-	msgs := []QueueMessageDeserialize{}
-	downloaded := []QueueMessageDeserialize{}
-	failed := []QueueMessageDeserialize{}
+	envelopes := []Envelope{}
+	downloaded := []Envelope{}
+	failed := []Envelope{}
 
 	b, err := os.ReadFile(args.messagesFile)
 	if err != nil {
 		return err
 	}
 
-	if err := json.Unmarshal(b, &msgs); err != nil {
+	if err := json.Unmarshal(b, &envelopes); err != nil {
 		return err
 	}
 
 	// Loop over messages, downloading blobs for each
 	var errs error
 	c := http.Client{}
-	for _, msg := range msgs {
+	fail := func(f Envelope, e error) {
+		failed = append(failed, f)
+		errs = errors.Join(errs, err)
+	}
+	for _, envelope := range envelopes {
 		// if there's a failure during the downloading process, do not add the msg to the downloaded array
-		uri := msg.Content.Artifact.URI
-		expectedSum := msg.Content.Artifact.Sha256Sum
-
-		fail := func(f QueueMessageDeserialize, e error) {
-			failed = append(failed, f)
-			errs = errors.Join(errs, err)
+		message, err := envelope.GetMessageContent()
+		if err != nil {
+			fail(envelope, err)
+			continue
 		}
+		uri := message.Artifact.URI
+		expectedSum := message.Artifact.Sha256Sum
 
 		resp, err := c.Get(uri)
 		if err != nil {
-			fail(msg, err)
+			fail(envelope, err)
 			continue
 		}
 
 		blobContents := new(bytes.Buffer)
 		if _, err := io.Copy(blobContents, resp.Body); err != nil {
-			fail(msg, err)
+			fail(envelope, err)
 			continue
 		}
 
@@ -212,17 +170,17 @@ func runDownload(args downloadArgs) error {
 
 		actualSum := fmt.Sprintf("%x", sha256.Sum256(b))
 		if actualSum != expectedSum {
-			fail(msg, fmt.Errorf("wrong sum for artifact %s\n\texpected: %s\n\tactual:%s", msg.Content.Artifact.Name, expectedSum, actualSum))
+			fail(envelope, fmt.Errorf("wrong sum for artifact %s\n\texpected: %s\n\tactual:%s", message.Artifact.Name, expectedSum, actualSum))
 			continue
 		}
 
-		dstFile := filepath.Join(args.outDir, msg.Content.Artifact.Name)
+		dstFile := filepath.Join(args.outDir, message.Artifact.Name)
 		if err := os.WriteFile(dstFile, b, 0o600); err != nil {
-			fail(msg, err)
+			fail(envelope, err)
 			continue
 		}
 
-		downloaded = append(downloaded, msg)
+		downloaded = append(downloaded, envelope)
 	}
 
 	if errs != nil {
@@ -272,25 +230,31 @@ func runUpload(args uploadArgs) error {
 		return err
 	}
 
-	msgs := []QueueMessageDeserialize{}
-	if err := json.Unmarshal(msgBytes, &msgs); err != nil {
+	envelopes := []Envelope{}
+	failed := []Envelope{}
+	successful := []Envelope{}
+	var errs error
+
+	if err := json.Unmarshal(msgBytes, &envelopes); err != nil {
 		return err
 	}
 
-	var errs error
-	nameToMsg := make(map[string][]QueueMessageDeserialize)
-	for _, msg := range msgs {
-		nameToMsg[msg.Content.Artifact.Name] = append(nameToMsg[msg.Content.Artifact.Name], msg)
-	}
-
-	failed := []QueueMessageDeserialize{}
-	successful := []QueueMessageDeserialize{}
-
-	fail := func(e error, f ...QueueMessageDeserialize) {
+	fail := func(e error, f ...Envelope) {
 		for _, c := range f {
 			failed = append(failed, c)
 		}
 		errs = errors.Join(errs, err)
+	}
+
+	nameToEnvelopes := make(map[string][]Envelope)
+	for _, envelope := range envelopes {
+		message, err := envelope.GetMessageContent()
+		if err != nil {
+			fail(err, envelope)
+			continue
+		}
+
+		nameToEnvelopes[message.Artifact.Name] = append(nameToEnvelopes[message.Artifact.Name], envelope)
 	}
 
 	client, err := azblob.NewClient(prodAccountName, cred, nil)
@@ -298,56 +262,48 @@ func runUpload(args uploadArgs) error {
 		return err
 	}
 
-outer:
-	for pkgBasename, messages := range nameToMsg {
+	for pkgBasename, envelopes := range nameToEnvelopes {
 		signedPkgFilename := filepath.Join(args.signedDir, pkgBasename)
 		if _, err := os.Stat(signedPkgFilename); err != nil {
 			errs = errors.Join(errs, fmt.Errorf("filename not found in the signing directory; signing likely failed for '%s'", pkgBasename))
 			continue
 		}
 
-		if len(messages) > 1 {
-			for i := 1; i < len(messages); i++ {
-				if messages[i-1].Content.Artifact.Sha256Sum != messages[i].Content.Artifact.Sha256Sum {
-					fail(
-						fmt.Errorf(
-							"messages encountered with same filename and different sha256 digests; manual intervention will be required. "+
-								"digest[%d]: %s digest[%d]: %s",
-							i-1, messages[i-1].Content.Artifact.Sha256Sum, i, messages[i].Content.Artifact.Sha256Sum),
-						messages...,
-					)
-					continue outer
-				}
-			}
+		envelope, err := resolveDuplicates(envelopes)
+		if err != nil {
+			fail(err, envelopes...)
+			continue
 		}
 
-		msg := messages[0]
+		message, err := envelope.GetMessageContent()
+		if err != nil {
+			fail(err, envelopes...)
+			continue
+		}
 
-		pkg := msg.Content.Spec.Pkg
-		version := fmt.Sprintf("%s+azure", msg.Content.Spec.Tag)
-		distro := msg.Content.Spec.Distro
-		pkgOS := msg.Content.Spec.OS()
-		sanitizedArch := strings.ReplaceAll(msg.Content.Spec.Arch, "/", "")
+		pkg := message.Spec.Pkg
+		version := fmt.Sprintf("%s+azure", message.Spec.Tag)
+		distro := message.Spec.Distro
+		pkgOS := message.Spec.OS()
+		sanitizedArch := strings.ReplaceAll(message.Spec.Arch, "/", "")
 
 		storagePath := fmt.Sprintf("%s/%s/%s/%s_%s/%s", pkg, version, distro, pkgOS, sanitizedArch, pkgBasename)
 		fmt.Fprintln(os.Stderr, storagePath)
 
 		f, err := os.Open(signedPkgFilename)
 		if err != nil {
-			fail(err, msg)
+			fail(err, envelope)
 			continue
 		}
 
 		if _, err := client.UploadFile(ctx, prodContainerName, storagePath, f, &azblob.UploadFileOptions{
-			Metadata: map[string]*string{
-				"sha256": &msg.Content.Artifact.Sha256Sum,
-			},
+			Metadata: map[string]*string{sha256Key: &message.Artifact.Sha256Sum},
 		}); err != nil {
-			fail(err, msg)
+			fail(err, envelope)
 			continue
 		}
 
-		successful = append(successful, messages...)
+		successful = append(successful, envelopes...)
 	}
 
 	if errs != nil {
@@ -405,8 +361,8 @@ func runFixupQueue(args fixupQueueArgs) error {
 		return err
 	}
 
-	messages := []QueueMessageDeserialize{}
-	if err := json.Unmarshal(msgBytes, &messages); err != nil {
+	envelopes := []Envelope{}
+	if err := json.Unmarshal(msgBytes, &envelopes); err != nil {
 		return err
 	}
 
@@ -414,8 +370,8 @@ func runFixupQueue(args fixupQueueArgs) error {
 	succeeded := []azqueue.DeleteMessageResponse{}
 
 	var errs error
-	for _, msg := range messages {
-		resp, err := qClient.DeleteMessage(ctx, msg.ID, msg.PopReceipt, &azqueue.DeleteMessageOptions{})
+	for _, envelope := range envelopes {
+		resp, err := qClient.DeleteMessage(ctx, envelope.ID, envelope.PopReceipt, &azqueue.DeleteMessageOptions{})
 		if err != nil {
 			errs = errors.Join(errs, err)
 			failed = append(failed, resp)
@@ -436,4 +392,37 @@ func runFixupQueue(args fixupQueueArgs) error {
 	_ = os.WriteFile(failedFile, failedJSON, 0o600)
 
 	return nil
+}
+
+func resolveDuplicates(e []Envelope) (Envelope, error) {
+	switch len(e) {
+	case 0:
+		err := fmt.Errorf("unexpected error: the length of the envelopes array is zero")
+		return Envelope{}, err
+	case 1:
+		return e[0], nil
+	default:
+		lastMsg, err := e[0].GetMessageContent()
+		if err != nil {
+			return Envelope{}, err
+		}
+
+		for i := 1; i < len(e); i++ {
+			thisMsg, err := e[i].GetMessageContent()
+			if err != nil {
+				return Envelope{}, err
+			}
+
+			if lastMsg.Artifact.Sha256Sum != thisMsg.Artifact.Sha256Sum {
+				return Envelope{}, fmt.Errorf(
+					"messages encountered with same filename and different sha256 digests; manual intervention will be required. "+
+						"digest[%d]: %s digest[%d]: %s",
+					i-1, lastMsg.Artifact.Sha256Sum, i, thisMsg.Artifact.Sha256Sum)
+			}
+
+			lastMsg = thisMsg
+		}
+
+		return e[0], nil
+	}
 }
