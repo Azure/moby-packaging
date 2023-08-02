@@ -52,9 +52,7 @@ var (
 		Binaries: []string{
 			"/build/src/build/tini-static",
 		},
-		Conflicts: []string{
-			"moby-engine (<< 24.0.0)",
-		},
+		Conflicts:   []string{},
 		Description: BaseArchive.Description,
 	}
 
@@ -66,7 +64,7 @@ var (
 			"/build/src/build/tini-static",
 		},
 		Description: BaseArchive.Description,
-		Conflicts:   []string{"moby-engine < 24.0.0"},
+		Conflicts:   []string{},
 	}
 
 	MarinerArchive = RPMArchive
