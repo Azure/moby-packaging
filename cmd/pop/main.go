@@ -338,7 +338,11 @@ outer:
 			continue
 		}
 
-		if _, err := client.UploadFile(ctx, prodContainerName, storagePath, f, &azblob.UploadFileOptions{}); err != nil {
+		if _, err := client.UploadFile(ctx, prodContainerName, storagePath, f, &azblob.UploadFileOptions{
+			Metadata: map[string]*string{
+				"sha256": &msg.Content.Artifact.Sha256Sum,
+			},
+		}); err != nil {
 			fail(err, msg)
 			continue
 		}
