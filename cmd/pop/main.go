@@ -290,16 +290,18 @@ func runUpload(args uploadArgs) error {
 		storagePath := fmt.Sprintf("%s/%s/%s/%s_%s/%s", pkg, version, distro, pkgOS, sanitizedArch, pkgBasename)
 		fmt.Fprintln(os.Stderr, storagePath)
 
-		f, err := os.Open(signedPkgFilename)
+		b, err := os.ReadFile(signedPkgFilename)
 		if err != nil {
-			fail(err, envelope)
+			fail(err, envelopes...)
 			continue
 		}
 
-		if _, err := client.UploadFile(ctx, prodContainerName, storagePath, f, &azblob.UploadFileOptions{
-			Metadata: map[string]*string{sha256Key: &message.Artifact.Sha256Sum},
+		signedSha256Sum := fmt.Sprintf("%x", sha256.Sum256(b))
+
+		if _, err := client.UploadBuffer(ctx, prodContainerName, storagePath, b, &azblob.UploadFileOptions{
+			Metadata: map[string]*string{sha256Key: &signedSha256Sum},
 		}); err != nil {
-			fail(err, envelope)
+			fail(err, envelopes...)
 			continue
 		}
 
