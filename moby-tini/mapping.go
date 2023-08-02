@@ -52,12 +52,7 @@ var (
 		Binaries: []string{
 			"/build/src/build/tini-static",
 		},
-		Conflicts: []string{
-			"tini",
-		},
-		Replaces: []string{
-			"tini",
-		},
+		Conflicts:   []string{},
 		Description: BaseArchive.Description,
 	}
 

@@ -1,0 +1,132 @@
+parameters:
+  - name: num_messages
+    displayName: number of messages to process
+    type: string
+    default: "30"
+  - name: build_id
+    displayName: build id
+    type: string
+    default: "__not_supplied"
+
+# trigger: none
+
+# schedules:
+#  - cron: "0 2,10,18 * * *"
+#    displayName: "Process Queue"
+#    always: true
+#    branches:
+#      include:
+#        - main
+
+name: ${{ replace(parameters.build_id, '__not_supplied', '$(Date:yyyyMMdd)') }}.$(Rev:r)
+
+variables:
+  build.pool: staging-pool-amd64-mariner-2
+
+stages:
+  - stage: ReadQueue
+    jobs:
+      - job: Pull_Messages
+        pool: $(build.pool)
+        steps:
+          - bash: |
+              set -exu
+              mkdir "$MSG_DIR"
+              az login --identity
+              az storage message get \
+                --auth-mode login \
+                --account-name moby \
+                --queue-name moby-packaging-signing-and-publishing \
+                --visibility-timeout 1 \
+                --num-messages "$NUM_MESSAGES" |
+                tee "$MSG_DIR/message"
+            env:
+              NUM_MESSAGES: "${{ parameters.num_messages }}"
+              MSG_DIR: "$(Pipeline.Workspace)/messages"
+          - task: PublishBuildArtifacts@1
+            inputs:
+              pathToPublish: "$(Pipeline.Workspace)/messages"
+              artifactName: messages
+  - stage: SignAndPublish
+    jobs:
+      - job: Read_Queue
+        pool: production-pool-amd64-mariner-2
+        steps:
+          - download: current
+            artifact: messages
+          - bash: |
+              set -exu
+              # downloads all packages, puts them in out-dir, logs successful downloads to stdout (put in 'downloaded' file)
+              go run ./cmd/pop download --out-dir="$OUT_DIR" --messages-file="$MSG_DIR/message" | tee "$MSG_DIR/downloaded"
+            env:
+              MSG_DIR: "$(Pipeline.Workspace)/messages"
+              OUT_DIR: "$(Pipeline.Workspace)/downloaded"
+          - bash: |
+              readarray -t failed < <(jq -r '.[] | .content | fromjson.artifact.name' < "$MSG_DIR/failed_downloading")
+              for f in "${failed[@]}"; do
+                printf '##vso[task.logissue type=error;]failed downloading:  %s\n' "$f"
+              done
+            env:
+              MSG_DIR: "$(Pipeline.Workspace)/messages"
+            displayName: Surface failed downloads
+          - bash: |
+              cp -r $(Pipeline.Workspace)/downloaded $(Pipeline.Workspace)/signed
+            displayName: Copy downloaded files to sign
+          - task: UseDotNet@2
+            displayName: Install .NET Core SDK
+            inputs:
+              packageType: sdk
+              version: 2.2.207
+          - template: templates/sign.steps.yml
+            parameters:
+              folderPath: "$(Pipeline.Workspace)/signed"
+          - bash: |
+              # uploads signed files to prod bucket, removes unsigned / failed uploads, writes output to stdout
+              go run ./cmd/pop upload \
+                --signed-dir="$SIGNED_DIR" \
+                --messages-file="$MSG_DIR/downloaded" |
+                tee "$MSG_DIR/succeeded"
+            env:
+              SIGNED_DIR: "$(Pipeline.Workspace)/signed"
+              MSG_DIR: "$(Pipeline.Workspace)/messages"
+          - bash: |
+              readarray -t failed < <(jq -r '.[] | .content | fromjson.artifact.name' < "$MSG_DIR/failed_singing_or_publishing")
+              for f in "${failed[@]}"; do
+                printf '##vso[task.logissue type=error;]failed signing or uploading:  %s\n' "$f"
+              done
+            env:
+              MSG_DIR: "$(Pipeline.Workspace)/messages"
+            displayName: Surface failed uploads
+          - task: PublishBuildArtifacts@1
+            inputs:
+              pathToPublish: "$(Pipeline.Workspace)/messages"
+              artifactName: messages
+  - stage: FixupQueue
+    jobs:
+      - job: FixupQueue
+        pool: $(build.pool)
+        steps:
+          - download: current
+            artifact: messages
+          - bash: |
+              set -exu
+
+              # removes successfully signed & published artifacts from the queue
+              go run ./cmd/pop fixup-queue \
+                --messages-file="$MSG_DIR/succeeded" |
+                tee "$MSG_DIR/removed_from_queue"
+            env:
+              MSG_DIR: "$(Pipeline.Workspace)/messages"
+            displayName: Remove successful items from the queue
+          - bash: |
+              readarray -t failed < <(jq -r '.[] | .content | fromjson.artifact.name' < "$MSG_DIR/failed_deleting_from_queue")
+              for f in "${failed[@]}"; do
+                printf '##vso[task.logissue type=error;]failed removing from queue:  %s\n' "$f"
+              done
+            env:
+              MSG_DIR: "$(Pipeline.Workspace)/messages"
+            displayName: Surface failed message removals
+          - task: PublishBuildArtifacts@1
+            inputs:
+              pathToPublish: "$(Pipeline.Workspace)/messages"
+              artifactName: messages

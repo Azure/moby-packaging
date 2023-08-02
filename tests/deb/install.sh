@@ -19,6 +19,7 @@ prepare_local_apt() {
     if [ -n "${1}" ]; then
         dir="${1}"
     fi
+
     if [ -z "$(ls ${dir}/*.deb)" ]; then
         return
     fi
