@@ -220,6 +220,7 @@ func runUpload(args uploadArgs) error {
 	}
 
 	ctx := context.Background()
+	_ = ctx
 	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
 		return err
@@ -258,6 +259,7 @@ func runUpload(args uploadArgs) error {
 	}
 
 	client, err := azblob.NewClient(prodAccountName, cred, nil)
+	_ = client
 	if err != nil {
 		return err
 	}
@@ -291,17 +293,18 @@ func runUpload(args uploadArgs) error {
 		fmt.Fprintln(os.Stderr, storagePath)
 
 		f, err := os.Open(signedPkgFilename)
+		_ = f
 		if err != nil {
 			fail(err, envelope)
 			continue
 		}
 
-		if _, err := client.UploadFile(ctx, prodContainerName, storagePath, f, &azblob.UploadFileOptions{
-			Metadata: map[string]*string{sha256Key: &message.Artifact.Sha256Sum},
-		}); err != nil {
-			fail(err, envelope)
-			continue
-		}
+		// if _, err := client.UploadFile(ctx, prodContainerName, storagePath, f, &azblob.UploadFileOptions{
+		// 	Metadata: map[string]*string{sha256Key: &message.Artifact.Sha256Sum},
+		// }); err != nil {
+		// 	fail(err, envelope)
+		// 	continue
+		// }
 
 		successful = append(successful, envelopes...)
 	}
