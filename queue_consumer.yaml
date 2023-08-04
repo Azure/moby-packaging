@@ -61,6 +61,7 @@ stages:
             env:
               MSG_DIR: "$(Pipeline.Workspace)/messages"
               OUT_DIR: "$(Pipeline.Workspace)/downloaded"
+            displayName: Pull Queued Packages
           - bash: |
               readarray -t failed < <(jq -r '.[] | .content | fromjson.artifact.name' < "$MSG_DIR/failed_downloading")
               for f in "${failed[@]}"; do
@@ -89,6 +90,7 @@ stages:
             env:
               SIGNED_DIR: "$(Pipeline.Workspace)/signed"
               MSG_DIR: "$(Pipeline.Workspace)/messages"
+            displayName: Upload Signed Packages to Prod Storage
           - bash: |
               readarray -t failed < <(jq -r '.[] | .content | fromjson.artifact.name' < "$MSG_DIR/failed_singing_or_publishing")
               for f in "${failed[@]}"; do
