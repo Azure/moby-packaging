@@ -2,7 +2,7 @@ parameters:
   - name: num_messages
     displayName: number of messages to process
     type: string
-    default: "2147483647" # max 32-bit signed integer, i.e. all messages
+    default: "32" # max number of allowed messages
   - name: build_id
     displayName: build id
     type: string
