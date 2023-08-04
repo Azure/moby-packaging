@@ -9,6 +9,7 @@ import (
 	"flag"
 	"fmt"
 	"io/fs"
+	"math"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -151,6 +152,20 @@ func perform() error {
 
 	qClient := sClient.NewQueueClient(queueName)
 
+	max := int32(math.MaxInt32)
+	messages, err := qClient.PeekMessages(ctx, &azqueue.PeekMessagesOptions{NumberOfMessages: &max})
+	if err != nil {
+		// log the error, but try to push the messages anyway
+		fmt.Fprintf(os.Stderr, "##vso[task.logissue type=error;]%s\n", err)
+	}
+
+	for _, existingMessage := range messages.Messages {
+		if existingMessage.MessageText != nil && *existingMessage.MessageText == content {
+			fmt.Fprintf(os.Stderr, "message with payload %s already enqueued", content)
+			return nil
+		}
+	}
+
 	resp, err := qClient.EnqueueMessage(ctx, content, &azqueue.EnqueueMessageOptions{TimeToLive: &sevenDaysInSeconds})
 	if err != nil {
 		return err
@@ -167,7 +182,7 @@ func perform() error {
 	}
 
 	fmt.Println(queueMessageHuman)
-	fmt.Printf("%#v\n", resp)
+	fmt.Fprintf(os.Stderr, "%#v\n", resp)
 
 	return nil
 }
