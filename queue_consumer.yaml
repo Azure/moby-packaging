@@ -63,7 +63,7 @@ stages:
               OUT_DIR: "$(Pipeline.Workspace)/downloaded"
             displayName: Pull Queued Packages
           - bash: |
-              readarray -t failed < <(jq -r '.[] | .content | fromjson.artifact.name' < "$MSG_DIR/failed_downloading")
+              readarray -t failed < <(jq '.[] | .content' < "$MSG_DIR/failed_downloading" | base64 -d | jq -r 'fromjson.artifact.name')
               for f in "${failed[@]}"; do
                 printf '##vso[task.logissue type=error;]failed downloading:  %s\n' "$f"
               done
@@ -92,7 +92,7 @@ stages:
               MSG_DIR: "$(Pipeline.Workspace)/messages"
             displayName: Upload Signed Packages to Prod Storage
           - bash: |
-              readarray -t failed < <(jq -r '.[] | .content | fromjson.artifact.name' < "$MSG_DIR/failed_singing_or_publishing")
+              readarray -t failed < <(jq '.[] | .content' < "$MSG_DIR/failed_singing_or_publishing" | base64 -d | jq -r 'fromjson.artifact.name')
               for f in "${failed[@]}"; do
                 printf '##vso[task.logissue type=error;]failed signing or uploading:  %s\n' "$f"
               done
