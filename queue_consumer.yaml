@@ -2,7 +2,7 @@ parameters:
   - name: num_messages
     displayName: number of messages to process
     type: string
-    default: "30"
+    default: "32" # max number of allowed messages
   - name: build_id
     displayName: build id
     type: string
