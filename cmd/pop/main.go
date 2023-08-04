@@ -421,8 +421,8 @@ func resolveDuplicates(e []Envelope) (Envelope, error) {
 			if lastMsg.Artifact.Sha256Sum != thisMsg.Artifact.Sha256Sum {
 				return Envelope{}, fmt.Errorf(
 					"messages encountered with same filename and different sha256 digests; manual intervention will be required. "+
-						"digest[%d]: %s digest[%d]: %s",
-					i-1, lastMsg.Artifact.Sha256Sum, i, thisMsg.Artifact.Sha256Sum)
+						"filename: `%s`, digest[%d]: %s digest[%d]: %s",
+					lastMsg.Artifact.Name, i-1, lastMsg.Artifact.Sha256Sum, i, thisMsg.Artifact.Sha256Sum)
 			}
 
 			lastMsg = thisMsg
