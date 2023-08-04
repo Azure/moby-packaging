@@ -137,13 +137,15 @@ func runDownload(args downloadArgs) error {
 		return err
 	}
 
-	// Loop over messages, downloading blobs for each
-	var errs error
 	c := http.Client{}
-	fail := func(f Envelope, e error) {
-		failed = append(failed, f)
-		errs = errors.Join(errs, err)
+
+	var errs error
+	fail := func(localEnvelope Envelope, localErr error) {
+		failed = append(failed, localEnvelope)
+		errs = errors.Join(errs, localErr)
 	}
+
+	// Loop over messages, downloading blobs for each
 	for _, envelope := range envelopes {
 		// if there's a failure during the downloading process, do not add the msg to the downloaded array
 		message, err := envelope.GetMessageContent()
@@ -230,24 +232,24 @@ func runUpload(args uploadArgs) error {
 		return err
 	}
 
-	envelopes := []Envelope{}
+	allEnvelopes := []Envelope{}
 	failed := []Envelope{}
 	successful := []Envelope{}
 	var errs error
 
-	if err := json.Unmarshal(msgBytes, &envelopes); err != nil {
+	if err := json.Unmarshal(msgBytes, &allEnvelopes); err != nil {
 		return err
 	}
 
-	fail := func(e error, f ...Envelope) {
-		for _, c := range f {
+	fail := func(localErr error, localEnvelope ...Envelope) {
+		for _, c := range localEnvelope {
 			failed = append(failed, c)
 		}
-		errs = errors.Join(errs, err)
+		errs = errors.Join(errs, localErr)
 	}
 
 	nameToEnvelopes := make(map[string][]Envelope)
-	for _, envelope := range envelopes {
+	for _, envelope := range allEnvelopes {
 		message, err := envelope.GetMessageContent()
 		if err != nil {
 			fail(err, envelope)
@@ -257,27 +259,29 @@ func runUpload(args uploadArgs) error {
 		nameToEnvelopes[message.Artifact.Name] = append(nameToEnvelopes[message.Artifact.Name], envelope)
 	}
 
-	client, err := azblob.NewClient(prodAccountName, cred, nil)
+	serviceURL := fmt.Sprintf("https://%s.blob.core.windows.net", prodAccountName)
+	client, err := azblob.NewClient(serviceURL, cred, nil)
 	if err != nil {
 		return err
 	}
 
-	for pkgBasename, envelopes := range nameToEnvelopes {
+	for pkgBasename, pkgEnvelopes := range nameToEnvelopes {
 		signedPkgFilename := filepath.Join(args.signedDir, pkgBasename)
 		if _, err := os.Stat(signedPkgFilename); err != nil {
-			errs = errors.Join(errs, fmt.Errorf("filename not found in the signing directory; signing likely failed for '%s'", pkgBasename))
+			err := err
+			fail(err, pkgEnvelopes...)
 			continue
 		}
 
-		envelope, err := resolveDuplicates(envelopes)
+		envelope, err := resolveDuplicates(pkgEnvelopes)
 		if err != nil {
-			fail(err, envelopes...)
+			fail(err, pkgEnvelopes...)
 			continue
 		}
 
 		message, err := envelope.GetMessageContent()
 		if err != nil {
-			fail(err, envelopes...)
+			fail(err, pkgEnvelopes...)
 			continue
 		}
 
@@ -288,11 +292,10 @@ func runUpload(args uploadArgs) error {
 		sanitizedArch := strings.ReplaceAll(message.Spec.Arch, "/", "")
 
 		storagePath := fmt.Sprintf("%s/%s/%s/%s_%s/%s", pkg, version, distro, pkgOS, sanitizedArch, pkgBasename)
-		fmt.Fprintln(os.Stderr, storagePath)
 
 		b, err := os.ReadFile(signedPkgFilename)
 		if err != nil {
-			fail(err, envelopes...)
+			fail(err, pkgEnvelopes...)
 			continue
 		}
 
@@ -301,11 +304,11 @@ func runUpload(args uploadArgs) error {
 		if _, err := client.UploadBuffer(ctx, prodContainerName, storagePath, b, &azblob.UploadFileOptions{
 			Metadata: map[string]*string{sha256Key: &signedSha256Sum},
 		}); err != nil {
-			fail(err, envelopes...)
+			fail(err, pkgEnvelopes...)
 			continue
 		}
 
-		successful = append(successful, envelopes...)
+		successful = append(successful, pkgEnvelopes...)
 	}
 
 	if errs != nil {
@@ -418,8 +421,8 @@ func resolveDuplicates(e []Envelope) (Envelope, error) {
 			if lastMsg.Artifact.Sha256Sum != thisMsg.Artifact.Sha256Sum {
 				return Envelope{}, fmt.Errorf(
 					"messages encountered with same filename and different sha256 digests; manual intervention will be required. "+
-						"digest[%d]: %s digest[%d]: %s",
-					i-1, lastMsg.Artifact.Sha256Sum, i, thisMsg.Artifact.Sha256Sum)
+						"filename: `%s`, digest[%d]: %s digest[%d]: %s",
+					lastMsg.Artifact.Name, i-1, lastMsg.Artifact.Sha256Sum, i, thisMsg.Artifact.Sha256Sum)
 			}
 
 			lastMsg = thisMsg
