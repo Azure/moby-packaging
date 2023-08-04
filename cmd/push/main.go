@@ -9,7 +9,6 @@ import (
 	"flag"
 	"fmt"
 	"io/fs"
-	"math"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -152,7 +151,7 @@ func perform() error {
 
 	qClient := sClient.NewQueueClient(queueName)
 
-	max := int32(math.MaxInt32)
+	var max int32 = 32 // maximum number of messages for request
 	messages, err := qClient.PeekMessages(ctx, &azqueue.PeekMessagesOptions{NumberOfMessages: &max})
 	if err != nil {
 		// log the error, but try to push the messages anyway
