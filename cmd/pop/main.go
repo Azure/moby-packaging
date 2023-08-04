@@ -257,7 +257,8 @@ func runUpload(args uploadArgs) error {
 		nameToEnvelopes[message.Artifact.Name] = append(nameToEnvelopes[message.Artifact.Name], envelope)
 	}
 
-	client, err := azblob.NewClient(prodAccountName, cred, nil)
+	serviceURL := fmt.Sprintf("https://%s.blob.core.windows.net", prodAccountName)
+	client, err := azblob.NewClient(serviceURL, cred, nil)
 	if err != nil {
 		return err
 	}
