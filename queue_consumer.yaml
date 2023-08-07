@@ -40,18 +40,24 @@ stages:
                 --visibility-timeout 1 \
                 --num-messages "$NUM_MESSAGES" |
                 tee "$MSG_DIR/message"
+
+              num_messages_found=$(jq 'length' < "$MSG_DIR/message")
+              echo "##vso[task.setvariable variable=nummessages;isOutput=true]$num_messages_found"
             env:
               NUM_MESSAGES: "${{ parameters.num_messages }}"
               MSG_DIR: "$(Pipeline.Workspace)/messages"
             displayName: Pull Messages from Queue
+            name: GetMessages
           - task: PublishBuildArtifacts@1
             inputs:
               pathToPublish: "$(Pipeline.Workspace)/messages"
               artifactName: messages
   - stage: SignAndPublish
+    dependsOn: ["ReadQueue"]
     jobs:
       - job: Read_Queue
         pool: production-pool-amd64-mariner-2
+        condition: ne(stageDependencies.ReadQueue.Pull_Messages.outputs['GetMessages.nummessages'], '0')
         steps:
           - download: current
             artifact: messages
@@ -105,9 +111,11 @@ stages:
               pathToPublish: "$(Pipeline.Workspace)/messages"
               artifactName: messages
   - stage: FixupQueue
+    dependsOn: ["ReadQueue", "SignAndPublish"]
     jobs:
       - job: FixupQueue
         pool: $(build.pool)
+        condition: ne(stageDependencies.ReadQueue.Pull_Messages.outputs['GetMessages.nummessages'], '0')
         steps:
           - download: current
             artifact: messages
