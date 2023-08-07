@@ -103,6 +103,7 @@ stages:
         steps:
           - download: current
             artifact: packages
+          # The following step can be removed once moby-tini is in PMC
           - script: |
               ! [ ${{ parameters.distro }} = mariner2 ] && exit 0
 
@@ -192,6 +193,13 @@ stages:
 
               make test OUTPUT="$bundle_dir"
             displayName: Integration Test
+          # The following step can be removed once moby-tini is in PMC
+          - bash: |
+              find "$BUNDLE_DIR" -type f -name 'moby-tini*' -print0 | xargs -0 rm -f
+            env:
+              BUNDLE_DIR: "$(Pipeline.Workspace)/packages"
+            condition: ne(parameters.package_name, 'moby-tini')
+            displayName: Remove manually-added moby-tini package
           - task: PublishBuildArtifacts@1
             inputs:
               pathToPublish: "$(Pipeline.Workspace)/packages"
@@ -221,7 +229,11 @@ stages:
               set -exu
               : ${BLOB_PREFIX:=/}
 
-              go run ./cmd/push --artifact-dir="$ARTIFACTS_DIR" --build-id="${{ parameters.build_id }}"
+              go run ./cmd/push \
+                --artifact-dir="$ARTIFACTS_DIR" \
+                --package-name="$PACKAGE_NAME" \
+                --build-id="${{ parameters.build_id }}"
             env:
               ARTIFACTS_DIR: $(Pipeline.Workspace)/packages
+              PACKAGE_NAME: "${{ parameters.package_name }}"
             displayName: Upload to Staging, Queue Signing Job

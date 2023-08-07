@@ -29,6 +29,7 @@ type Flags struct {
 	ArtifactDir string
 	BuildID     string
 	Debug       bool
+	PackageName string
 }
 
 const (
@@ -54,6 +55,7 @@ func perform() error {
 	f := Flags{}
 	flag.StringVar(&f.ArtifactDir, "artifact-dir", "", "path to directory of artifacts to upload")
 	flag.StringVar(&f.BuildID, "build-id", "", "build id")
+	flag.StringVar(&f.PackageName, "package-name", "", "package name")
 	flag.BoolVar(&f.Debug, "debug", false, "enable debug output")
 	flag.Parse()
 
@@ -225,7 +227,8 @@ func findBlobAndSpec(f Flags) (string, string, error) {
 			return nil
 		}
 
-		if r.MatchString(d.Name()) {
+		basename := d.Name()
+		if r.MatchString(basename) && strings.HasPrefix(basename, f.PackageName) {
 			blobFile = path
 			return nil
 		}
