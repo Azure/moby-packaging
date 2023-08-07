@@ -118,8 +118,9 @@ stages:
               arch=${rhel_arch[${{ parameters.arch }}]}
               pkg_basename="$(printf "moby-tini-0.19.0-1.cm2.%s.rpm" "$arch")"
               tini_url="https://moby.blob.core.windows.net/moby/moby-tini/0.19.0/mariner2/$pkg_basename"
+              os_arch_dir="$bundle_dir/mariner2/${{ parameters.os }}_${{ replace(parameters.arch, '/', '') }}"
 
-              curl -fsSL -o "$bundle_dir/mariner2/$pkg_basename" "$tini_url"
+              curl -fsSL -o "$os_arch_dir/$pkg_basename" "$tini_url"
             # Install tini manually on mariner, but not when tini is the
             # package being built/tested.
             condition: |
