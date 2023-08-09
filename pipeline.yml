@@ -135,6 +135,7 @@ stages:
 
               declare -A os
               os=(
+                  [bookworm]=debian
                   [bullseye]=debian
                   [buster]=debian
                   [focal]=ubuntu
@@ -147,6 +148,7 @@ stages:
 
               declare -A versions
               versions=(
+                  [bookworm]=12
                   [bullseye]=11
                   [buster]=10
                   [focal]=20.04
