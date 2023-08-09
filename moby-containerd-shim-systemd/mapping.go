@@ -15,6 +15,7 @@ var (
 	debPostRm string
 
 	Archives = map[string]archive.Archive{
+		"bookworm": DebArchive,
 		"buster":   DebArchive,
 		"bullseye": DebArchive,
 		"bionic":   DebArchive,

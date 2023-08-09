@@ -4,6 +4,7 @@ import "github.com/Azure/moby-packaging/pkg/archive"
 
 var (
 	Archives = map[string]archive.Archive{
+		"bookworm": DebArchive,
 		"buster":   DebArchive,
 		"bullseye": DebArchive,
 		"bionic":   DebArchive,
