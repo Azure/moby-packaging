@@ -99,7 +99,7 @@ func perform() error {
 	}
 
 	pkgOS := spec.OS()
-	sanitizedArch := strings.ReplaceAll(spec.Arch, "/", "")
+	sanitizedArch := strings.ReplaceAll(spec.Arch, "/", "_")
 	blobBasename := filepath.Base(blobFile)
 	specBasename := filepath.Base(specFile)
 	storagePathBlob := fmt.Sprintf("%s/%s+azure/%s/%s_%s/%s", spec.Pkg, spec.Tag, spec.Distro, pkgOS, sanitizedArch, blobBasename)
