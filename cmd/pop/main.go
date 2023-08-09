@@ -289,7 +289,7 @@ func runUpload(args uploadArgs) error {
 		version := fmt.Sprintf("%s+azure", message.Spec.Tag)
 		distro := message.Spec.Distro
 		pkgOS := message.Spec.OS()
-		sanitizedArch := strings.ReplaceAll(message.Spec.Arch, "/", "")
+		sanitizedArch := strings.ReplaceAll(message.Spec.Arch, "/", "_")
 
 		storagePath := fmt.Sprintf("%s/%s/%s/%s_%s/%s", pkg, version, distro, pkgOS, sanitizedArch, pkgBasename)
 
