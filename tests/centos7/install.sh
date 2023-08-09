@@ -31,14 +31,8 @@ install() {
         "moby-runc$(with_glob ${TEST_RUNC_PACKAGE_VERSION})"
         "moby-buildx$(with_glob ${TEST_BUILDX_PACKAGE_VERSION})"
         "moby-compose$(with_glob ${TEST_COMPOSE_PACKAGE_VERSION})"
+        "moby-tini$(with_glob ${TEST_TINI_PACKAGE_VERSION})"
     )
-
-    # Until the "default" package installed by the repo is the new
-    # `moby-engine` *without* `docker-init` packaged in, `moby-tini` will
-    # conflict with packages other than itself and `moby-engine`.
-    if [ -n "$TEST_ENGINE_PACKAGE_VERSION" ] || [ -n "$TEST_TINI_PACKAGE_VERSION" ]; then
-        packages+=("moby-tini$(with_glob ${TEST_TINI_PACKAGE_VERSION})")
-    fi
 
     yum install -y --nogpgcheck "${packages[@]}"
 }
