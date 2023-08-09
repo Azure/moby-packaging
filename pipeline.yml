@@ -200,7 +200,7 @@ stages:
               find "$BUNDLE_DIR" -type f -name 'moby-tini*' -print0 | xargs -0 rm -f
             env:
               BUNDLE_DIR: "$(Pipeline.Workspace)/packages"
-            condition: ne(parameters.package_name, 'moby-tini')
+            condition: ne('${{ parameters.package_name }}', 'moby-tini')
             displayName: Remove manually-added moby-tini package
           - task: PublishBuildArtifacts@1
             inputs:
