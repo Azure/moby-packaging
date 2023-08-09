@@ -184,7 +184,7 @@ stages:
 
               export DISTRO="$distro"
               export TARGETARCH="${{ parameters.arch }}"
-              export INCLUDE_TESTING=1
+              export INCLUDE_TESTING=0
               export "TEST_${package}_COMMIT=$commit"
               export "TEST_${package}_VERSION=${tag}-${revision}"
               export "TEST_${package}_PACKAGE_VERSION=${tag}-${revision}.${pkgver}"
