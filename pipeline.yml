@@ -103,35 +103,8 @@ stages:
         steps:
           - download: current
             artifact: packages
-          # The following step can be removed once moby-tini is in PMC
           - script: |
-              ! [ ${{ parameters.distro }} = mariner2 ] && exit 0
-
               set -exu
-
-              declare -A rhel_arch
-              rhel_arch=(
-                [arm64]=aarch64
-                [amd64]=x86_64
-              )
-
-              bundle_dir="$(Pipeline.Workspace)/packages"
-              arch=${rhel_arch[${{ parameters.arch }}]}
-              pkg_basename="$(printf "moby-tini-0.19.0-1.cm2.%s.rpm" "$arch")"
-              tini_url="https://moby.blob.core.windows.net/moby/moby-tini/0.19.0/mariner2/$pkg_basename"
-              os_arch_dir="$bundle_dir/mariner2/${{ parameters.os }}_${{ replace(parameters.arch, '/', '') }}"
-
-              curl -fsSL -o "$os_arch_dir/$pkg_basename" "$tini_url"
-            # Install tini manually on mariner, but not when tini is the
-            # package being built/tested.
-            condition: |
-              and(
-                eq('${{ parameters.distro }}', 'mariner2'),
-                ne('${{ parameters.package_name }}', 'moby-tini')
-              )
-            displayName: MarinerInstallTini
-          - script: |
-              set -exu # TODO: remove
 
               declare -A os
               os=(
@@ -195,13 +168,6 @@ stages:
 
               make test OUTPUT="$bundle_dir"
             displayName: Integration Test
-          # The following step can be removed once moby-tini is in PMC
-          - bash: |
-              find "$BUNDLE_DIR" -type f -name 'moby-tini*' -print0 | xargs -0 rm -f
-            env:
-              BUNDLE_DIR: "$(Pipeline.Workspace)/packages"
-            condition: ne('${{ parameters.package_name }}', 'moby-tini')
-            displayName: Remove manually-added moby-tini package
           - task: PublishBuildArtifacts@1
             inputs:
               pathToPublish: "$(Pipeline.Workspace)/packages"
