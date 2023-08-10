@@ -40,9 +40,18 @@ stages:
                 --visibility-timeout 1 \
                 --num-messages "$NUM_MESSAGES" |
                 tee "$MSG_DIR/message"
-
+            env:
+              NUM_MESSAGES: "${{ parameters.num_messages }}"
+              MSG_DIR: "$(Pipeline.Workspace)/messages"
+            displayName: Pull Messages from Queue
+            name: GetMessages
+          - task: PublishBuildArtifacts@1
+            inputs:
+              pathToPublish: "$(Pipeline.Workspace)/messages"
+              artifactName: messages
+          - bash: |
+              set -exu
               num_messages_found=$(jq 'length' < "$MSG_DIR/message")
-
               echo "##vso[task.setvariable variable=nummessages;isOutput=true]$num_messages_found"
 
               if [ $num_messages_found -ne 0 ]; then
@@ -50,7 +59,7 @@ stages:
               fi
 
               # otherwise, cancel the rest of this pipeline & log that there were no queue messages
-              echo "##vso[build.updatebuildnumber]${{ parameters.build_id }}.$(Rev:r).no.new.queue.messages"
+              echo "##vso[build.updatebuildnumber]$UPDATED_BUILD_NUMBER"
               echo "##[warning]no new queue messages"
 
               # just in case, to avoid token leaking
@@ -63,14 +72,9 @@ stages:
                 -d '{"status": "Cancelling"}' \
                 'https://dev.azure.com/AzureContainerUpstream/Moby/_apis/build/builds/$(Build.BuildId)?api-version=7.0'
             env:
-              NUM_MESSAGES: "${{ parameters.num_messages }}"
               MSG_DIR: "$(Pipeline.Workspace)/messages"
-            displayName: Pull Messages from Queue
-            name: GetMessages
-          - task: PublishBuildArtifacts@1
-            inputs:
-              pathToPublish: "$(Pipeline.Workspace)/messages"
-              artifactName: messages
+              UPDATED_BUILD_NUMBER: "${{ parameters.build_id }}.no.new.queue.messages"
+            displayName: "Cancel Build if there are no Messages"
   - stage: SignAndPublish
     dependsOn: ["ReadQueue"]
     jobs:
