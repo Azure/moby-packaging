@@ -14,6 +14,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
@@ -191,15 +192,15 @@ func convertToRawMsgs(msgs []*azqueue.DequeuedMessage) ([]Envelope, error) {
 		}
 
 		if msg.ExpirationTime != nil {
-			e.ExpirationTime = msg.ExpirationTime.String()
+			e.ExpirationTime = msg.ExpirationTime.Format(time.RFC3339)
 		}
 
 		if msg.InsertionTime != nil {
-			e.InsertionTime = msg.InsertionTime.String()
+			e.InsertionTime = msg.InsertionTime.Format(time.RFC3339)
 		}
 
 		if msg.TimeNextVisible != nil {
-			e.TimeNextVisible = msg.TimeNextVisible.String()
+			e.TimeNextVisible = msg.TimeNextVisible.Format(time.RFC3339)
 		}
 
 		envelopes = append(envelopes, e)
