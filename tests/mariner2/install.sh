@@ -18,8 +18,6 @@ prepare_local_yum() {
     fi
     /opt/moby/download-pcks.sh "${dir}"
     createrepo "${dir}"
-    dnf config-manager --disable mariner-official-base
-    dnf config-manager --disable "file://${dir}" || true
     dnf config-manager --add-repo "file://${dir}"
 }
 
