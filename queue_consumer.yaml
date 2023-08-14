@@ -67,7 +67,7 @@ stages:
                 'https://dev.azure.com/AzureContainerUpstream/Moby/_apis/build/builds/$(Build.BuildId)?api-version=7.0'
             env:
               MSG_DIR: "$(Pipeline.Workspace)/messages"
-              UPDATED_BUILD_NUMBER: "${{ parameters.build_id }}.no.new.queue.messages"
+              UPDATED_BUILD_NUMBER: "${{ replace(parameters.build_id, '__not_supplied', '$(Date:yyyyMMdd)') }}.no.new.queue.messages"
             displayName: "Cancel Build if there are no Messages"
   - stage: SignAndPublish
     dependsOn: ["ReadQueue"]
