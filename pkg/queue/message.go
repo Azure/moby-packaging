@@ -2,6 +2,8 @@ package queue
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -76,6 +78,47 @@ func (c *Client) GetAllMessages(ctx context.Context) (*Messages, error) {
 	}
 
 	return &Messages{Messages: allMessages}, allErrs
+}
+
+// used by trigger
+func (m *Messages) ContainsBuild(spec archive.Spec) (bool, error) {
+	failures := 0
+	for _, rawMessage := range m.Messages {
+		if failures > 4 {
+			return false, fmt.Errorf("too many failures inspecting builds")
+		}
+
+		messageID := "unknown"
+		if rawMessage.MessageID != nil {
+			messageID = *rawMessage.MessageID
+		}
+
+		if rawMessage.MessageText == nil {
+			failures++
+			fmt.Fprintf(os.Stderr, "##vso[task.logissue type=error;]nil message with ID: %s\n", messageID)
+			continue
+		}
+
+		b, err := base64.StdEncoding.DecodeString(*rawMessage.MessageText)
+		if err != nil {
+			failures++
+			fmt.Fprintf(os.Stderr, "##vso[task.logissue type=error;]error decoding base64 string for message with ID: %s\n", messageID)
+			continue
+		}
+
+		var m Message
+		if err := json.Unmarshal(b, &m); err != nil {
+			failures++
+			fmt.Fprintf(os.Stderr, "##vso[task.logissue type=error;]error unmarshaling message with ID: %s\n", messageID)
+			continue
+		}
+
+		if m.Spec == spec {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
 
 func NewDefaultSignQueueClient() (*Client, error) {
