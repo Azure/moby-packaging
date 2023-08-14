@@ -14,6 +14,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
@@ -77,7 +78,7 @@ type fixupQueueArgs struct {
 
 func run() error {
 	if len(os.Args) < 2 {
-		return fmt.Errorf("available arguments are download, upload, and delete")
+		return fmt.Errorf("available arguments are get-messages, download, upload, and delete")
 	}
 
 	dlArgs := downloadArgs{}
@@ -96,6 +97,10 @@ func run() error {
 	fqArgs.messagesFile = messagesFile
 
 	switch os.Args[1] {
+	case "get-messages":
+		if err := getMessages(); err != nil {
+			return err
+		}
 	case "download":
 		if err := runDownload(dlArgs); err != nil {
 			return err
@@ -113,6 +118,95 @@ func run() error {
 	}
 
 	return nil
+}
+
+func getMessages() error {
+	ctx := context.Background()
+	q, err := queue.NewDefaultSignQueueClient()
+	if err != nil {
+		return err
+	}
+
+	msgs, err := q.GetAllMessages(ctx)
+	if err != nil {
+		if len(msgs.Messages) == 0 {
+			return err
+		}
+		fmt.Fprintf(os.Stderr, "##vso[task.logissue type=error;]errors getting messages: %s\n", err)
+	}
+
+	envelopes, err := convertToRawMsgs(msgs.Messages)
+	if err != nil {
+		if len(envelopes) == 0 {
+			return err
+		}
+		fmt.Fprintf(os.Stderr, "##vso[task.logissue type=error;]errors converting messages to raw messages: %s\n", err)
+	}
+
+	j, err := json.Marshal(&envelopes)
+	if err != nil {
+		return err
+	}
+
+	// Write to stdout
+	fmt.Println(string(j))
+
+	return nil
+}
+
+func convertToRawMsgs(msgs []*azqueue.DequeuedMessage) ([]Envelope, error) {
+	envelopes := []Envelope{}
+	var errs error
+
+	fail := func(collection *error, err error) {
+		*collection = errors.Join(*collection, err)
+	}
+
+	for _, msg := range msgs {
+		var e Envelope
+		if msg == nil {
+			fail(&errs, fmt.Errorf("nil message, skipping..."))
+			continue
+		}
+
+		if msg.MessageID == nil {
+			fail(&errs, fmt.Errorf("nil message ID, skipping..."))
+			continue
+		}
+		e.ID = *msg.MessageID
+
+		if msg.MessageText == nil {
+			fail(&errs, fmt.Errorf("nil message content, skipping..."))
+			continue
+		}
+		e.Content = *msg.MessageText
+
+		if msg.PopReceipt == nil {
+			fail(&errs, fmt.Errorf("nil message popReceipt, skipping"))
+			continue
+		}
+		e.PopReceipt = *msg.PopReceipt
+
+		if msg.DequeueCount != nil {
+			e.DequeueCount = int(*msg.DequeueCount)
+		}
+
+		if msg.ExpirationTime != nil {
+			e.ExpirationTime = msg.ExpirationTime.Format(time.RFC3339)
+		}
+
+		if msg.InsertionTime != nil {
+			e.InsertionTime = msg.InsertionTime.Format(time.RFC3339)
+		}
+
+		if msg.TimeNextVisible != nil {
+			e.TimeNextVisible = msg.TimeNextVisible.Format(time.RFC3339)
+		}
+
+		envelopes = append(envelopes, e)
+	}
+
+	return envelopes, errs
 }
 
 func runDownload(args downloadArgs) error {
