@@ -36,13 +36,13 @@ variables:
   build.pool: staging-pool-amd64-mariner-2
 
 stages:
-  - stage: ReadQueue
+  - stage: PullMessages
     jobs:
       - job: Pull_Messages
         pool: $(build.pool)
         steps:
           - bash: |
-              set -exu
+              set -exuo pipefail
 
               az login --identity
               mkdir "$MSG_DIR"
@@ -56,7 +56,7 @@ stages:
               pathToPublish: "$(Pipeline.Workspace)/messages"
               artifactName: messages
           - bash: |
-              set -exu
+              set -exuo pipefail
               num_messages_found=$(jq 'length' < "$MSG_DIR/message")
               echo "##vso[task.setvariable variable=nummessages;isOutput=true]$num_messages_found"
 
@@ -82,16 +82,15 @@ stages:
               UPDATED_BUILD_NUMBER: "${{ parameters.build_id }}.no.new.queue.messages"
             displayName: "Cancel Build if there are no Messages"
   - stage: SignAndPublish
-    dependsOn: ["ReadQueue"]
+    dependsOn: ["PullMessages"]
     jobs:
       - job: Read_Queue
         pool: production-pool-amd64-mariner-2
-        condition: ne(stageDependencies.ReadQueue.Pull_Messages.outputs['GetMessages.nummessages'], '0')
         steps:
           - download: current
             artifact: messages
           - bash: |
-              set -eu
+              set -euo pipefail
               # downloads all packages, puts them in out-dir, logs successful downloads to stdout (put in 'downloaded' file)
               go run ./cmd/pop download --out-dir="$OUT_DIR" --messages-file="$MSG_DIR/message" | tee "$MSG_DIR/downloaded"
             env:
@@ -118,7 +117,8 @@ stages:
             parameters:
               folderPath: "$(Pipeline.Workspace)/signed"
           - bash: |
-              set -eu
+              set -euo pipefail
+
               # uploads signed files to prod bucket, removes unsigned / failed uploads, writes output to stdout
               go run ./cmd/pop upload \
                 --signed-dir="$SIGNED_DIR" \
@@ -128,6 +128,7 @@ stages:
               SIGNED_DIR: "$(Pipeline.Workspace)/signed"
               MSG_DIR: "$(Pipeline.Workspace)/messages"
             displayName: Upload Signed Packages to Prod Storage
+            name: UploadPackages
           - bash: |
               readarray -t failed < <(jq -r '.[] | .content | @base64d | fromjson.artifact.name' < "$MSG_DIR/failed_singing_or_publishing")
               for f in "${failed[@]}"; do
@@ -193,16 +194,16 @@ stages:
               ${{ if eq(parameters.rebuild, 'true') }}:
                 REBUILD_INDEX: "1"
   - stage: FixupQueue
-    dependsOn: ["ReadQueue", "SignAndPublish"]
+    dependsOn: ["PullMessages", "SignAndPublish"]
+    condition: succededOrFailed()
     jobs:
       - job: FixupQueue
         pool: $(build.pool)
-        condition: ne(stageDependencies.ReadQueue.Pull_Messages.outputs['GetMessages.nummessages'], '0')
         steps:
           - download: current
             artifact: messages
           - bash: |
-              set -eu
+              set -euo pipefail
 
               # removes successfully signed & published artifacts from the queue
               go run ./cmd/pop fixup-queue \
