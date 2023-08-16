@@ -110,6 +110,10 @@ stages:
             inputs:
               pathToPublish: "$(Pipeline.Workspace)/downloaded"
               artifactName: downloaded
+          - task: PublishBuildArtifacts@1
+            inputs:
+              pathToPublish: "$(Pipeline.Workspace)/messages"
+              artifactName: messages
       - job: Sign_Packages
         dependsOn: ["Download_Artifacts"]
         pool: production-pool-amd64-mariner-2
