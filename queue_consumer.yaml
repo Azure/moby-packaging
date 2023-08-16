@@ -140,43 +140,7 @@ stages:
             inputs:
               pathToPublish: "$(Pipeline.Workspace)/messages"
               artifactName: messages
-  - stage: FixupQueue
-    dependsOn: ["ReadQueue", "SignAndPublish"]
-    jobs:
-      - job: FixupQueue
-        pool: $(build.pool)
-        condition: ne(stageDependencies.ReadQueue.Pull_Messages.outputs['GetMessages.nummessages'], '0')
-        steps:
-          - download: current
-            artifact: messages
-          - bash: |
-              set -eu
-
-              # removes successfully signed & published artifacts from the queue
-              go run ./cmd/pop fixup-queue \
-                --messages-file="$MSG_DIR/succeeded" |
-                tee "$MSG_DIR/removed_from_queue"
-            env:
-              MSG_DIR: "$(Pipeline.Workspace)/messages"
-            displayName: Remove successful items from the queue
-          - bash: |
-              readarray -t failed < <(jq -r '.[] | .content | @base64d | fromjson.artifact.name' < "$MSG_DIR/failed_deleting_from_queue")
-              for f in "${failed[@]}"; do
-                printf '##vso[task.logissue type=error;]failed removing from queue:  %s\n' "$f"
-              done
-            env:
-              MSG_DIR: "$(Pipeline.Workspace)/messages"
-            displayName: Surface failed message removals
-          - task: PublishBuildArtifacts@1
-            inputs:
-              pathToPublish: "$(Pipeline.Workspace)/messages"
-              artifactName: messages
-      - job: UpdateLatest
-        pool: production-pool-amd64-mariner-2
-        steps:
-          - checkout: self
-          - bash: az login --identity
-            displayName: Log In to Azure
+          # Update latest index
           - bash: scripts/generate-versions.sh
             displayName: Generate versions
             env:
@@ -191,7 +155,6 @@ stages:
               set -e
 
               az storage container create -n "${STORAGE_CONTAINER}" --auth-mode=login --public-access=blob
-
 
               if [ "${REBUILD_INDEX}" = "1" ]; then
                 az storage blob delete-batch --source "${STORAGE_CONTAINER}" --auth-mode=login --pattern=*
@@ -229,3 +192,34 @@ stages:
               STORAGE_CONTAINER: ${{ parameters.index_container }}
               ${{ if eq(parameters.rebuild, 'true') }}:
                 REBUILD_INDEX: "1"
+  - stage: FixupQueue
+    dependsOn: ["ReadQueue", "SignAndPublish"]
+    jobs:
+      - job: FixupQueue
+        pool: $(build.pool)
+        condition: ne(stageDependencies.ReadQueue.Pull_Messages.outputs['GetMessages.nummessages'], '0')
+        steps:
+          - download: current
+            artifact: messages
+          - bash: |
+              set -eu
+
+              # removes successfully signed & published artifacts from the queue
+              go run ./cmd/pop fixup-queue \
+                --messages-file="$MSG_DIR/succeeded" |
+                tee "$MSG_DIR/removed_from_queue"
+            env:
+              MSG_DIR: "$(Pipeline.Workspace)/messages"
+            displayName: Remove successful items from the queue
+          - bash: |
+              readarray -t failed < <(jq -r '.[] | .content | @base64d | fromjson.artifact.name' < "$MSG_DIR/failed_deleting_from_queue")
+              for f in "${failed[@]}"; do
+                printf '##vso[task.logissue type=error;]failed removing from queue:  %s\n' "$f"
+              done
+            env:
+              MSG_DIR: "$(Pipeline.Workspace)/messages"
+            displayName: Surface failed message removals
+          - task: PublishBuildArtifacts@1
+            inputs:
+              pathToPublish: "$(Pipeline.Workspace)/messages"
+              artifactName: messages
