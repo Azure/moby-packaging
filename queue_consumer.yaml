@@ -187,45 +187,45 @@ stages:
             displayName: Store pipeline artifacts
             inputs:
               artifactName: versions
-      - bash: |
-          set -e
+          - bash: |
+              set -e
 
-          az storage container create -n "${STORAGE_CONTAINER}" --auth-mode=login --public-access=blob
+              az storage container create -n "${STORAGE_CONTAINER}" --auth-mode=login --public-access=blob
 
 
-          if [ "${REBUILD_INDEX}" = "1" ]; then
-            az storage blob delete-batch --source "${STORAGE_CONTAINER}" --auth-mode=login --pattern=*
-          fi
+              if [ "${REBUILD_INDEX}" = "1" ]; then
+                az storage blob delete-batch --source "${STORAGE_CONTAINER}" --auth-mode=login --pattern=*
+              fi
 
-          az storage blob upload-batch \
-            --max-connections=10 --auth-mode=login \
-            --overwrite \
-            --source "${BUILD_ARTIFACTSTAGINGDIRECTORY}/" \
-            --destination "${STORAGE_CONTAINER}" \
-            --destination-path "/" \
-            --pattern "*.json" \
-            --content-type "application/json"
+              az storage blob upload-batch \
+                --max-connections=10 --auth-mode=login \
+                --overwrite \
+                --source "${BUILD_ARTIFACTSTAGINGDIRECTORY}/" \
+                --destination "${STORAGE_CONTAINER}" \
+                --destination-path "/" \
+                --pattern "*.json" \
+                --content-type "application/json"
 
-          az storage blob upload-batch \
-            --max-connections=10 --auth-mode=login \
-            --overwrite \
-            --source "${BUILD_ARTIFACTSTAGINGDIRECTORY}/" \
-            --destination "${STORAGE_CONTAINER}" \
-            --destination-path "/" \
-            --pattern "*.rss" \
-            --content-type "application/rss+xml"
+              az storage blob upload-batch \
+                --max-connections=10 --auth-mode=login \
+                --overwrite \
+                --source "${BUILD_ARTIFACTSTAGINGDIRECTORY}/" \
+                --destination "${STORAGE_CONTAINER}" \
+                --destination-path "/" \
+                --pattern "*.rss" \
+                --content-type "application/rss+xml"
 
-          az storage blob upload-batch \
-            --max-connections=10 --auth-mode=login \
-            --overwrite \
-            --source "${BUILD_ARTIFACTSTAGINGDIRECTORY}/" \
-            --destination "${STORAGE_CONTAINER}" \
-            --destination-path "/" \
-            --pattern "**/latest/*" \
-            --content-type "text/plain"
-        displayName: Upload versions to blob storage
-        env:
-          AZURE_STORAGE_ACCOUNT: ${{ parameters.storage_account_name }}
-          STORAGE_CONTAINER: ${{ parameters.index_container }}
-          ${{ if eq(parameters.rebuild, 'true') }}:
-            REBUILD_INDEX: "1"
+              az storage blob upload-batch \
+                --max-connections=10 --auth-mode=login \
+                --overwrite \
+                --source "${BUILD_ARTIFACTSTAGINGDIRECTORY}/" \
+                --destination "${STORAGE_CONTAINER}" \
+                --destination-path "/" \
+                --pattern "**/latest/*" \
+                --content-type "text/plain"
+            displayName: Upload versions to blob storage
+            env:
+              AZURE_STORAGE_ACCOUNT: ${{ parameters.storage_account_name }}
+              STORAGE_CONTAINER: ${{ parameters.index_container }}
+              ${{ if eq(parameters.rebuild, 'true') }}:
+                REBUILD_INDEX: "1"
