@@ -7,10 +7,10 @@ parameters:
     displayName: build id
     type: string
     default: "__not_supplied"
-  - name: storage_account_name
+  - name: prod_storage_account_name
     displayName: Storage Account Name
     type: string
-    default: moby
+    default: mobyreleases
   - name: index_container
     displayName: Storage Container for storing index
     type: string
@@ -180,7 +180,7 @@ stages:
           - bash: scripts/generate-versions.sh
             displayName: Generate versions
             env:
-              AZURE_STORAGE_ACCOUNT: ${{ parameters.storage_account_name }}
+              AZURE_STORAGE_ACCOUNT: ${{ parameters.prod_storage_account_name }}
               STORAGE_CONTAINER: mobyreleases
               OUTPUT: $(Build.ArtifactStagingDirectory)
           - task: PublishBuildArtifacts@1
@@ -224,7 +224,7 @@ stages:
                 --content-type "text/plain"
             displayName: Upload versions to blob storage
             env:
-              AZURE_STORAGE_ACCOUNT: ${{ parameters.storage_account_name }}
+              AZURE_STORAGE_ACCOUNT: ${{ parameters.prod_storage_account_name }}
               STORAGE_CONTAINER: ${{ parameters.index_container }}
               ${{ if eq(parameters.rebuild, 'true') }}:
                 REBUILD_INDEX: "1"
