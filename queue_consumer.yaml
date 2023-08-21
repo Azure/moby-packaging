@@ -15,10 +15,6 @@ parameters:
     displayName: Storage Container for storing index
     type: string
     default: index
-  - name: rebuild
-    displayName: Full index rebuild (destructive)
-    type: boolean
-    default: false
 
 trigger: none
 
@@ -192,10 +188,6 @@ stages:
 
               az storage container create -n "${STORAGE_CONTAINER}" --auth-mode=login --public-access=blob
 
-              if [ "${REBUILD_INDEX}" = "1" ]; then
-                az storage blob delete-batch --source "${STORAGE_CONTAINER}" --auth-mode=login --pattern=*
-              fi
-
               az storage blob upload-batch \
                 --max-connections=10 --auth-mode=login \
                 --overwrite \
@@ -226,8 +218,6 @@ stages:
             env:
               AZURE_STORAGE_ACCOUNT: ${{ parameters.prod_storage_account_name }}
               STORAGE_CONTAINER: ${{ parameters.index_container }}
-              ${{ if eq(parameters.rebuild, 'true') }}:
-                REBUILD_INDEX: "1"
   - stage: FixupQueue
     dependsOn: ["PullMessages", "SignAndPublish"]
     condition: succeededOrFailed()
