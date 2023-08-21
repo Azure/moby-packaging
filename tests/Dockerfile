@@ -16,7 +16,7 @@ ARG INCLUDE_STAGING=0
 
 
 # For jammy which uses zstd compressed packages, but aptly from the distro packages does not.
-FROM mcr.microsoft.com/oss/go/microsoft/golang:1.19.6 AS aptly
+FROM mcr.microsoft.com/oss/go/microsoft/golang:1.19.12 AS aptly
 ENV GOCACHE=/root/.gobuild GOPROXY=direct GOGC=off CGO_ENABLED=0
 RUN \
     --mount=type=cache,target=/go/pkg/mod \
