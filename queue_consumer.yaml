@@ -7,6 +7,14 @@ parameters:
     displayName: build id
     type: string
     default: "__not_supplied"
+  - name: prod_storage_account_name
+    displayName: Storage Account Name
+    type: string
+    default: mobyreleases
+  - name: index_container
+    displayName: Storage Container for storing index
+    type: string
+    default: index
 
 trigger: none
 
@@ -24,13 +32,13 @@ variables:
   build.pool: staging-pool-amd64-mariner-2
 
 stages:
-  - stage: ReadQueue
+  - stage: PullMessages
     jobs:
       - job: Pull_Messages
         pool: $(build.pool)
         steps:
           - bash: |
-              set -exu
+              set -exuo pipefail
 
               az login --identity
               mkdir "$MSG_DIR"
@@ -44,7 +52,7 @@ stages:
               pathToPublish: "$(Pipeline.Workspace)/messages"
               artifactName: messages
           - bash: |
-              set -exu
+              set -exuo pipefail
               num_messages_found=$(jq 'length' < "$MSG_DIR/message")
               echo "##vso[task.setvariable variable=nummessages;isOutput=true]$num_messages_found"
 
@@ -53,7 +61,8 @@ stages:
               fi
 
               # otherwise, cancel the rest of this pipeline & log that there were no queue messages
-              echo "##vso[build.updatebuildnumber]$UPDATED_BUILD_NUMBER"
+              time_of_run="$(date +%s)"
+              echo "##vso[build.updatebuildnumber]$time_of_run.$NO_MSGS_MSG"
               echo "##[warning]no new queue messages"
 
               # just in case, to avoid token leaking
@@ -67,19 +76,18 @@ stages:
                 'https://dev.azure.com/AzureContainerUpstream/Moby/_apis/build/builds/$(Build.BuildId)?api-version=7.0'
             env:
               MSG_DIR: "$(Pipeline.Workspace)/messages"
-              UPDATED_BUILD_NUMBER: "${{ parameters.build_id }}.no.new.queue.messages"
+              NO_MSGS_MSG: "no.new.queue.messages"
             displayName: "Cancel Build if there are no Messages"
   - stage: SignAndPublish
-    dependsOn: ["ReadQueue"]
+    dependsOn: ["PullMessages"]
     jobs:
-      - job: Read_Queue
+      - job: Download_Artifacts
         pool: production-pool-amd64-mariner-2
-        condition: ne(stageDependencies.ReadQueue.Pull_Messages.outputs['GetMessages.nummessages'], '0')
         steps:
           - download: current
             artifact: messages
           - bash: |
-              set -eu
+              set -euo pipefail
               # downloads all packages, puts them in out-dir, logs successful downloads to stdout (put in 'downloaded' file)
               go run ./cmd/pop download --out-dir="$OUT_DIR" --messages-file="$MSG_DIR/message" | tee "$MSG_DIR/downloaded"
             env:
@@ -94,6 +102,22 @@ stages:
             env:
               MSG_DIR: "$(Pipeline.Workspace)/messages"
             displayName: Surface failed downloads
+          - task: PublishBuildArtifacts@1
+            inputs:
+              pathToPublish: "$(Pipeline.Workspace)/downloaded"
+              artifactName: downloaded
+          - task: PublishBuildArtifacts@1
+            inputs:
+              pathToPublish: "$(Pipeline.Workspace)/messages"
+              artifactName: messages
+      - job: Sign_Packages
+        dependsOn: ["Download_Artifacts"]
+        pool: production-pool-amd64-mariner-2
+        steps:
+          - download: current
+            artifact: messages
+          - download: current
+            artifact: downloaded
           - bash: |
               cp -r $(Pipeline.Workspace)/downloaded $(Pipeline.Workspace)/signed
             displayName: Copy downloaded files to sign
@@ -105,8 +129,21 @@ stages:
           - template: templates/sign.steps.yml
             parameters:
               folderPath: "$(Pipeline.Workspace)/signed"
+          - task: PublishBuildArtifacts@1
+            inputs:
+              pathToPublish: "$(Pipeline.Workspace)/signed"
+              artifactName: signed
+      - job: Upload_Packages
+        dependsOn: ["Download_Artifacts", "Sign_Packages"]
+        pool: production-pool-amd64-mariner-2
+        steps:
+          - download: current
+            artifact: messages
+          - download: current
+            artifact: signed
           - bash: |
-              set -eu
+              set -euo pipefail
+
               # uploads signed files to prod bucket, removes unsigned / failed uploads, writes output to stdout
               go run ./cmd/pop upload \
                 --signed-dir="$SIGNED_DIR" \
@@ -116,6 +153,7 @@ stages:
               SIGNED_DIR: "$(Pipeline.Workspace)/signed"
               MSG_DIR: "$(Pipeline.Workspace)/messages"
             displayName: Upload Signed Packages to Prod Storage
+            name: uploadPackages
           - bash: |
               readarray -t failed < <(jq -r '.[] | .content | @base64d | fromjson.artifact.name' < "$MSG_DIR/failed_singing_or_publishing")
               for f in "${failed[@]}"; do
@@ -128,17 +166,73 @@ stages:
             inputs:
               pathToPublish: "$(Pipeline.Workspace)/messages"
               artifactName: messages
+      - job: Update_Latest
+        dependsOn: ["Download_Artifacts", "Sign_Packages", "Upload_Packages"]
+        pool: production-pool-amd64-mariner-2
+        steps:
+          - checkout: self
+          - bash: az login --identity
+            displayName: Login to Azure
+          - bash: scripts/generate-versions.sh
+            displayName: Generate versions
+            env:
+              AZURE_STORAGE_ACCOUNT: ${{ parameters.prod_storage_account_name }}
+              STORAGE_CONTAINER: mobyreleases
+              OUTPUT: $(Build.ArtifactStagingDirectory)
+          - task: PublishBuildArtifacts@1
+            displayName: Store pipeline artifacts
+            inputs:
+              artifactName: versions
+          - bash: |
+              set -ex
+
+              az storage container create -n "${STORAGE_CONTAINER}" --auth-mode=login --public-access=blob
+
+              az storage blob upload-batch \
+                --max-connections=10 --auth-mode=login \
+                --overwrite \
+                --source "${BUILD_ARTIFACTSTAGINGDIRECTORY}/" \
+                --destination "${STORAGE_CONTAINER}" \
+                --destination-path "/" \
+                --pattern "*.json" \
+                --content-type "application/json"
+
+              az storage blob upload-batch \
+                --max-connections=10 --auth-mode=login \
+                --overwrite \
+                --source "${BUILD_ARTIFACTSTAGINGDIRECTORY}/" \
+                --destination "${STORAGE_CONTAINER}" \
+                --destination-path "/" \
+                --pattern "*.rss" \
+                --content-type "application/rss+xml"
+
+              az storage blob upload-batch \
+                --max-connections=10 --auth-mode=login \
+                --overwrite \
+                --source "${BUILD_ARTIFACTSTAGINGDIRECTORY}/" \
+                --destination "${STORAGE_CONTAINER}" \
+                --destination-path "/" \
+                --pattern "**/latest/*" \
+                --content-type "text/plain"
+            displayName: Upload versions to blob storage
+            env:
+              AZURE_STORAGE_ACCOUNT: ${{ parameters.prod_storage_account_name }}
+              STORAGE_CONTAINER: ${{ parameters.index_container }}
   - stage: FixupQueue
-    dependsOn: ["ReadQueue", "SignAndPublish"]
+    dependsOn: ["PullMessages", "SignAndPublish"]
+    condition: succeededOrFailed()
     jobs:
       - job: FixupQueue
         pool: $(build.pool)
-        condition: ne(stageDependencies.ReadQueue.Pull_Messages.outputs['GetMessages.nummessages'], '0')
         steps:
           - download: current
             artifact: messages
           - bash: |
-              set -eu
+              set -euo pipefail
+
+              if ! [ -f "$MSG_DIR/succeeded" ]; then
+                exit 0
+              fi
 
               # removes successfully signed & published artifacts from the queue
               go run ./cmd/pop fixup-queue \
@@ -148,6 +242,10 @@ stages:
               MSG_DIR: "$(Pipeline.Workspace)/messages"
             displayName: Remove successful items from the queue
           - bash: |
+              if ! [ -f "$MSG_DIR/failed_deleting_from_queue" ]; then
+                exit 0
+              fi
+
               readarray -t failed < <(jq -r '.[] | .content | @base64d | fromjson.artifact.name' < "$MSG_DIR/failed_deleting_from_queue")
               for f in "${failed[@]}"; do
                 printf '##vso[task.logissue type=error;]failed removing from queue:  %s\n' "$f"
