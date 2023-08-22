@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pmengelbert/moby-queue"
+	"github.com/pmengelbert/moby-queue/pkg/queue"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
