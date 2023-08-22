@@ -1,6 +1,6 @@
 module github.com/Azure/moby-packaging
 
-go 1.21.0
+go 1.21
 
 require (
 	dagger.io/dagger v0.8.4
@@ -8,7 +8,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.3.1
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.1.0
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azqueue v1.0.0
-	github.com/pmengelbert/moby-queue v0.0.0-20230822164530-99870ff04c66
+	github.com/pmengelbert/moby-queue v0.0.0-20230822192650-4816ef535af4
 	golang.org/x/sync v0.3.0
 	golang.org/x/sys v0.11.0
 )
@@ -29,4 +29,5 @@ require (
 	golang.org/x/crypto v0.12.0 // indirect
 	golang.org/x/net v0.14.0 // indirect
 	golang.org/x/text v0.12.0 // indirect
+	k8s.io/apimachinery v0.28.0 // indirect
 )
