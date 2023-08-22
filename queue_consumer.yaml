@@ -150,7 +150,7 @@ stages:
               mv "$win_dir/*" "$SIGNED_DIR"
               mv "$linux_dir/*" "$SIGNED_DIR"
               rm -rf "$win_dir" "$linux_dir"
-            displayName: Separate windows and linux artifacts
+            displayName: Combine windows and linux artifacts
             env:
               SIGNED_DIR: "$(Pipeline.Workspace)/signed"
           - task: PublishBuildArtifacts@1
