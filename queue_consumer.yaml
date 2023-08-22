@@ -126,9 +126,33 @@ stages:
             inputs:
               packageType: sdk
               version: 2.2.207
+          - bash: |
+              set -exu
+
+              win_dir="$SIGNED_DIR/windows"
+              linux_dir="$SIGNED_DIR/linux"
+
+              mkdir -p "$win_dir" "$linux_dir"
+              find "$SIGNED_DIR" -maxdepth 1 -type f -name "*.zip" -exec mv {} "$win_dir" \;
+              find "$SIGNED_DIR" -maxdepth 1 -type f -not -name "*.zip" -exec mv {} "$linux_dir" \;
+            displayName: Separate windows and linux artifacts
+            env:
+              SIGNED_DIR: "$(Pipeline.Workspace)/signed"
           - template: templates/sign.steps.yml
             parameters:
-              folderPath: "$(Pipeline.Workspace)/signed"
+              rootDir: "$(Pipeline.Workspace)/signed"
+          - bash: |
+              set -exu
+
+              win_dir="$SIGNED_DIR/windows"
+              linux_dir="$SIGNED_DIR/linux"
+
+              mv "$win_dir/*" "$SIGNED_DIR"
+              mv "$linux_dir/*" "$SIGNED_DIR"
+              rm -rf "$win_dir" "$linux_dir"
+            displayName: Separate windows and linux artifacts
+            env:
+              SIGNED_DIR: "$(Pipeline.Workspace)/signed"
           - task: PublishBuildArtifacts@1
             inputs:
               pathToPublish: "$(Pipeline.Workspace)/signed"

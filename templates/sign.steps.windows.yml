@@ -70,7 +70,7 @@ steps:
       ]
 - script: |
     set -o xtrace
-    for i in ${ARTIFACTS_DIR}/windows/*; do
+    for i in ${ARTIFACTS_DIR}/*; do
       zip_file="$(file ${i}/*.zip | cut -d: -f1)"
       if [ ! -f "${zip_file}" ]; then
         continue
