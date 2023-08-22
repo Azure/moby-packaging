@@ -19,7 +19,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azqueue"
-	"github.com/Azure/moby-packaging/pkg/queue"
+	"github.com/pmengelbert/moby-queue"
 )
 
 const (
