@@ -130,7 +130,6 @@ stages:
               mkdir -p "$win_dir" "$linux_dir"
               find "$SIGNED_DIR" -maxdepth 1 -type f -name "*.zip" -exec mv {} "$win_dir" \;
               find "$SIGNED_DIR" -maxdepth 1 -type f -not -name "*.zip" -exec mv {} "$linux_dir" \;
-              tree "$SIGNED_DIR"
             displayName: Separate windows and linux artifacts
             env:
               SIGNED_DIR: "$(Pipeline.Workspace)/signed"
@@ -151,8 +150,6 @@ stages:
               rm -rf "$SIGNED_DIR/extracted"
               find "$SIGNED_DIR" -type f -exec mv {} "$SIGNED_DIR" \;
               rm -rf "$win_dir" "$linux_dir"
-
-              tree "$SIGNED_DIR"
             displayName: Combine windows and linux artifacts
             env:
               SIGNED_DIR: "$(Pipeline.Workspace)/signed"
@@ -204,7 +201,7 @@ stages:
             displayName: Generate versions
             env:
               AZURE_STORAGE_ACCOUNT: ${{ parameters.prod_storage_account_name }}
-              STORAGE_CONTAINER: mobyreleases
+              STORAGE_CONTAINER: moby
               OUTPUT: $(Build.ArtifactStagingDirectory)
           - task: PublishBuildArtifacts@1
             displayName: Store pipeline artifacts
