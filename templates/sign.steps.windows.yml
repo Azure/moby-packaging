@@ -1,5 +1,4 @@
 parameters:
-  pattern: ''
   folderPath: ''
 
 steps:
@@ -9,11 +8,14 @@ steps:
 - script: |
     set -o xtrace
 
-    tree ${ARTIFACTS_DIR}
+    readarray -d '' artifacts < <(find "${ARTIFACTS_DIR}" -maxdepth 1 -type f -regextype posix-egrep -regex '.*\.zip$' -print0)
 
-    readarray -d '' artifacts < <(find ${ARTIFACTS_DIR} -type f -regextype posix-egrep -regex '.*\.zip$' -print0)
-    for i in "${artifacts[@]}"; do
-      unzip -d $(dirname "$i") $i
+    mkdir "${ARTIFACTS_DIR}/extracted"
+    for art in "${artifacts[@]}"; do
+      base="$(basename "${art}")"
+      dir="$ARTIFACTS_DIR/extracted/${base}"
+
+      unzip -d "$dir" "$art"
     done
   displayName: Extract artifacts
   env:
@@ -23,7 +25,7 @@ steps:
   inputs:
     ConnectedServiceName: "ESRP Signing service"
     FolderPath: ${{ parameters.folderPath }}
-    Pattern: ${{ parameters.pattern }}
+    Pattern: "extracted/**/*.exe"
     UseMinimatch: true
     signConfigType: inlineSignParams
     inlineOperation: |
@@ -70,17 +72,21 @@ steps:
       ]
 - script: |
     set -o xtrace
-    for i in ${ARTIFACTS_DIR}/windows/*; do
-      zip_file="$(file ${i}/*.zip | cut -d: -f1)"
+
+    readarray -d '' artifacts < <(find "${ARTIFACTS_DIR}" -maxdepth 1 -type f -regextype posix-egrep -regex '.*\.zip$' -print0)
+
+    for zip_file in "${artifacts[@]}"; do
+      base="$(basename "$zip_file")"
+      dir="$(dirname "$zip_file")/extracted/${base}"
+
       if [ ! -f "${zip_file}" ]; then
         continue
       fi
 
-      zip -j -r "${zip_file}" "${i}" -x *.zip
-      for j in $(ls ${i}/*.exe); do
-          rm ${j}
-      done
+      zip -j -r "${zip_file}" "${dir}"
     done
+
+    rm -rf "${ARTIFACTS_DIR}/extracted"
   displayName: repack artifacts
   env:
     ARTIFACTS_DIR: ${{ parameters.folderPath }}
