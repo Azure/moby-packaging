@@ -42,7 +42,7 @@ stages:
 
               az login --identity
               mkdir "$MSG_DIR"
-              go run ./cmd/pop get-messages | tee "$MSG_DIR/message"
+              go run ./cmd/pop get-messages | tee "${MSG_DIR}/message"
             env:
               MSG_DIR: "$(Pipeline.Workspace)/messages"
             displayName: Pull Messages from Queue
@@ -53,7 +53,7 @@ stages:
               artifactName: messages
           - bash: |
               set -exuo pipefail
-              num_messages_found=$(jq 'length' < "$MSG_DIR/message")
+              num_messages_found=$(jq 'length' < "${MSG_DIR}/message")
               echo "##vso[task.setvariable variable=nummessages;isOutput=true]$num_messages_found"
 
               if [ $num_messages_found -ne 0 ]; then
@@ -89,13 +89,13 @@ stages:
           - bash: |
               set -euo pipefail
               # downloads all packages, puts them in out-dir, logs successful downloads to stdout (put in 'downloaded' file)
-              go run ./cmd/pop download --out-dir="$OUT_DIR" --messages-file="$MSG_DIR/message" | tee "$MSG_DIR/downloaded"
+              go run ./cmd/pop download --out-dir="$OUT_DIR" --messages-file="${MSG_DIR}/message" | tee "${MSG_DIR}/downloaded"
             env:
               MSG_DIR: "$(Pipeline.Workspace)/messages"
               OUT_DIR: "$(Pipeline.Workspace)/downloaded"
             displayName: Pull Queued Packages
           - bash: |
-              readarray -t failed < <(jq -r '.[] | .content | @base64d | fromjson.artifact.name' < "$MSG_DIR/failed_downloading")
+              readarray -t failed < <(jq -r '.[] | .content | @base64d | fromjson.artifact.name' < "${MSG_DIR}/failed_downloading")
               for f in "${failed[@]}"; do
                 printf '##vso[task.logissue type=error;]failed downloading:  %s\n' "$f"
               done
@@ -124,8 +124,8 @@ stages:
           - bash: |
               set -exu
 
-              win_dir="$SIGNED_DIR/windows"
-              linux_dir="$SIGNED_DIR/linux"
+              win_dir="${SIGNED_DIR}/windows"
+              linux_dir="${SIGNED_DIR}/linux"
 
               mkdir -p "$win_dir" "$linux_dir"
               find "$SIGNED_DIR" -maxdepth 1 -type f -name "*.zip" -exec mv {} "$win_dir" \;
@@ -144,10 +144,10 @@ stages:
           - bash: |
               set -exu
 
-              win_dir="$SIGNED_DIR/windows"
-              linux_dir="$SIGNED_DIR/linux"
+              win_dir="${SIGNED_DIR}/windows"
+              linux_dir="${SIGNED_DIR}/linux"
 
-              rm -rf "$SIGNED_DIR/extracted"
+              rm -rf "${SIGNED_DIR}/extracted"
               find "$SIGNED_DIR" -type f -exec mv {} "$SIGNED_DIR" \;
               rm -rf "$win_dir" "$linux_dir"
             displayName: Combine windows and linux artifacts
@@ -171,15 +171,15 @@ stages:
               # uploads signed files to prod bucket, removes unsigned / failed uploads, writes output to stdout
               go run ./cmd/pop upload \
                 --signed-dir="$SIGNED_DIR" \
-                --messages-file="$MSG_DIR/downloaded" |
-                tee "$MSG_DIR/succeeded"
+                --messages-file="${MSG_DIR}/downloaded" |
+                tee "${MSG_DIR}/succeeded"
             env:
               SIGNED_DIR: "$(Pipeline.Workspace)/signed"
               MSG_DIR: "$(Pipeline.Workspace)/messages"
             displayName: Upload Signed Packages to Prod Storage
             name: uploadPackages
           - bash: |
-              readarray -t failed < <(jq -r '.[] | .content | @base64d | fromjson.artifact.name' < "$MSG_DIR/failed_singing_or_publishing")
+              readarray -t failed < <(jq -r '.[] | .content | @base64d | fromjson.artifact.name' < "${MSG_DIR}/failed_singing_or_publishing")
               for f in "${failed[@]}"; do
                 printf '##vso[task.logissue type=error;]failed signing or uploading:  %s\n' "$f"
               done
@@ -254,23 +254,23 @@ stages:
           - bash: |
               set -euo pipefail
 
-              if ! [ -f "$MSG_DIR/succeeded" ]; then
+              if ! [ -f "${MSG_DIR}/succeeded" ]; then
                 exit 0
               fi
 
               # removes successfully signed & published artifacts from the queue
               go run ./cmd/pop fixup-queue \
-                --messages-file="$MSG_DIR/succeeded" |
-                tee "$MSG_DIR/removed_from_queue"
+                --messages-file="${MSG_DIR}/succeeded" |
+                tee "${MSG_DIR}/removed_from_queue"
             env:
               MSG_DIR: "$(Pipeline.Workspace)/messages"
             displayName: Remove successful items from the queue
           - bash: |
-              if ! [ -f "$MSG_DIR/failed_deleting_from_queue" ]; then
+              if ! [ -f "${MSG_DIR}/failed_deleting_from_queue" ]; then
                 exit 0
               fi
 
-              readarray -t failed < <(jq -r '.[] | .content | @base64d | fromjson.artifact.name' < "$MSG_DIR/failed_deleting_from_queue")
+              readarray -t failed < <(jq -r '.[] | .content | @base64d | fromjson.artifact.name' < "${MSG_DIR}/failed_deleting_from_queue")
               for f in "${failed[@]}"; do
                 printf '##vso[task.logissue type=error;]failed removing from queue:  %s\n' "$f"
               done
