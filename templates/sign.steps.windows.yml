@@ -8,13 +8,12 @@ steps:
 - script: |
     set -o xtrace
 
-    tree ${ARTIFACTS_DIR}
-
-    readarray -d '' artifacts < <(find ${ARTIFACTS_DIR} -maxdepth 1 -type f -regextype posix-egrep -regex '.*\.zip$' -print0)
+    readarray -d '' artifacts < <(find "${ARTIFACTS_DIR}" -maxdepth 1 -type f -regextype posix-egrep -regex '.*\.zip$' -print0)
 
     mkdir "${ARTIFACTS_DIR}/extracted"
     for art in "${artifacts[@]}"; do
-      dir="$ARTIFACTS_DIR/extracted/$(basename "$art")"
+      base="$(basename "${art}")"
+      dir="$ARTIFACTS_DIR/extracted/${base}"
 
       unzip -d "$dir" "$art"
     done
@@ -74,12 +73,12 @@ steps:
 - script: |
     set -o xtrace
 
-    readarray -d '' artifacts < <(find ${ARTIFACTS_DIR} -maxdepth 1 -type f -regextype posix-egrep -regex '.*\.zip$' -print0)
+    readarray -d '' artifacts < <(find "${ARTIFACTS_DIR}" -maxdepth 1 -type f -regextype posix-egrep -regex '.*\.zip$' -print0)
 
-    for art in "${artifacts[@]}"; do
-      dir="$(dirname "$art")/extracted/$(basename "$art")"
+    for zip_file in "${artifacts[@]}"; do
+      base="$(basename "$zip_file")"
+      dir="$(dirname "$zip_file")/extracted/${base}"
 
-      zip_file="$art"
       if [ ! -f "${zip_file}" ]; then
         continue
       fi
@@ -87,7 +86,7 @@ steps:
       zip -j -r "${zip_file}" "${dir}"
     done
 
-    rm -rf "$ARTIFACTS_DIR/extracted"
+    rm -rf "${ARTIFACTS_DIR}/extracted"
   displayName: repack artifacts
   env:
     ARTIFACTS_DIR: ${{ parameters.folderPath }}
