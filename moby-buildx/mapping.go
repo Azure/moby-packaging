@@ -55,6 +55,10 @@ var (
 		Conflicts: []string{
 			"docker-ce",
 			"docker-ee",
+			"docker-buildx-plugin",
+		},
+		Replaces: []string{
+			"docker-buildx-plugin",
 		},
 	}
 
