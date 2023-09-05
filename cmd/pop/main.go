@@ -468,11 +468,11 @@ func runFixupQueue(args fixupQueueArgs) error {
 	failed := []azqueue.DeleteMessageResponse{}
 	succeeded := []azqueue.DeleteMessageResponse{}
 
-	var errs error
+	errs := make([]error, 0, len(envelopes))
 	for _, envelope := range envelopes {
 		resp, err := qClient.DeleteMessage(ctx, envelope.ID, envelope.PopReceipt, &azqueue.DeleteMessageOptions{})
 		if err != nil {
-			errs = errors.Join(errs, err)
+			errs = append(errs, err)
 			failed = append(failed, resp)
 			continue
 		}
@@ -480,9 +480,8 @@ func runFixupQueue(args fixupQueueArgs) error {
 		succeeded = append(succeeded, resp)
 	}
 
-	if errs != nil {
-		all := strings.Split(errs.Error(), "\n")
-		for _, err := range all {
+	if len(errs) != 0 {
+		for _, err := range errs {
 			fmt.Fprintf(os.Stderr, "##vso[task.logissue type=error;]%s\n", err)
 		}
 
