@@ -480,6 +480,14 @@ func runFixupQueue(args fixupQueueArgs) error {
 		succeeded = append(succeeded, resp)
 	}
 
+	if errs != nil {
+		all := strings.Split(errs.Error(), "\n")
+		for _, err := range all {
+			fmt.Fprintf(os.Stderr, "##vso[task.logissue type=error;]%s\n", err)
+		}
+
+	}
+
 	msgDir := filepath.Dir(args.messagesFile)
 	failedFile := filepath.Join(msgDir, "failed_deleting_from_queue")
 	failedJSON, err := json.MarshalIndent(&failed, "", "    ")
