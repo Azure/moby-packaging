@@ -197,6 +197,8 @@ stages:
               set -exu
               : ${BLOB_PREFIX:=/}
 
+              az login --identity
+
               go run ./cmd/push \
                 --artifact-dir="$ARTIFACTS_DIR" \
                 --package-name="$PACKAGE_NAME" \
