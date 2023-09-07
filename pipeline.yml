@@ -1,207 +1,185 @@
 parameters:
-  - name: arch
-    displayName: arch
-    type: string
-    default: amd64
-  - name: os
-    displayName: os
-    type: string
-    default: ""
-  - name: commit
-    displayName: commit
-    type: string
-    default: ""
-  - name: distro
-    displayName: distro
-    type: string
-    default: ""
-  - name: github_repo
-    displayName: github_repo
-    type: string
-    default: ""
   - name: package_name
     displayName: package_name
     type: string
     default: ""
-  - name: pmc_repo
-    displayName: pmc_repo
-    type: string
-    default: ""
-  - name: release_main
-    displayName: release_main
-    type: boolean
-    default: False
-  - name: release_testing
-    displayName: release_testing
-    type: boolean
-    default: False
-  - name: tag
-    displayName: tag
-    type: string
-    default: ""
-  - name: revision
-    displayName: revision
-    type: string
-    default: "1"
+  - name: specs
+    displayName: Package Specs
+    type: object
+    default: []
   - name: build_id
     displayName: build id
     type: string
     default: "__not_supplied"
 
-name: ${{ replace(parameters.build_id, '__not_supplied', '$(Date:yyyyMMdd).$(Rev:r)') }}-${{ parameters.package_name }}-${{ parameters.distro }}-${{ replace(parameters.arch, '/', '') }}.$(Rev:r)
+# name: ${{ replace(parameters.build_id, '__not_supplied', '$(Date:yyyyMMdd).$(Rev:r)') }}-${{ parameters.package_name }}-${{ parameters.distro }}-${{ replace(parameters.arch, '/', '') }}.$(Rev:r)
 
 
-variables:
-  ${{ if contains(parameters.arch, 'arm') }}:
-    build.pool: staging-pool-arm64-mariner-2
-  ${{ else }}:
-    build.pool: staging-pool-amd64-mariner-2
+# variables:
+#   ${{ if contains(parameters.arch, 'arm') }}:
+#     build.pool: staging-pool-arm64-mariner-2
+#   ${{ else }}:
+#     build.pool: staging-pool-amd64-mariner-2
 
 stages:
-  - stage: Build
+  - stage: Validate
     jobs:
-      - job: Build_${{ replace(parameters.package_name, '-', '_') }}_${{ parameters.distro }}_${{ replace(parameters.arch, '/', '') }}
-        pool: $(build.pool)
+      - job: Validate
+        pool: staging-pool-amd64-mariner-2
         timeoutInMinutes: 240
         steps:
           - bash: |
-              set -x
-
-              bundle_dir="$(Pipeline.Workspace)/bundles"
-              bundle_distro_dir="$bundle_dir/${{ parameters.distro }}/$OS_ARCH_DIR"
-              mkdir -p "$bundle_distro_dir"
-              spec_file="$bundle_distro_dir/${{ parameters.package_name }}-spec.json"
-
-              printf '
-                {
-                  "arch": "${{ parameters.arch }}",
-                  "commit": "${{ parameters.commit }}",
-                  "repo": "https://github.com/${{ parameters.github_repo }}.git",
-                  "package": "${{ parameters.package_name }}",
-                  "distro": "${{ parameters.distro }}",
-                  "tag": "${{ parameters.tag }}",
-                  "revision": "${{ coalesce(parameters.revision, '1') }}"
-                }
-              ' > $spec_file
-
-              go run . --build-spec="$spec_file" --output="$bundle_dir"
-            env:
-              OS_ARCH_DIR: "${{ parameters.os }}_${{ replace(parameters.arch, '/', '') }}"
-          - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
-            displayName: Generate SBOM
-            inputs:
-              BuildDropPath: $(Pipeline.Workspace)/bundles/${{ parameters.distro }}
-          - task: PublishBuildArtifacts@1
-            inputs:
-              pathToPublish: "$(Pipeline.Workspace)/bundles"
-              artifactName: packages
-  - stage: TestAndSBOM
-    jobs:
-      - job: TestPackages
-        condition: ne('${{ parameters.distro }}', 'windows')
-        pool: $(build.pool)
-        steps:
-          - download: current
-            artifact: packages
-          - script: |
               set -exu
 
-              declare -A os
-              os=(
-                  [bookworm]=debian
-                  [bullseye]=debian
-                  [buster]=debian
-                  [focal]=ubuntu
-                  [jammy]=ubuntu
-                  [rhel9]=el9
-                  [rhel8]=el8
-                  [centos7]=el7
-                  [mariner2]=cm2
-              )
+              cat <<EOF
+              ${{ convertToJson(parameters.specs) }}
+              EOF
+            displayName: test
+  # - stage: Build
+  #   jobs:
+  #     - ${{ each spec in parameters.specs }}:
+  #       - job: Build_${{ replace(parameters.package_name, '-', '_') }}_${{ parameters.distro }}_${{ replace(parameters.arch, '/', '') }}
+  #         pool: $(build.pool)
+  #         timeoutInMinutes: 240
+  #         steps:
+  #           - bash: |
+  #               set -x
 
-              declare -A versions
-              versions=(
-                  [bookworm]=12
-                  [bullseye]=11
-                  [buster]=10
-                  [focal]=20.04
-                  [jammy]=22.04
-                  [rhel9]=el9
-                  [rhel8]=el8
-                  [centos7]=el7
-                  [mariner2]=cm2
-              )
+  #               bundle_dir="$(Pipeline.Workspace)/bundles"
+  #               bundle_distro_dir="$bundle_dir/${{ parameters.distro }}/$OS_ARCH_DIR"
+  #               mkdir -p "$bundle_distro_dir"
+  #               spec_file="$bundle_distro_dir/${{ parameters.package_name }}-spec.json"
 
-              # the bundles directory from the previous stage will be in $(Pipeline.Workspace)/packages
-              bundle_dir="$(Pipeline.Workspace)/packages"
+  #               printf '
+  #                 {
+  #                   "arch": "${{ parameters.arch }}",
+  #                   "commit": "${{ parameters.commit }}",
+  #                   "repo": "https://github.com/${{ parameters.github_repo }}.git",
+  #                   "package": "${{ parameters.package_name }}",
+  #                   "distro": "${{ parameters.distro }}",
+  #                   "tag": "${{ parameters.tag }}",
+  #                   "revision": "${{ coalesce(parameters.revision, '1') }}"
+  #                 }
+  #               ' > $spec_file
 
-              readarray -d '' specs < <(find "$bundle_dir" -name '${{ parameters.package_name }}-spec.json' -print0)
-              if ! [ "${#specs[@]}" -eq 1 ]; then
-                printf "##vso[task.complete result=Failed;]%s\n" "multiple spec files found: ${specs[*]}"
-                exit 1
-              fi
+  #               go run . --build-spec="$spec_file" --output="$bundle_dir"
+  #             env:
+  #               OS_ARCH_DIR: "${{ parameters.os }}_${{ replace(parameters.arch, '/', '') }}"
+  #           - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
+  #             displayName: Generate SBOM
+  #             inputs:
+  #               BuildDropPath: $(Pipeline.Workspace)/bundles/${{ parameters.distro }}
+  #           - task: PublishBuildArtifacts@1
+  #             inputs:
+  #               pathToPublish: "$(Pipeline.Workspace)/bundles"
+  #               artifactName: packages
+  # - stage: TestAndSBOM
+  #   jobs:
+  #     - job: TestPackages
+  #       condition: ne('${{ parameters.distro }}', 'windows')
+  #       pool: $(build.pool)
+  #       steps:
+  #         - download: current
+  #           artifact: packages
+  #         - script: |
+  #             set -exu
 
-              spec="${specs[0]}"
+  #             declare -A os
+  #             os=(
+  #                 [bookworm]=debian
+  #                 [bullseye]=debian
+  #                 [buster]=debian
+  #                 [focal]=ubuntu
+  #                 [jammy]=ubuntu
+  #                 [rhel9]=el9
+  #                 [rhel8]=el8
+  #                 [centos7]=el7
+  #                 [mariner2]=cm2
+  #             )
 
-              commit="$(jq -r '.commit' < "$spec")"
-              tag="$(jq -r '.tag' < "$spec")"
-              revision="$(jq -r '.revision' < "$spec")"
-              distro="$(jq -r '.distro' < "$spec")"
-              pkgos="${os[$distro]}"
-              pkgver="${versions[$distro]}"
+  #             declare -A versions
+  #             versions=(
+  #                 [bookworm]=12
+  #                 [bullseye]=11
+  #                 [buster]=10
+  #                 [focal]=20.04
+  #                 [jammy]=22.04
+  #                 [rhel9]=el9
+  #                 [rhel8]=el8
+  #                 [centos7]=el7
+  #                 [mariner2]=cm2
+  #             )
 
-              package="$(jq -r .package < "$spec")"
-              package="${package#moby-}"
-              package="${package^^}"
-              package="${package//-/_}"
+  #             # the bundles directory from the previous stage will be in $(Pipeline.Workspace)/packages
+  #             bundle_dir="$(Pipeline.Workspace)/packages"
 
-              export DISTRO="$distro"
-              export TARGETARCH="${{ parameters.arch }}"
-              export INCLUDE_TESTING=0
-              export "TEST_${package}_COMMIT=$commit"
-              export "TEST_${package}_VERSION=${tag}-${revision}"
-              export "TEST_${package}_PACKAGE_VERSION=${tag}-${revision}.${pkgver}"
+  #             readarray -d '' specs < <(find "$bundle_dir" -name '${{ parameters.package_name }}-spec.json' -print0)
+  #             if ! [ "${#specs[@]}" -eq 1 ]; then
+  #               printf "##vso[task.complete result=Failed;]%s\n" "multiple spec files found: ${specs[*]}"
+  #               exit 1
+  #             fi
 
-              if [ "$pkgos" = debian ] || [ "$pkgos" = ubuntu ]; then
-                export "TEST_${package}_PACKAGE_VERSION=${tag}-${pkgos}${pkgver}u${revision}"
-              fi
+  #             spec="${specs[0]}"
 
-              make test OUTPUT="$bundle_dir"
-            displayName: Integration Test
-          - task: PublishBuildArtifacts@1
-            inputs:
-              pathToPublish: "$(Pipeline.Workspace)/packages"
-              artifactName: packages
-          - task: PublishBuildArtifacts@1
-            condition: always()
-            inputs:
-              pathToPublish: "tests/.test"
-              artifactName: testresults
-  - stage: PublishStaging
-    dependsOn: ["TestAndSBOM"]
-    condition: succeeded()
-    jobs:
-      - job: PublishStaging
-        pool: $(build.pool)
-        workspace:
-          clean: all
-        variables:
-          - name: storage.account.name
-            value: moby
-          - name: storage.account.container
-            value: moby
-        steps:
-          - download: current
-            artifact: packages
-          - script: |
-              set -exu
-              : ${BLOB_PREFIX:=/}
+  #             commit="$(jq -r '.commit' < "$spec")"
+  #             tag="$(jq -r '.tag' < "$spec")"
+  #             revision="$(jq -r '.revision' < "$spec")"
+  #             distro="$(jq -r '.distro' < "$spec")"
+  #             pkgos="${os[$distro]}"
+  #             pkgver="${versions[$distro]}"
 
-              go run ./cmd/push \
-                --artifact-dir="$ARTIFACTS_DIR" \
-                --package-name="$PACKAGE_NAME" \
-                --build-id="${{ parameters.build_id }}"
-            env:
-              ARTIFACTS_DIR: $(Pipeline.Workspace)/packages
-              PACKAGE_NAME: "${{ parameters.package_name }}"
-            displayName: Upload to Staging, Queue Signing Job
+  #             package="$(jq -r .package < "$spec")"
+  #             package="${package#moby-}"
+  #             package="${package^^}"
+  #             package="${package//-/_}"
+
+  #             export DISTRO="$distro"
+  #             export TARGETARCH="${{ parameters.arch }}"
+  #             export INCLUDE_TESTING=0
+  #             export "TEST_${package}_COMMIT=$commit"
+  #             export "TEST_${package}_VERSION=${tag}-${revision}"
+  #             export "TEST_${package}_PACKAGE_VERSION=${tag}-${revision}.${pkgver}"
+
+  #             if [ "$pkgos" = debian ] || [ "$pkgos" = ubuntu ]; then
+  #               export "TEST_${package}_PACKAGE_VERSION=${tag}-${pkgos}${pkgver}u${revision}"
+  #             fi
+
+  #             make test OUTPUT="$bundle_dir"
+  #           displayName: Integration Test
+  #         - task: PublishBuildArtifacts@1
+  #           inputs:
+  #             pathToPublish: "$(Pipeline.Workspace)/packages"
+  #             artifactName: packages
+  #         - task: PublishBuildArtifacts@1
+  #           condition: always()
+  #           inputs:
+  #             pathToPublish: "tests/.test"
+  #             artifactName: testresults
+  # - stage: PublishStaging
+  #   dependsOn: ["TestAndSBOM"]
+  #   condition: succeeded()
+  #   jobs:
+  #     - job: PublishStaging
+  #       pool: $(build.pool)
+  #       workspace:
+  #         clean: all
+  #       variables:
+  #         - name: storage.account.name
+  #           value: moby
+  #         - name: storage.account.container
+  #           value: moby
+  #       steps:
+  #         - download: current
+  #           artifact: packages
+  #         - script: |
+  #             set -exu
+  #             : ${BLOB_PREFIX:=/}
+
+  #             go run ./cmd/push \
+  #               --artifact-dir="$ARTIFACTS_DIR" \
+  #               --package-name="$PACKAGE_NAME" \
+  #               --build-id="${{ parameters.build_id }}"
+  #           env:
+  #             ARTIFACTS_DIR: $(Pipeline.Workspace)/packages
+  #             PACKAGE_NAME: "${{ parameters.package_name }}"
+  #           displayName: Upload to Staging, Queue Signing Job
