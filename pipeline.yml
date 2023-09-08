@@ -95,10 +95,10 @@ stages:
                   exit 1
                 fi
 
-                artifact_pattern="${artifacts[0]#"${BUNDLE_DIR}/"}"
+                artifact_pattern="bundles/${artifacts[0]#"${BUNDLE_DIR}/"}"
                 echo "##vso[task.setvariable variable=artifact.pattern;isoutput=true]$artifact_pattern"
 
-                spec_pattern="${SPEC_FILE#"${BUNDLE_DIR}/"}"
+                spec_pattern="bundles/${SPEC_FILE#"${BUNDLE_DIR}/"}"
                 echo "##vso[task.setvariable variable=spec.pattern;isoutput=true]$spec_pattern"
               name: buildPackage
               displayName: Build package
@@ -117,10 +117,10 @@ stages:
     jobs:
       - ${{ each spec in parameters.specs }}:
         - job: "Test_\
-                ${{ replace(spec.package, '-', '_') }}_\
-                ${{ spec.distro }}_\
-                ${{ replace(spec.arch, '/', '') }}_\
-                ${{ replace(spec.tag, '.', '_') }}"
+                  ${{ replace(spec.package, '-', '_') }}_\
+                  ${{ spec.distro }}_\
+                  ${{ replace(spec.arch, '/', '') }}_\
+                  ${{ replace(spec.tag, '.', '_') }}"
           condition: ne('${{ spec.distro }}', 'windows')
           pool: $(build.pool)
           variables:
