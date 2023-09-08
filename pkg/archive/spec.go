@@ -10,11 +10,6 @@ type Spec struct {
 	Revision string `json:"revision"`
 }
 
-type SpecOs struct {
-	Spec `json:",inline"`
-	OS   string `json:"os"`
-}
-
 func (s *Spec) OS() string {
 	if s.Distro == "windows" {
 		return "windows"

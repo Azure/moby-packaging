@@ -28,7 +28,7 @@ func main() {
 }
 
 func validate(j []byte) error {
-	specs := []archive.SpecOs{}
+	specs := []archive.Spec{}
 
 	if err := json.Unmarshal(j, &specs); err != nil {
 		return err
@@ -39,7 +39,6 @@ func validate(j []byte) error {
 			specs[i].Arch,
 			specs[i].Commit,
 			specs[i].Distro,
-			specs[i].OS,
 			specs[i].Pkg,
 			specs[i].Repo,
 			specs[i].Revision,

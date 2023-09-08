@@ -24,25 +24,53 @@ parameters:
 stages:
   - stage: Validate
     jobs:
+      - job: ValidateDataFormat
+        pool: staging-pool-amd64-mariner-2
+        timeoutInMinutes: 5
+        steps:
+          - bash: |
+              set -exu
+
+              specs_file="$(mktemp)"
+
+              cat > "$specs_file" <<EOF
+              ${{ convertToJson(parameters.specs) }}
+              EOF
+
+              cat "$specs_file"
+              go run ./cmd/validate/ < "$specs_file"
+            displayName: Validate Input Data Format
       - ${{ each spec in parameters.specs }}:
-        - job: Validate_${{ replace(spec.package, '-', '_') }}_${{ spec.os }}_${{ spec.arch }}_${{ replace(spec.tag, '.', '_') }}
+        - job: Validate_${{ replace(spec.package, '-', '_') }}_${{ spec.arch }}_${{ replace(spec.tag, '.', '_') }}
+          dependsOn: ["ValidateDataFormat"]
           pool: staging-pool-amd64-mariner-2
           timeoutInMinutes: 240
           steps:
             - bash: |
+                os=linux
+
+                if [ "$DISTRO" = "windows" ]; then
+                  os=windows
+                fi
+
+                echo "##vso[task.setvariable variable=pkg.os]$os"
+              displayName: Determine OS
+              env:
+                DISTRO: ${{ spec.distro }}
+            - bash: |
                 set -exu
 
-                bundle_dir="$(Pipeline.Workspace)/bundles"
-                bundle_distro_dir="$bundle_dir/${{ spec.distro }}/$OS_ARCH_DIR"
-                mkdir -p "$bundle_distro_dir"
-                spec_file="$bundle_distro_dir/${{ parameters.package_name }}-spec.json"
+                spec_file="$OUT_DIR/${{ parameters.package_name }}-spec.json"
+                install -D /dev/null "$spec_file"
 
                 cat > $spec_file <<EOF
                 ${{ convertToJson(spec) }}
                 EOF
+
+                cat "$spec_file"
               displayName: test
               env:
-                OS_ARCH_DIR: "${{ spec.os }}_${{ replace(spec.arch, '/', '') }}"
+                OUT_DIR: "$(Pipeline.Workspace)/bundles/${{ spec.distro }}/$(pkg.os)_${{ replace(spec.arch, '/', '') }}"
   # - stage: Build
   #   jobs:
   #     - ${{ each spec in parameters.specs }}:
