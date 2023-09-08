@@ -1,40 +1,8 @@
 parameters:
-  - name: arch
-    displayName: arch
-    type: string
-    default: amd64
-  - name: os
-    displayName: os
-    type: string
-    default: ""
-  - name: commit
-    displayName: commit
-    type: string
-    default: ""
-  - name: distro
-    displayName: distro
-    type: string
-    default: ""
-  - name: github_repo
-    displayName: github_repo
-    type: string
-    default: ""
   - name: package_name
     displayName: package_name
     type: string
     default: ""
-  - name: pmc_repo
-    displayName: pmc_repo
-    type: string
-    default: ""
-  - name: release_main
-    displayName: release_main
-    type: boolean
-    default: False
-  - name: release_testing
-    displayName: release_testing
-    type: boolean
-    default: False
   - name: tag
     displayName: tag
     type: string
@@ -42,166 +10,267 @@ parameters:
   - name: revision
     displayName: revision
     type: string
-    default: "1"
+    default: ""
+  - name: specs
+    displayName: Package Specs
+    type: object
+    default: []
   - name: build_id
     displayName: build id
     type: string
     default: "__not_supplied"
+  - name: prod_storage_account_name
+    displayName: Prod Storage Account Name
+    type: string
+    default: mobyreleases
+  - name: index_container
+    displayName: Index Container
+    type: string
+    default: index
 
-name: ${{ replace(parameters.build_id, '__not_supplied', '$(Date:yyyyMMdd).$(Rev:r)') }}-${{ parameters.package_name }}-${{ parameters.distro }}-${{ replace(parameters.arch, '/', '') }}.$(Rev:r)
+name: ${{ replace(parameters.build_id, '__not_supplied', '$(Date:yyyyMMdd).$(Rev:r)') }}-${{ parameters.package_name }}-${{ parameters.tag }}-${{ parameters.revision }}.run$(Rev:r)
 
 
 variables:
-  ${{ if contains(parameters.arch, 'arm') }}:
-    build.pool: staging-pool-arm64-mariner-2
-  ${{ else }}:
-    build.pool: staging-pool-amd64-mariner-2
+  amd.pool: staging-pool-amd64-mariner-2
+  package.name: "${{ parameters.package_name }}"
 
 stages:
-  - stage: Build
+  - stage: Validate
     jobs:
-      - job: Build_${{ replace(parameters.package_name, '-', '_') }}_${{ parameters.distro }}_${{ replace(parameters.arch, '/', '') }}
-        pool: $(build.pool)
-        timeoutInMinutes: 240
+      - job: ValidateDataFormat
+        pool: $(amd.pool)
+        timeoutInMinutes: 5
         steps:
           - bash: |
-              set -x
-
-              bundle_dir="$(Pipeline.Workspace)/bundles"
-              bundle_distro_dir="$bundle_dir/${{ parameters.distro }}/$OS_ARCH_DIR"
-              mkdir -p "$bundle_distro_dir"
-              spec_file="$bundle_distro_dir/${{ parameters.package_name }}-spec.json"
-
-              printf '
-                {
-                  "arch": "${{ parameters.arch }}",
-                  "commit": "${{ parameters.commit }}",
-                  "repo": "https://github.com/${{ parameters.github_repo }}.git",
-                  "package": "${{ parameters.package_name }}",
-                  "distro": "${{ parameters.distro }}",
-                  "tag": "${{ parameters.tag }}",
-                  "revision": "${{ coalesce(parameters.revision, '1') }}"
-                }
-              ' > $spec_file
-
-              go run . --build-spec="$spec_file" --output="$bundle_dir"
-            env:
-              OS_ARCH_DIR: "${{ parameters.os }}_${{ replace(parameters.arch, '/', '') }}"
-          - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
-            displayName: Generate SBOM
-            inputs:
-              BuildDropPath: $(Pipeline.Workspace)/bundles/${{ parameters.distro }}
-          - task: PublishBuildArtifacts@1
-            inputs:
-              pathToPublish: "$(Pipeline.Workspace)/bundles"
-              artifactName: packages
-  - stage: TestAndSBOM
-    jobs:
-      - job: TestPackages
-        condition: ne('${{ parameters.distro }}', 'windows')
-        pool: $(build.pool)
-        steps:
-          - download: current
-            artifact: packages
-          - script: |
               set -exu
 
-              declare -A os
-              os=(
-                  [bookworm]=debian
-                  [bullseye]=debian
-                  [buster]=debian
-                  [focal]=ubuntu
-                  [jammy]=ubuntu
-                  [rhel9]=el9
-                  [rhel8]=el8
-                  [centos7]=el7
-                  [mariner2]=cm2
-              )
+              specs_basename="$(go run ./cmd/hash --project="$PACKAGE_NAME" --tag="$TAG" --revision="$REVISION")"
+              specs_file="${INPUTDIR}/${specs_basename}"
+              mkdir -p "$(dirname "$specs_file")"
 
-              declare -A versions
-              versions=(
-                  [bookworm]=12
-                  [bullseye]=11
-                  [buster]=10
-                  [focal]=20.04
-                  [jammy]=22.04
-                  [rhel9]=el9
-                  [rhel8]=el8
-                  [centos7]=el7
-                  [mariner2]=cm2
-              )
+              cat > "$specs_file" <<EOF
+              ${{ convertToJson(parameters.specs) }}
+              EOF
 
-              # the bundles directory from the previous stage will be in $(Pipeline.Workspace)/packages
-              bundle_dir="$(Pipeline.Workspace)/packages"
-
-              readarray -d '' specs < <(find "$bundle_dir" -name '${{ parameters.package_name }}-spec.json' -print0)
-              if ! [ "${#specs[@]}" -eq 1 ]; then
-                printf "##vso[task.complete result=Failed;]%s\n" "multiple spec files found: ${specs[*]}"
-                exit 1
-              fi
-
-              spec="${specs[0]}"
-
-              commit="$(jq -r '.commit' < "$spec")"
-              tag="$(jq -r '.tag' < "$spec")"
-              revision="$(jq -r '.revision' < "$spec")"
-              distro="$(jq -r '.distro' < "$spec")"
-              pkgos="${os[$distro]}"
-              pkgver="${versions[$distro]}"
-
-              package="$(jq -r .package < "$spec")"
-              package="${package#moby-}"
-              package="${package^^}"
-              package="${package//-/_}"
-
-              export DISTRO="$distro"
-              export TARGETARCH="${{ parameters.arch }}"
-              export INCLUDE_TESTING=0
-              export "TEST_${package}_COMMIT=$commit"
-              export "TEST_${package}_VERSION=${tag}-${revision}"
-              export "TEST_${package}_PACKAGE_VERSION=${tag}-${revision}.${pkgver}"
-
-              if [ "$pkgos" = debian ] || [ "$pkgos" = ubuntu ]; then
-                export "TEST_${package}_PACKAGE_VERSION=${tag}-${pkgos}${pkgver}u${revision}"
-              fi
-
-              make test OUTPUT="$bundle_dir"
-            displayName: Integration Test
+              cat "$specs_file"
+              go run ./cmd/validate/ "$PACKAGE_NAME" < "$specs_file"
+            displayName: Validate Input Data Format
+            env:
+              TAG: "${{ parameters.tag }}"
+              INPUTDIR: "$(Pipeline.Workspace)/input"
+              REVISION: "${{ parameters.revision }}"
           - task: PublishBuildArtifacts@1
             inputs:
-              pathToPublish: "$(Pipeline.Workspace)/packages"
-              artifactName: packages
-          - task: PublishBuildArtifacts@1
-            condition: always()
-            inputs:
-              pathToPublish: "tests/.test"
-              artifactName: testresults
-  - stage: PublishStaging
-    dependsOn: ["TestAndSBOM"]
-    condition: succeeded()
+              pathToPublish: "$(Pipeline.Workspace)/input"
+              artifactName: input
+  - stage: Build
     jobs:
-      - job: PublishStaging
-        pool: $(build.pool)
-        workspace:
-          clean: all
-        variables:
-          - name: storage.account.name
-            value: moby
-          - name: storage.account.container
-            value: moby
+      - ${{ each spec in parameters.specs }}:
+        - job: "Build_\
+                  ${{ replace(spec.package, '-', '_') }}_\
+                  ${{ spec.distro }}_\
+                  ${{ replace(spec.arch, '/', '') }}_\
+                  ${{ replace(spec.tag, '.', '_') }}"
+          variables:
+            bundle.dir: "$(Pipeline.Workspace)/bundles"
+            ${{ if contains(spec.arch, 'arm') }}:
+              build.pool: staging-pool-arm64-mariner-2
+            ${{ else }}:
+              build.pool: staging-pool-amd64-mariner-2
+          pool: $(build.pool)
+          timeoutInMinutes: 240
+          steps:
+            - bash: |
+                set -exu
+
+                mkdir -p "$SPEC_DIR"
+
+                filename="$(echo '${{ convertToJson(spec) }}' | go run ./cmd/path basename --spec-file=/dev/stdin)"
+                spec_file="${SPEC_DIR}/${filename}"
+
+                cat > "$spec_file" <<EOF
+                ${{ convertToJson(spec) }}
+                EOF
+
+                cat "$spec_file"
+                go run . --build-spec="$spec_file" --output="$BUNDLE_DIR"
+              name: buildPackage
+              displayName: Build package
+              env:
+                SPEC_DIR: "$(Pipeline.Workspace)/specs"
+                DISTRO: "${{ spec.distro }}"
+                ARCH: "${{ spec.arch }}"
+            - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
+              displayName: Generate SBOM
+              inputs:
+                BuildDropPath: $(Pipeline.Workspace)/bundles/${{ parameters.distro }}
+            - task: PublishBuildArtifacts@1
+              inputs:
+                pathToPublish: "$(Pipeline.Workspace)/bundles"
+                artifactName: bundles
+            - task: PublishBuildArtifacts@1
+              inputs:
+                pathToPublish: "$(Pipeline.Workspace)/specs"
+                artifactName: specs
+  - stage: Test
+    dependsOn: ["Build"]
+    jobs:
+      - ${{ each spec in parameters.specs }}:
+        - job: "Test_\
+                  ${{ replace(spec.package, '-', '_') }}_\
+                  ${{ spec.distro }}_\
+                  ${{ replace(spec.arch, '/', '') }}_\
+                  ${{ replace(spec.tag, '.', '_') }}"
+          condition: ne('${{ spec.distro }}', 'windows')
+          pool: $(build.pool)
+          variables:
+            bundle.dir: "$(Pipeline.Workspace)/bundles"
+            artifact.pattern: "**/${{ spec.distro }}/linux_${{ replace(spec.arch, '/', '_') }}/*@(-spec.json|.deb|.rpm)"
+            ${{ if contains(spec.arch, 'arm') }}:
+              build.pool: staging-pool-arm64-mariner-2
+            ${{ else }}:
+              build.pool: staging-pool-amd64-mariner-2
+          steps:
+            - download: current
+              artifact: bundles
+              patterns: "$(artifact.pattern)"
+            - download: current
+              artifact: specs
+            - script: |
+                set -exu
+
+                filename="$(echo '${{ convertToJson(spec) }}' | go run ./cmd/path basename --spec-file=/dev/stdin)"
+                spec_file="${SPEC_DIR}/${filename}"
+
+                # runs the tests
+
+                set +x
+                go run ./cmd/run_tests --spec-file="$spec_file" --bundle-dir="$BUNDLE_DIR"
+                rc="$?"
+                set -x
+
+                out_dir="$(go run ./cmd/path dir --spec-file="$spec_file" --bundle-dir="$RESULTS_DIR")"
+                mkdir -p "$out_dir"
+                find tests/.test -type f -exec cp {} "$out_dir" \;
+
+                exit "$rc"
+              displayName: Integration Test
+              env:
+                SPEC_DIR: "$(Pipeline.Workspace)/specs"
+                NAME: "${{ spec.package }}"
+                DISTRO: "${{ spec.distro }}"
+                ARCH: "${{ spec.arch }}"
+                RESULTS_DIR: "$(Pipeline.Workspace)/testresults"
+            - task: PublishBuildArtifacts@1
+              inputs:
+                pathToPublish: "$(Pipeline.Workspace)/bundles"
+                artifactName: bundles
+            - task: PublishBuildArtifacts@1
+              condition: always()
+              inputs:
+                pathToPublish: "$(Pipeline.Workspace)/testresults"
+                artifactName: testresults
+  - stage: SignAndPublish
+    dependsOn: ["Test"]
+    jobs:
+      - job: Sign_Packages
+        pool: production-pool-amd64-mariner-2
         steps:
           - download: current
-            artifact: packages
-          - script: |
+            artifact: bundles
+          - bash: |
               set -exu
-              : ${BLOB_PREFIX:=/}
-
-              go run ./cmd/push \
-                --artifact-dir="$ARTIFACTS_DIR" \
-                --package-name="$PACKAGE_NAME" \
-                --build-id="${{ parameters.build_id }}"
+              cp -r $(Pipeline.Workspace)/bundles "$SIGNED_DIR"
+            displayName: Copy files to sign
             env:
-              ARTIFACTS_DIR: $(Pipeline.Workspace)/packages
-              PACKAGE_NAME: "${{ parameters.package_name }}"
-            displayName: Upload to Staging, Queue Signing Job
+              SIGNED_DIR: "$(Pipeline.Workspace)/signed"
+          - task: UseDotNet@2
+            displayName: Install .NET Core SDK
+            inputs:
+              packageType: sdk
+              version: 2.2.207
+          - template: templates/sign.steps.yml
+            parameters:
+              rootDir: "$(Pipeline.Workspace)/signed"
+          - task: PublishBuildArtifacts@1
+            inputs:
+              pathToPublish: "$(Pipeline.Workspace)/signed"
+              artifactName: signed
+      - job: Upload_Packages
+        dependsOn: ["Sign_Packages"]
+        pool: production-pool-amd64-mariner-2
+        steps:
+          - download: current
+            artifact: signed
+          - download: current
+            artifact: input
+          - bash: |
+              set -exu
+
+              specs_basename="$(go run ./cmd/hash --project="$PACKAGE_NAME" --tag="$TAG" --revision="$REVISION")"
+              specs_file="${INPUTDIR}/${specs_basename}"
+
+              # uploads signed files to prod bucket, removes unsigned / failed uploads, writes output to stdout
+              go run ./cmd/upload \
+                --signed-dir="$SIGNED_DIR" \
+                --specs-file="$specs_file"
+            env:
+              INPUTDIR: "$(Pipeline.Workspace)/input"
+              SIGNED_DIR: "$(Pipeline.Workspace)/signed"
+              TAG: "${{ parameters.tag }}"
+              REVISION: "${{ parameters.revision }}"
+            displayName: Upload Signed Packages to Prod Storage
+            name: uploadPackages
+      - job: Update_Latest
+        dependsOn: ["Sign_Packages", "Upload_Packages"]
+        pool: production-pool-amd64-mariner-2
+        steps:
+          - checkout: self
+          - bash: az login --identity
+            displayName: Login to Azure
+          - bash: scripts/generate-versions.sh
+            displayName: Generate versions
+            env:
+              AZURE_STORAGE_ACCOUNT: ${{ parameters.prod_storage_account_name }}
+              STORAGE_CONTAINER: moby
+              OUTPUT: $(Build.ArtifactStagingDirectory)
+          - task: PublishBuildArtifacts@1
+            displayName: Store pipeline artifacts
+            inputs:
+              artifactName: versions
+          - bash: |
+              set -ex
+
+              az storage container create -n "${STORAGE_CONTAINER}" --auth-mode=login --public-access=blob
+
+              az storage blob upload-batch \
+                --max-connections=10 --auth-mode=login \
+                --overwrite \
+                --source "${BUILD_ARTIFACTSTAGINGDIRECTORY}/" \
+                --destination "${STORAGE_CONTAINER}" \
+                --destination-path "/" \
+                --pattern "*.json" \
+                --content-type "application/json"
+
+              az storage blob upload-batch \
+                --max-connections=10 --auth-mode=login \
+                --overwrite \
+                --source "${BUILD_ARTIFACTSTAGINGDIRECTORY}/" \
+                --destination "${STORAGE_CONTAINER}" \
+                --destination-path "/" \
+                --pattern "*.rss" \
+                --content-type "application/rss+xml"
+
+              az storage blob upload-batch \
+                --max-connections=10 --auth-mode=login \
+                --overwrite \
+                --source "${BUILD_ARTIFACTSTAGINGDIRECTORY}/" \
+                --destination "${STORAGE_CONTAINER}" \
+                --destination-path "/" \
+                --pattern "**/latest/*" \
+                --content-type "text/plain"
+            displayName: Upload versions to blob storage
+            env:
+              AZURE_STORAGE_ACCOUNT: ${{ parameters.prod_storage_account_name }}
+              STORAGE_CONTAINER: ${{ parameters.index_container }}

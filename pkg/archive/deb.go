@@ -37,7 +37,7 @@ Description: {{ .Description }}
 `
 
 var (
-	debDistroMap = map[string]string{
+	DebDistroMap = map[string]string{
 		"xenial":  "ubuntu16.04",
 		"yakkety": "ubuntu16.10",
 		"zesty":   "ubuntu17.04",
@@ -82,7 +82,7 @@ func (d *DebPackager) Package(client *dagger.Client, c *dagger.Container, projec
 	dir := client.Directory()
 	rootDir := "/package"
 
-	version := fmt.Sprintf("%s-%su%s", project.Tag, debDistroMap[project.Distro], project.Revision)
+	version := fmt.Sprintf("%s-%su%s", project.Tag, DebDistroMap[project.Distro], project.Revision)
 	c = c.WithDirectory(rootDir, dir)
 	c = d.moveStaticFiles(c, rootDir)
 	c = d.withControlFile(c, version, project)
