@@ -156,16 +156,14 @@ stages:
           steps:
             - download: current
               artifact: bundles
-              patterns: "$(artifact.pattern)"
+              patterns: "$(spec.pattern)"
             - download: current
               artifact: bundles
-              patterns: "$(spec.pattern)"
+              patterns: "$(artifact.pattern)"
             - script: |
                 set -exu
 
                 # runs the tests
-                tree $(Pipeline.Workspace)/bundles
-                tree .
                 go run ./cmd/env_vars "$SPEC_FILE" "$BUNDLE_DIR"
               displayName: Integration Test
             - task: PublishBuildArtifacts@1
