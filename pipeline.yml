@@ -20,7 +20,7 @@ parameters:
     type: string
     default: "__not_supplied"
 
-name: ${{ replace(parameters.build_id, '__not_supplied', '$(Date:yyyyMMdd).$(Rev:r)') }}-${{ parameters.package_name }}-${{ parameters.tag }}-${{ parameters.revision }}.$(Rev:r)
+name: ${{ replace(parameters.build_id, '__not_supplied', '$(Date:yyyyMMdd).$(Rev:r)') }}-${{ parameters.package_name }}-${{ parameters.tag }}-${{ parameters.revision }}.run$(Rev:r)
 
 
 variables:
@@ -121,6 +121,12 @@ stages:
                   ${{ spec.distro }}_\
                   ${{ replace(spec.arch, '/', '') }}_\
                   ${{ replace(spec.tag, '.', '_') }}"
+          # dependsOn: 
+          #   - "Build_\
+          #         ${{ replace(spec.package, '-', '_') }}_\
+          #         ${{ spec.distro }}_\
+          #         ${{ replace(spec.arch, '/', '') }}_\
+          #         ${{ replace(spec.tag, '.', '_') }}"
           condition: ne('${{ spec.distro }}', 'windows')
           pool: $(build.pool)
           variables:
@@ -158,6 +164,7 @@ stages:
                 set -exu
 
                 # runs the tests
+                tree bundles
                 go run ./cmd/env_vars "$SPEC_FILE" "$BUNDLE_DIR"
               displayName: Integration Test
             - task: PublishBuildArtifacts@1
