@@ -11,6 +11,10 @@ import (
 )
 
 func main() {
+	pkgName := ""
+	if len(os.Args) > 1 {
+		pkgName = os.Args[1]
+	}
 	r := bufio.NewReader(os.Stdin)
 
 	j, err := r.ReadBytes(byte(0))
@@ -19,13 +23,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := validate(j); err != nil {
+	if err := validate(j, pkgName); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %s\n", err)
 		os.Exit(1)
 	}
 }
 
-func validate(j []byte) error {
+func validate(j []byte, pkgName string) error {
 	specs := []archive.Spec{}
 
 	if err := json.Unmarshal(j, &specs); err != nil {
@@ -33,6 +37,10 @@ func validate(j []byte) error {
 	}
 
 	for i := range specs {
+		if pn := specs[i].Pkg; pn != pkgName {
+			return fmt.Errorf("package name does not match: '%s' vs '%s'", pkgName, pn)
+		}
+
 		s := []string{
 			specs[i].Arch,
 			specs[i].Commit,

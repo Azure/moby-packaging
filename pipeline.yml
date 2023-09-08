@@ -25,6 +25,7 @@ name: ${{ replace(parameters.build_id, '__not_supplied', '$(Date:yyyyMMdd).$(Rev
 
 variables:
   amd.pool: staging-pool-amd64-mariner-2
+  package.name: "${{ parameters.package_name }}"
 
 stages:
   - stage: Validate
@@ -43,7 +44,7 @@ stages:
               EOF
 
               cat "$specs_file"
-              go run ./cmd/validate/ < "$specs_file"
+              go run ./cmd/validate/ "$PACKAGE_NAME" < "$specs_file"
             displayName: Validate Input Data Format
   - stage: Build
     jobs:
@@ -149,16 +150,14 @@ stages:
                   exit 1
                 fi
 
-                spec="${specs[0]}"
-
-                commit="$(jq -r '.commit' < "$spec")"
-                tag="$(jq -r '.tag' < "$spec")"
-                revision="$(jq -r '.revision' < "$spec")"
-                distro="$(jq -r '.distro' < "$spec")"
+                commit="$(jq -r '.commit' < "$SPEC_FILE")"
+                tag="$(jq -r '.tag' < "$SPEC_FILE")"
+                revision="$(jq -r '.revision' < "$SPEC_FILE")"
+                distro="$(jq -r '.distro' < "$SPEC_FILE")"
                 pkgos="${os[$distro]}"
                 pkgver="${versions[$distro]}"
 
-                package="$(jq -r .package < "$spec")"
+                package="$(jq -r .package < "$SPEC_FILE")"
                 package="${package#moby-}"
                 package="${package^^}"
                 package="${package//-/_}"
