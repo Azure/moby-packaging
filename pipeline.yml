@@ -164,7 +164,8 @@ stages:
                 set -exu
 
                 # runs the tests
-                tree bundles
+                tree $(Pipeline.Workspace)/bundles
+                tree .
                 go run ./cmd/env_vars "$SPEC_FILE" "$BUNDLE_DIR"
               displayName: Integration Test
             - task: PublishBuildArtifacts@1
