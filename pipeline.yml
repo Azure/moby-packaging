@@ -84,6 +84,18 @@ stages:
                 go run . --build-spec="$SPEC_FILE" --output="$BUNDLE_DIR"
 
                 echo "##vso[task.setvariable variable=spec.file;isoutput=true]$SPEC_FILE"
+                readarray -d '' artifacts < <(find "$BUNDLE_DIR" -type f -regextype posix-egrep -regex '.*\.(rpm|deb|zip)$' -print0)
+
+                if [ ${#artifacts[@]} -ne 1 ]; then
+                  printf "##vso[task.complete result=Failed;]%s\n" "somehow, no artifact was generated (or too many)"
+                  exit 1
+                fi
+
+                artifact_pattern="${artifacts[0]#"${BUNDLE_DIR}/"}"
+                echo "##vso[task.setvariable variable=artifact.pattern;isoutput=true]$artifact_pattern"
+
+                spec_pattern="${SPEC_FILE#"${BUNDLE_DIR}/"}"
+                echo "##vso[task.setvariable variable=spec.pattern;isoutput=true]$spec_pattern"
               name: buildPackage
               displayName: Build package
               env: 
@@ -104,7 +116,10 @@ stages:
           condition: ne('${{ spec.distro }}', 'windows')
           pool: $(build.pool)
           variables:
+            stage.id: Build_${{ replace(spec.package, '-', '_') }}_${{ spec.distro }}_${{ replace(spec.arch, '/', '') }}_${{ replace(spec.tag, '.', '_') }}
             bundle.dir: "$(Pipeline.Workspace)/bundles"
+            artifact.pattern: $[ stageDependencies.Build.${{ variables.stage.id }}.outputs['buildPackage.artifact.pattern'] ]
+            spec.pattern: $[ stageDependencies.Build.${{ variables.stage.id }}.outputs['buildPackage.spec.pattern'] ]
             spec.file: $[ stageDependencies.Build.Build_${{ replace(spec.package, '-', '_') }}_${{ spec.distro }}_${{ replace(spec.arch, '/', '') }}_${{ replace(spec.tag, '.', '_') }}.outputs['buildPackage.spec.file'] ]
             ${{ if contains(spec.arch, 'arm') }}:
               build.pool: staging-pool-arm64-mariner-2
@@ -113,6 +128,10 @@ stages:
           steps:
             - download: current
               artifact: bundles
+              patterns: "$(artifact.pattern)"
+            - download: current
+              artifact: bundles
+              patterns: "$(spec.pattern)"
             - script: |
                 set -exu
 
