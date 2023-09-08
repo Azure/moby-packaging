@@ -49,7 +49,11 @@ stages:
   - stage: Build
     jobs:
       - ${{ each spec in parameters.specs }}:
-        - job: "Build_${{ replace(spec.package, '-', '_') }}_${{ spec.distro }}_${{ replace(spec.arch, '/', '') }}_${{ replace(spec.tag, '.', '_') }}"
+        - job: "Build_\
+                  ${{ replace(spec.package, '-', '_') }}_\
+                  ${{ spec.distro }}_\
+                  ${{ replace(spec.arch, '/', '') }}_\
+                  ${{ replace(spec.tag, '.', '_') }}"
           variables:
             bundle.dir: "$(Pipeline.Workspace)/bundles"
             ${{ if contains(spec.arch, 'arm') }}:
@@ -112,15 +116,33 @@ stages:
     dependsOn: ["Build"]
     jobs:
       - ${{ each spec in parameters.specs }}:
-        - job: "Test_${{ replace(spec.package, '-', '_') }}_${{ spec.distro }}_${{ replace(spec.arch, '/', '') }}_${{ replace(spec.tag, '.', '_') }}"
+        - job: "Test_\
+                ${{ replace(spec.package, '-', '_') }}_\
+                ${{ spec.distro }}_\
+                ${{ replace(spec.arch, '/', '') }}_\
+                ${{ replace(spec.tag, '.', '_') }}"
           condition: ne('${{ spec.distro }}', 'windows')
           pool: $(build.pool)
           variables:
-            stage.id: Build_${{ replace(spec.package, '-', '_') }}_${{ spec.distro }}_${{ replace(spec.arch, '/', '') }}_${{ replace(spec.tag, '.', '_') }}
+            stage.id: 
             bundle.dir: "$(Pipeline.Workspace)/bundles"
-            artifact.pattern: $[ stageDependencies.Build.${{ variables.stage.id }}.outputs['buildPackage.artifact.pattern'] ]
-            spec.pattern: $[ stageDependencies.Build.${{ variables.stage.id }}.outputs['buildPackage.spec.pattern'] ]
-            spec.file: $[ stageDependencies.Build.Build_${{ replace(spec.package, '-', '_') }}_${{ spec.distro }}_${{ replace(spec.arch, '/', '') }}_${{ replace(spec.tag, '.', '_') }}.outputs['buildPackage.spec.file'] ]
+            artifact.pattern: "$[ stageDependencies.Build.Build_\
+                                 ${{ replace(spec.package, '-', '_') }}_\
+                                 ${{ spec.distro }}_${{ replace(spec.arch, '/', '') }}_\
+                                 ${{ replace(spec.tag, '.', '_') }}.\
+                                 outputs['buildPackage.artifact.pattern'] ]"
+            spec.pattern: "$[ stageDependencies.Build.Build_\
+                             ${{ replace(spec.package, '-', '_') }}_\
+                             ${{ spec.distro }}_\
+                             ${{ replace(spec.arch, '/', '') }}_\
+                             ${{ replace(spec.tag, '.', '_') }}.\
+                             outputs['buildPackage.spec.pattern'] ]"
+            spec.file: "$[ stageDependencies.Build.Build_\
+                          ${{ replace(spec.package, '-', '_') }}_\
+                          ${{ spec.distro }}_\
+                          ${{ replace(spec.arch, '/', '') }}_\
+                          ${{ replace(spec.tag, '.', '_') }}\
+                          .outputs['buildPackage.spec.file'] ]"
             ${{ if contains(spec.arch, 'arm') }}:
               build.pool: staging-pool-arm64-mariner-2
             ${{ else }}:
