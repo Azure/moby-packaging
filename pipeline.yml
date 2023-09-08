@@ -157,64 +157,8 @@ stages:
             - script: |
                 set -exu
 
-                declare -A os
-                os=(
-                    [bookworm]=debian
-                    [bullseye]=debian
-                    [buster]=debian
-                    [focal]=ubuntu
-                    [jammy]=ubuntu
-                    [rhel9]=el9
-                    [rhel8]=el8
-                    [centos7]=el7
-                    [mariner2]=cm2
-                )
-
-                declare -A versions
-                versions=(
-                    [bookworm]=12
-                    [bullseye]=11
-                    [buster]=10
-                    [focal]=20.04
-                    [jammy]=22.04
-                    [rhel9]=el9
-                    [rhel8]=el8
-                    [centos7]=el7
-                    [mariner2]=cm2
-                )
-
-                # the bundles directory from the previous stage will be in $(Pipeline.Workspace)/bundles
-                bundle_dir="$(Pipeline.Workspace)/bundles"
-
-                if ! [ -f "$SPEC_FILE" ]; then
-                  printf "##vso[task.complete result=Failed;]%s\n" "spec file not found: $SPEC_FILE"
-                  exit 1
-                fi
-
-                commit="$(jq -r '.commit' < "$SPEC_FILE")"
-                tag="$(jq -r '.tag' < "$SPEC_FILE")"
-                revision="$(jq -r '.revision' < "$SPEC_FILE")"
-                distro="$(jq -r '.distro' < "$SPEC_FILE")"
-                pkgos="${os[$distro]}"
-                pkgver="${versions[$distro]}"
-
-                package="$(jq -r .package < "$SPEC_FILE")"
-                package="${package#moby-}"
-                package="${package^^}"
-                package="${package//-/_}"
-
-                export DISTRO="$distro"
-                export TARGETARCH="${{ spec.arch }}"
-                export INCLUDE_TESTING=0
-                export "TEST_${package}_COMMIT=$commit"
-                export "TEST_${package}_VERSION=${tag}-${revision}"
-                export "TEST_${package}_PACKAGE_VERSION=${tag}-${revision}.${pkgver}"
-
-                if [ "$pkgos" = debian ] || [ "$pkgos" = ubuntu ]; then
-                  export "TEST_${package}_PACKAGE_VERSION=${tag}-${pkgos}${pkgver}u${revision}"
-                fi
-
-                make test OUTPUT="$BUNDLE_DIR"
+                # runs the tests
+                go run ./cmd/env_vars "$SPEC_FILE" "$BUNDLE_DIR"
               displayName: Integration Test
             - task: PublishBuildArtifacts@1
               inputs:
