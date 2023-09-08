@@ -164,7 +164,7 @@ stages:
                 set -exu
 
                 # runs the tests
-                go run ./cmd/env_vars "$SPEC_FILE" "$BUNDLE_DIR"
+                go run ./cmd/run_tests "$SPEC_FILE" "$BUNDLE_DIR"
               displayName: Integration Test
             - task: PublishBuildArtifacts@1
               inputs:
