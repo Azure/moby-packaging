@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 	"syscall"
 
@@ -11,8 +12,9 @@ import (
 )
 
 const (
-	debian = "debian"
-	ubuntu = "ubuntu"
+	debian  = "debian"
+	ubuntu  = "ubuntu"
+	makebin = "make"
 )
 
 var (
@@ -116,5 +118,11 @@ export TEST_%[3]s_PACKAGE_VERSION=%[5]s-%[6]s.%[7]s
 		)
 	}
 
-	return syscall.Exec("/usr/bin/make", []string{"test", fmt.Sprintf("OUTPUT=%s", os.Args[2])}, []string{})
+	bin, err := exec.LookPath(makebin)
+	if err != nil {
+		return err
+	}
+
+	env := os.Environ()
+	return syscall.Exec(bin, []string{makebin, "test", fmt.Sprintf("OUTPUT=%s", os.Args[2])}, env)
 }
