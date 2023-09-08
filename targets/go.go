@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	GoVersion     = "1.20.7"
+	GoVersion     = "1.20.8"
 	GoRef         = path.Join("mcr.microsoft.com/oss/go/microsoft/golang:" + GoVersion)
 	GoModCacheKey = "go-mod-cache"
 )
