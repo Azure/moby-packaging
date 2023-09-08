@@ -51,7 +51,6 @@ stages:
         - job: "Build_${{ replace(spec.package, '-', '_') }}_${{ spec.distro }}_${{ replace(spec.arch, '/', '') }}_${{ replace(spec.tag, '.', '_') }}"
           variables:
             bundle.dir: "$(Pipeline.Workspace)/bundles"
-            spec.file: "$(bundle.dir)/${{ spec.distro }}/$(pkg.os)_${{ replace(spec.arch, '/', '') }}/${{ parameters.package_name }}-${{ spec.distro }}-${{ replace(spec.arch, '/', '') }}-spec.json"
             ${{ if contains(spec.arch, 'arm') }}:
               build.pool: staging-pool-arm64-mariner-2
             ${{ else }}:
@@ -66,7 +65,7 @@ stages:
                   os=windows
                 fi
 
-                echo "##vso[task.setvariable variable=pkg.os;isoutput=true]$os"
+                echo "##vso[task.setvariable variable=pkg.os]$os"
               name: determineOS
               displayName: Determine OS
               env:
@@ -86,6 +85,8 @@ stages:
                 echo "##vso[task.setvariable variable=spec.file;isoutput=true]$SPEC_FILE"
               name: buildPackage
               displayName: Build package
+              env: 
+                SPEC_FILE: "$(bundle.dir)/${{ spec.distro }}/$(pkg.os)_${{ replace(spec.arch, '/', '') }}/${{ spec.package }}-${{ spec.distro }}-${{ replace(spec.arch, '/', '') }}-spec.json"
             - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
               displayName: Generate SBOM
               inputs:
