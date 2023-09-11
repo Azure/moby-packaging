@@ -207,8 +207,8 @@ stages:
               linux_dir="${SIGNED_DIR}/linux"
 
               mkdir -p "$win_dir" "$linux_dir"
-              find "$SIGNED_DIR" -maxdepth 1 -type f -name "*.zip" -exec mv {} "$win_dir" \;
-              find "$SIGNED_DIR" -maxdepth 1 -type f -not -name "*.zip" -exec mv {} "$linux_dir" \;
+              find "$SIGNED_DIR" -type f -name "*.zip" -exec mv {} "$win_dir" \;
+              find "$SIGNED_DIR" -type f -not -name "*.zip" -exec mv {} "$linux_dir" \;
             displayName: Separate windows and linux artifacts
             env:
               SIGNED_DIR: "$(Pipeline.Workspace)/signed"
