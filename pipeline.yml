@@ -119,7 +119,7 @@ stages:
           pool: $(build.pool)
           variables:
             bundle.dir: "$(Pipeline.Workspace)/bundles"
-            artifact.pattern: "**/${{ spec.distro }}/linux_${{ replace(spec.arch, '/', '') }}/*@(-spec.json|.deb|.rpm|.zip)"
+            artifact.pattern: "**/${{ spec.distro }}/linux_${{ replace(spec.arch, '/', '') }}/*@(-spec.json|.deb|.rpm)"
             spec.file: "$[ stageDependencies.Build.Build_\
                           ${{ replace(spec.package, '-', '_') }}_\
                           ${{ spec.distro }}_\
