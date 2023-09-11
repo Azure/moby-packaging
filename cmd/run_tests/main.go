@@ -75,7 +75,7 @@ func do() error {
 		return fmt.Errorf("unrecognized distro: %s", pkgOs)
 	}
 
-	pkgVer, ok := versionMap[s.Distro]
+	pv, ok := versionMap[s.Distro]
 	if !ok {
 		return fmt.Errorf("unrecognized distro: %s", pkgOs)
 	}
@@ -94,27 +94,18 @@ export TEST_%[3]s_PACKAGE_VERSION=%[5]s-%[6]s.%[7]s
 		/* 4 */ s.Commit,
 		/* 5 */ s.Tag,
 		/* 6 */ s.Revision,
-		/* 7 */ pkgVer,
+		/* 7 */ pv,
 	)
 
 	tagRevision := fmt.Sprintf("%s-%s", s.Tag, s.Revision)
-
-	os.Setenv("DISTRO", s.Distro)
-	os.Setenv("TARGETARCH", s.Arch)
-	os.Setenv("INCLUDE_TESTING", "0")
-	os.Setenv(fmt.Sprintf("TEST_%s_COMMIT", transformed), s.Commit)
-	os.Setenv(fmt.Sprintf("TEST_%s_VERSION", transformed), tagRevision)
-	os.Setenv(fmt.Sprintf("TEST_%s_PACKAGE_VERSION", transformed), fmt.Sprintf("%s.%s", tagRevision, pkgVer))
+	pkgVer := fmt.Sprintf("%s.%s", tagRevision, pv)
 
 	if pkgOs == debian || pkgOs == ubuntu {
-		os.Setenv(
-			fmt.Sprintf("TEST_%s_PACKAGE_VERSION", transformed),
-			fmt.Sprintf("%[1]s-%[2]s%[3]su%[4]s",
-				/* 1 */ s.Tag,
-				/* 2 */ pkgOs,
-				/* 3 */ pkgVer,
-				/* 4 */ s.Revision,
-			),
+		pkgVer = fmt.Sprintf("%[1]s-%[2]s%[3]su%[4]s",
+			/* 1 */ s.Tag,
+			/* 2 */ pkgOs,
+			/* 3 */ pv,
+			/* 4 */ s.Revision,
 		)
 	}
 
@@ -124,5 +115,12 @@ export TEST_%[3]s_PACKAGE_VERSION=%[5]s-%[6]s.%[7]s
 	}
 
 	env := os.Environ()
+	env = append(env, fmt.Sprintf("DISTRO=%s", s.Distro))
+	env = append(env, fmt.Sprintf("TARGETARCH=%s", s.Arch))
+	env = append(env, "INCLUDE_TESTING=0")
+	env = append(env, fmt.Sprintf("TEST_%s_COMMIT=%s", transformed, s.Commit))
+	env = append(env, fmt.Sprintf("TEST_%s_VERSION=%s", transformed, tagRevision))
+	env = append(env, fmt.Sprintf("TEST_%s_PACKAGE_VERSION=%s", transformed, pkgVer))
+
 	return syscall.Exec(bin, []string{makebin, "test", fmt.Sprintf("OUTPUT=%s", os.Args[2])}, env)
 }
