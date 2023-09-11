@@ -121,12 +121,12 @@ stages:
                   ${{ spec.distro }}_\
                   ${{ replace(spec.arch, '/', '') }}_\
                   ${{ replace(spec.tag, '.', '_') }}"
-          dependsOn:
-            - "Build_\
-                  ${{ replace(spec.package, '-', '_') }}_\
-                  ${{ spec.distro }}_\
-                  ${{ replace(spec.arch, '/', '') }}_\
-                  ${{ replace(spec.tag, '.', '_') }}"
+          # dependsOn:
+          #   - "Build_\
+          #         ${{ replace(spec.package, '-', '_') }}_\
+          #         ${{ spec.distro }}_\
+          #         ${{ replace(spec.arch, '/', '') }}_\
+          #         ${{ replace(spec.tag, '.', '_') }}"
           condition: ne('${{ spec.distro }}', 'windows')
           pool: $(build.pool)
           variables:
@@ -175,7 +175,7 @@ stages:
                 pathToPublish: "tests/.test"
                 artifactName: testresults
   - stage: SignAndPublish
-    dependsOn: ["PullMessages"]
+    dependsOn: ["TestAndSBOM"]
     jobs:
       - job: Sign_Packages
         pool: production-pool-amd64-mariner-2

@@ -1,0 +1,3 @@
+NOTE TO SELF:
+change ./cmd/pop upload script to just do the uploads based on what's present on the filesystem.
+Or loop through the specs using templating and upload them all.
