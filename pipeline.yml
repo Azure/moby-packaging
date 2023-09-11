@@ -131,17 +131,7 @@ stages:
           pool: $(build.pool)
           variables:
             bundle.dir: "$(Pipeline.Workspace)/bundles"
-            artifact.pattern: "$[ stageDependencies.Build.Build_\
-                                 ${{ replace(spec.package, '-', '_') }}_\
-                                 ${{ spec.distro }}_${{ replace(spec.arch, '/', '') }}_\
-                                 ${{ replace(spec.tag, '.', '_') }}.\
-                                 outputs['buildPackage.artifact.pattern'] ]"
-            spec.pattern: "$[ stageDependencies.Build.Build_\
-                             ${{ replace(spec.package, '-', '_') }}_\
-                             ${{ spec.distro }}_\
-                             ${{ replace(spec.arch, '/', '') }}_\
-                             ${{ replace(spec.tag, '.', '_') }}.\
-                             outputs['buildPackage.spec.pattern'] ]"
+            artifact.pattern: "**/*.@(spec|deb|rpm|zip)"
             spec.file: "$[ stageDependencies.Build.Build_\
                           ${{ replace(spec.package, '-', '_') }}_\
                           ${{ spec.distro }}_\
@@ -153,9 +143,6 @@ stages:
             ${{ else }}:
               build.pool: staging-pool-amd64-mariner-2
           steps:
-            - download: current
-              artifact: bundles
-              patterns: "$(spec.pattern)"
             - download: current
               artifact: bundles
               patterns: "$(artifact.pattern)"
