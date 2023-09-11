@@ -88,18 +88,6 @@ stages:
                 go run . --build-spec="$SPEC_FILE" --output="$BUNDLE_DIR"
 
                 echo "##vso[task.setvariable variable=spec.file;isoutput=true]$SPEC_FILE"
-                readarray -d '' artifacts < <(find "$BUNDLE_DIR" -type f -regextype posix-egrep -regex '.*\.(rpm|deb|zip)$' -print0)
-
-                if [ ${#artifacts[@]} -ne 1 ]; then
-                  printf "##vso[task.complete result=Failed;]%s\n" "somehow, no artifact was generated (or too many)"
-                  exit 1
-                fi
-
-                artifact_pattern="bundles/${artifacts[0]#"${BUNDLE_DIR}/"}"
-                echo "##vso[task.setvariable variable=artifact.pattern;isoutput=true]$artifact_pattern"
-
-                spec_pattern="bundles/${SPEC_FILE#"${BUNDLE_DIR}/"}"
-                echo "##vso[task.setvariable variable=spec.pattern;isoutput=true]$spec_pattern"
               name: buildPackage
               displayName: Build package
               env:
