@@ -137,21 +137,6 @@ stages:
             - script: |
                 set -exu
 
-                timeout_in_seconds=15
-                secs=0
-                t1="$(date +%s)"
-
-                while ! [ -f "$SPEC_FILE" ]; do
-                  sleep 1
-                  t2="$(date +%s)"
-                  secs=$((t2-t1))
-
-                  if [ "$secs" -gt "$timeout_in_seconds" ]; then
-                    printf '##vso[task.logissue type=error;]file "%s" never found, exiting' "$SPEC_FILE"
-                    exit 1
-                  fi
-                done
-
                 # runs the tests
                 go run ./cmd/run_tests "$SPEC_FILE" "$BUNDLE_DIR"
               displayName: Integration Test
