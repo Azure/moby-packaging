@@ -37,6 +37,7 @@ stages:
           - bash: |
               set -exu
 
+              install -D /dev/null "$(Pipeline.Workspace)/input/specs.json"
               specs_file="$(mktemp)"
 
               cat > "$specs_file" <<EOF
@@ -46,6 +47,10 @@ stages:
               cat "$specs_file"
               go run ./cmd/validate/ "$PACKAGE_NAME" < "$specs_file"
             displayName: Validate Input Data Format
+          - task: PublishBuildArtifacts@1
+            inputs:
+              pathToPublish: "$(Pipeline.Workspace)/input"
+              artifactName: input
   - stage: Build
     jobs:
       - ${{ each spec in parameters.specs }}:
@@ -139,7 +144,12 @@ stages:
 
                 # runs the tests
                 go run ./cmd/run_tests "$SPEC_FILE" "$BUNDLE_DIR"
+
+                mkdir -p "$OUT_DIR"
+                find tests/.test -type f -exec mv {} "$OUT_DIR" \;
               displayName: Integration Test
+              env:
+                OUT_DIR: "$(Pipeline.Workspace)/testresults/${{ parameters.package_name }}/${{ spec.distro }}/${{ replace(spec.arch, '/', '') }}"
             - task: PublishBuildArtifacts@1
               inputs:
                 pathToPublish: "$(Pipeline.Workspace)/bundles"
@@ -147,7 +157,7 @@ stages:
             - task: PublishBuildArtifacts@1
               condition: always()
               inputs:
-                pathToPublish: "tests/.test"
+                pathToPublish: "$(Pipeline.Workspace)/testresults"
                 artifactName: testresults
   - stage: SignAndPublish
     dependsOn: ["Test"]
@@ -186,9 +196,11 @@ stages:
 
               win_dir="${SIGNED_DIR}/windows"
               linux_dir="${SIGNED_DIR}/linux"
+              complete_dir="${SIGNED_DIR}/complete"
 
               rm -rf "${SIGNED_DIR}/extracted"
-              find "$SIGNED_DIR" -type f -exec mv {} "$SIGNED_DIR" \;
+              find "$win_dir" -type f -exec mv {} "$complete_dir" \;
+              find "$linux_dir" -type f -exec mv {} "$complete_dir" \;
               rm -rf "$win_dir" "$linux_dir"
             displayName: Combine windows and linux artifacts
             env:
