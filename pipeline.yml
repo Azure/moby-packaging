@@ -138,7 +138,7 @@ stages:
           pool: $(build.pool)
           variables:
             bundle.dir: "$(Pipeline.Workspace)/bundles"
-            artifact.pattern: "**/${{ spec.distro }}/linux_${{ replace(spec.arch, '/', '') }}/*@(-spec.json|.deb|.rpm)"
+            artifact.pattern: "**/${{ spec.distro }}/linux_${{ replace(spec.arch, '/', '_') }}/*@(-spec.json|.deb|.rpm)"
             ${{ if contains(spec.arch, 'arm') }}:
               build.pool: staging-pool-arm64-mariner-2
             ${{ else }}:
