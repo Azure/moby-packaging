@@ -69,8 +69,8 @@ func run() error {
 	var messagesFile string
 
 	fs := flag.NewFlagSet("", flag.ExitOnError)
-	fs.StringVar(&upArgs.signedDir, "signed-dir", "", "directory containing files to upload")
-	fs.StringVar(&messagesFile, "messages-file", "", "file containing queue messages to process")
+	fs.StringVar(&upArgs.signedDir, "signed-dir", "", "directory containing signed files to upload")
+	fs.StringVar(&messagesFile, "specs-file", "", "file containing build specs of files to upload")
 	fs.Parse(os.Args[2:])
 
 	upArgs.specsFile = messagesFile
