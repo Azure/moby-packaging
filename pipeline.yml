@@ -83,20 +83,27 @@ stages:
             - bash: |
                 set -exu
 
-                install -D /dev/null "$SPEC_FILE"
+                mkdir -p "$SPEC_DIR"
 
-                cat > "$SPEC_FILE" <<EOF
+                filename="$(go run ./cmd/hash --project="$NAME", --distro="$DISTRO" --arch="$ARCH")"
+                spec_file="${SPEC_DIR}/${filename}"
+                install -D /dev/null "$spec_file"
+
+                cat > "$spec_file" <<EOF
                 ${{ convertToJson(spec) }}
                 EOF
 
-                cat "$SPEC_FILE"
-                go run . --build-spec="$SPEC_FILE" --output="$BUNDLE_DIR"
+                cat "$spec_file"
+                go run . --build-spec="$spec_file" --output="$BUNDLE_DIR"
 
-                echo "##vso[task.setvariable variable=spec.file;isoutput=true]$SPEC_FILE"
+                echo "##vso[task.setvariable variable=spec.file;isoutput=true]$spec_file"
               name: buildPackage
               displayName: Build package
               env:
-                SPEC_FILE: "$(bundle.dir)/${{ spec.distro }}/$(pkg.os)_${{ replace(spec.arch, '/', '') }}/${{ spec.package }}-${{ spec.distro }}-${{ replace(spec.arch, '/', '') }}-spec.json"
+                SPEC_DIR: "$(Pipeline.Workspace)/specs"
+                NAME: "${{ spec.package }}"
+                DISTRO: "${{ spec.distro }}"
+                ARCH: "${{ spec.arch }}"
             - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
               displayName: Generate SBOM
               inputs:
@@ -114,23 +121,11 @@ stages:
                   ${{ spec.distro }}_\
                   ${{ replace(spec.arch, '/', '') }}_\
                   ${{ replace(spec.tag, '.', '_') }}"
-          # dependsOn:
-          #   - "Build_\
-          #         ${{ replace(spec.package, '-', '_') }}_\
-          #         ${{ spec.distro }}_\
-          #         ${{ replace(spec.arch, '/', '') }}_\
-          #         ${{ replace(spec.tag, '.', '_') }}"
           condition: ne('${{ spec.distro }}', 'windows')
           pool: $(build.pool)
           variables:
             bundle.dir: "$(Pipeline.Workspace)/bundles"
             artifact.pattern: "**/${{ spec.distro }}/linux_${{ replace(spec.arch, '/', '') }}/*@(-spec.json|.deb|.rpm)"
-            spec.file: "$[ stageDependencies.Build.Build_\
-                          ${{ replace(spec.package, '-', '_') }}_\
-                          ${{ spec.distro }}_\
-                          ${{ replace(spec.arch, '/', '') }}_\
-                          ${{ replace(spec.tag, '.', '_') }}\
-                          .outputs['buildPackage.spec.file'] ]"
             ${{ if contains(spec.arch, 'arm') }}:
               build.pool: staging-pool-arm64-mariner-2
             ${{ else }}:
@@ -142,13 +137,20 @@ stages:
             - script: |
                 set -exu
 
+                filename="$(go run ./cmd/hash --project="$NAME", --distro="$DISTRO" --arch="$ARCH")"
+                spec_file="${SPEC_DIR}/${filename}"
+
                 # runs the tests
-                go run ./cmd/run_tests "$SPEC_FILE" "$BUNDLE_DIR"
+                go run ./cmd/run_tests --instructions-file="$filename" "$BUNDLE_DIR"
 
                 mkdir -p "$OUT_DIR"
-                find tests/.test -type f -exec mv {} "$OUT_DIR" \;
+                find tests/.test -type f -exec cp {} "$OUT_DIR" \;
               displayName: Integration Test
               env:
+                SPEC_DIR: "$(Pipeline.Workspace)/specs"
+                NAME: "${{ spec.package }}"
+                DISTRO: "${{ spec.distro }}"
+                ARCH: "${{ spec.arch }}"
                 OUT_DIR: "$(Pipeline.Workspace)/testresults/${{ parameters.package_name }}/${{ spec.distro }}/${{ replace(spec.arch, '/', '') }}"
             - task: PublishBuildArtifacts@1
               inputs:

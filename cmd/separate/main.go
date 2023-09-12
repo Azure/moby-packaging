@@ -1,21 +1,19 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
+
+	"github.com/Azure/moby-packaging/pkg/archive"
 )
 
 var (
 	r = regexp.MustCompile(`.*\.(zip|rpm|deb)`)
 )
-
-type Mapping struct {
-	Src string `json:"src"`
-	Dst string `json:"dst"`
-}
 
 func main() {
 	args := os.Args[1:]
@@ -31,40 +29,19 @@ func main() {
 }
 
 func do(args []string) error {
-	m := []Mapping{}
-	dstDir, err := filepath.Abs(args[1])
-	if err != nil {
-		return err
-	}
+    specs := []archive.Spec{}
+    b, err := os.ReadFile(args[0])
+    if err != nil {
+        return err
+    }
 
-	if err := filepath.WalkDir(args[0], func(path string, d fs.DirEntry, err error) error {
-		if d.IsDir() {
-			return nil
-		}
+    if err := json.Unmarshal(b, &specs); err != nil {
+        return err
+    }
 
-		if !r.MatchString(path) {
-			return nil
-		}
+    for _, spec := range specs {
+        path := 
+    }
 
-		// Move the file, recording source and destination
-		src, err := filepath.Abs(path)
-		if err != nil {
-			return err
-		}
-
-		base := filepath.Base(src)
-		dst := filepath.Join(dstDir, base)
-
-		mapping := Mapping{
-			Src: src,
-			Dst: dst,
-		}
-
-		m = append(m, mapping)
-
-		return nil
-	}); err != nil {
-		return err
-	}
-	return nil
+    return nil
 }
