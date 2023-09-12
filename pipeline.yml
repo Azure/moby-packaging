@@ -141,7 +141,6 @@ stages:
               patterns: "$(artifact.pattern)"
             - download: current
               artifact: specs
-              patterns: "$(artifact.pattern)"
             - script: |
                 set -exu
 
