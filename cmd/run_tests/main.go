@@ -128,10 +128,6 @@ TEST_%[3]s_PACKAGE_VERSION=%[5]s-%[6]s.%[7]s
 		return err
 	}
 
-	if err := cmd.Wait(); err != nil {
-		return err
-	}
-
 	// h, err := pi.Hash()
 	// if err != nil {
 	// 	return err
