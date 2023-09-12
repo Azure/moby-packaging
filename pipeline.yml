@@ -37,16 +37,17 @@ stages:
           - bash: |
               set -exu
 
-              install -D /dev/null "$(Pipeline.Workspace)/input/specs.json"
-              specs_file="$(mktemp)"
+              install -D /dev/null "$SPECS_FILE"
 
-              cat > "$specs_file" <<EOF
+              cat > "$SPECS_FILE" <<EOF
               ${{ convertToJson(parameters.specs) }}
               EOF
 
-              cat "$specs_file"
-              go run ./cmd/validate/ "$PACKAGE_NAME" < "$specs_file"
+              cat "$SPECS_FILE"
+              go run ./cmd/validate/ "$PACKAGE_NAME" < "$SPECS_FILE"
             displayName: Validate Input Data Format
+            env:
+              SPECS_FILE: "$(Pipeline.Workspace)/input/specs.json"
           - task: PublishBuildArtifacts@1
             inputs:
               pathToPublish: "$(Pipeline.Workspace)/input"
