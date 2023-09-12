@@ -23,6 +23,7 @@ require (
 	github.com/iancoleman/strcase v0.3.0 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
+	github.com/mitchellh/hashstructure v1.1.0 // indirect
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8 // indirect
 	github.com/vektah/gqlparser/v2 v2.5.6 // indirect
 	golang.org/x/crypto v0.12.0 // indirect

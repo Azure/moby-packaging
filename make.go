@@ -64,34 +64,34 @@ func main() {
 		os.Exit(4)
 	}
 
-	artifact, err := findArtifact(artifactDir)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(5)
-	}
+	// artifact, err := findArtifact(artifactDir)
+	// if err != nil {
+	// 	fmt.Fprintln(os.Stderr, err)
+	// 	os.Exit(5)
+	// }
 
-	absPath, err := filepath.Abs(filepath.Dir(artifact))
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(6)
-	}
+	// absPath, err := filepath.Abs(filepath.Dir(artifact))
+	// if err != nil {
+	// 	fmt.Fprintln(os.Stderr, err)
+	// 	os.Exit(6)
+	// }
 
-	pi := archive.PipelineInstructions{
-		Spec:                *spec,
-		SpecPath:            *buildSpec,
-		Basename:            filepath.Base(artifact),
-		OriginalArtifactDir: filepath.Dir(absPath),
-		// the following information will be filled in later as artifacts
-		// propagate through the pipeline.
-		SignedArtifactDir: "",
-		TestResultsPath:   "",
-		SignedSha256Sum:   "",
-	}
+	// pi := archive.PipelineInstructions{
+	// 	Spec:                *spec,
+	// 	SpecPath:            *buildSpec,
+	// 	Basename:            filepath.Base(artifact),
+	// 	OriginalArtifactDir: filepath.Dir(absPath),
+	// 	// the following information will be filled in later as artifacts
+	// 	// propagate through the pipeline.
+	// 	SignedArtifactDir: "",
+	// 	TestResultsPath:   "",
+	// 	SignedSha256Sum:   "",
+	// }
 
-	if err := writeInstructions(&pi, *outDir); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(7)
-	}
+	// if err := writeInstructions(&pi, *outDir); err != nil {
+	// 	fmt.Fprintln(os.Stderr, err)
+	// 	os.Exit(7)
+	// }
 }
 
 func writeInstructions(pi *archive.PipelineInstructions, outDir string) error {

@@ -8,7 +8,7 @@ steps:
 - script: |
     set -o xtrace
 
-    readarray -d '' artifacts < <(find "${ARTIFACTS_DIR}" -maxdepth 1 -type f -regextype posix-egrep -regex '.*\.zip$' -print0)
+    readarray -d '' artifacts < <(find "${ARTIFACTS_DIR}" -type f -regextype posix-egrep -regex '.*\.zip$' -print0)
 
     mkdir "${ARTIFACTS_DIR}/extracted"
     for art in "${artifacts[@]}"; do
@@ -21,7 +21,7 @@ steps:
   env:
     ARTIFACTS_DIR: ${{ parameters.folderPath }}
 - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
-  displayName: "Sign ${{ parameters.folderPath }}/${{ parameters.pattern }}"
+  displayName: "Sign Artifacts"
   inputs:
     ConnectedServiceName: "ESRP Signing service"
     FolderPath: ${{ parameters.folderPath }}

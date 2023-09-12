@@ -112,6 +112,10 @@ stages:
               inputs:
                 pathToPublish: "$(Pipeline.Workspace)/bundles"
                 artifactName: bundles
+            - task: PublishBuildArtifacts@1
+              inputs:
+                pathToPublish: "$(Pipeline.Workspace)/specs"
+                artifactName: specs
   - stage: Test
     dependsOn: ["Build"]
     jobs:
@@ -141,7 +145,7 @@ stages:
                 spec_file="${SPEC_DIR}/${filename}"
 
                 # runs the tests
-                go run ./cmd/run_tests --instructions-file="$filename" "$BUNDLE_DIR"
+                go run ./cmd/run_tests --spec-file="$filename" --bundle-dir="$BUNDLE_DIR"
 
                 mkdir -p "$OUT_DIR"
                 find tests/.test -type f -exec cp {} "$OUT_DIR" \;
@@ -170,19 +174,9 @@ stages:
           - download: current
             artifact: bundles
           - bash: |
-              cp -r $(Pipeline.Workspace)/bundles $(Pipeline.Workspace)/signed
-              tree $(Pipeline.Workspace)/signed
-            displayName: Copy downloaded files to sign
-          - bash: |
               set -exu
-
-              win_dir="${SIGNED_DIR}/windows"
-              linux_dir="${SIGNED_DIR}/linux"
-
-              mkdir -p "$win_dir" "$linux_dir"
-              find "$SIGNED_DIR" -type f -name "*.zip" -exec mv {} "$win_dir" \;
-              find "$SIGNED_DIR" -type f --regextype posix-egrep -regex ".*\.(deb|rpm)$" -exec mv {} "$linux_dir" \;
-            displayName: Separate windows and linux artifacts
+              cp -r $(Pipeline.Workspace)/bundles "$SIGNED_DIR"
+            displayName: Copy files to sign
             env:
               SIGNED_DIR: "$(Pipeline.Workspace)/signed"
           - task: UseDotNet@2
@@ -193,20 +187,6 @@ stages:
           - template: templates/sign.steps.yml
             parameters:
               rootDir: "$(Pipeline.Workspace)/signed"
-          - bash: |
-              set -exu
-
-              win_dir="${SIGNED_DIR}/windows"
-              linux_dir="${SIGNED_DIR}/linux"
-              complete_dir="${SIGNED_DIR}/complete"
-
-              rm -rf "${SIGNED_DIR}/extracted"
-              find "$win_dir" -type f -exec mv {} "$complete_dir" \;
-              find "$linux_dir" -type f -exec mv {} "$complete_dir" \;
-              rm -rf "$win_dir" "$linux_dir"
-            displayName: Combine windows and linux artifacts
-            env:
-              SIGNED_DIR: "$(Pipeline.Workspace)/signed"
           - task: PublishBuildArtifacts@1
             inputs:
               pathToPublish: "$(Pipeline.Workspace)/signed"

@@ -4,15 +4,10 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/Azure/moby-packaging/pkg/archive"
+	"github.com/mitchellh/hashstructure"
 )
-
-func hash(s *archive.Spec) (string, error) {
-	h := strings.ReplaceAll(fmt.Sprintf("%s%s%s%s%s", s.Pkg, s.Distro, s.Arch, s.Tag, s.Revision), "/", "")
-	return h, nil
-}
 
 func main() {
 	s := archive.Spec{}
@@ -23,11 +18,11 @@ func main() {
 	flag.StringVar(&s.Revision, "revision", "", "revision")
 	flag.Parse()
 
-	h, err := hash(&s)
+	n, err := hashstructure.Hash(&s, nil)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 
-	fmt.Printf("%s", h)
+	fmt.Printf("%x", n)
 }

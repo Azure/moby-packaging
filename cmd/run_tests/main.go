@@ -44,13 +44,13 @@ var (
 )
 
 type Args struct {
-	InstructionsPath string
-	BundleDirPath    string
+	SpecPath      string
+	BundleDirPath string
 }
 
 func main() {
 	args := Args{}
-	flag.StringVar(&args.InstructionsPath, "instructions-file", "", "path of the pipeline instructions file to be used")
+	flag.StringVar(&args.SpecPath, "spec-file", "", "path of the pipeline instructions file to be used")
 	flag.StringVar(&args.BundleDirPath, "bundle-dir", "", "path of the bundle dir to test")
 	flag.Parse()
 
@@ -61,26 +61,26 @@ func main() {
 }
 
 func runTest(args Args) error {
-	b, err := os.ReadFile(args.InstructionsPath)
+	b, err := os.ReadFile(args.SpecPath)
 	if err != nil {
 		return err
 	}
 
-	var pi archive.PipelineInstructions
-	if err := json.Unmarshal(b, &pi); err != nil {
+	var s archive.Spec
+	if err := json.Unmarshal(b, &s); err != nil {
 		return err
 	}
 
-	transformed := strings.TrimPrefix(pi.Pkg, "moby-")
+	transformed := strings.TrimPrefix(s.Pkg, "moby-")
 	transformed = strings.ToUpper(transformed)
 	transformed = strings.ReplaceAll(transformed, "-", "_")
 
-	pkgOs, ok := osMap[pi.Distro]
+	pkgOs, ok := osMap[s.Distro]
 	if !ok {
 		return fmt.Errorf("unrecognized distro: %s", pkgOs)
 	}
 
-	pv, ok := versionMap[pi.Distro]
+	pv, ok := versionMap[s.Distro]
 	if !ok {
 		return fmt.Errorf("unrecognized distro: %s", pkgOs)
 	}
@@ -93,32 +93,32 @@ TEST_%[3]s_COMMIT=%[4]s
 TEST_%[3]s_VERSION=%[5]s-%[6]s
 TEST_%[3]s_PACKAGE_VERSION=%[5]s-%[6]s.%[7]s
 `,
-		/* 1 */ pi.Distro,
-		/* 2 */ pi.Arch,
+		/* 1 */ s.Distro,
+		/* 2 */ s.Arch,
 		/* 3 */ transformed,
-		/* 4 */ pi.Commit,
-		/* 5 */ pi.Tag,
-		/* 6 */ pi.Revision,
+		/* 4 */ s.Commit,
+		/* 5 */ s.Tag,
+		/* 6 */ s.Revision,
 		/* 7 */ pv,
 	)
 
-	tagRevision := fmt.Sprintf("%s-%s", pi.Tag, pi.Revision)
+	tagRevision := fmt.Sprintf("%s-%s", s.Tag, s.Revision)
 	pkgVer := fmt.Sprintf("%s.%s", tagRevision, pv)
 
 	if pkgOs == debian || pkgOs == ubuntu {
 		pkgVer = fmt.Sprintf("%[1]s-%[2]s%[3]su%[4]s",
-			/* 1 */ pi.Tag,
+			/* 1 */ s.Tag,
 			/* 2 */ pkgOs,
 			/* 3 */ pv,
-			/* 4 */ pi.Revision,
+			/* 4 */ s.Revision,
 		)
 	}
 
 	cmd := exec.Command("/usr/bin/make", "test", fmt.Sprintf("OUTPUT=%s", args.BundleDirPath))
-	cmd.Env = append(cmd.Env, fmt.Sprintf("DISTRO=%s", pi.Distro))
-	cmd.Env = append(cmd.Env, fmt.Sprintf("TARGETARCH=%s", pi.Arch))
+	cmd.Env = append(cmd.Env, fmt.Sprintf("DISTRO=%s", s.Distro))
+	cmd.Env = append(cmd.Env, fmt.Sprintf("TARGETARCH=%s", s.Arch))
 	cmd.Env = append(cmd.Env, "INCLUDE_TESTING=0")
-	cmd.Env = append(cmd.Env, fmt.Sprintf("TEST_%s_COMMIT=%s", transformed, pi.Commit))
+	cmd.Env = append(cmd.Env, fmt.Sprintf("TEST_%s_COMMIT=%s", transformed, s.Commit))
 	cmd.Env = append(cmd.Env, fmt.Sprintf("TEST_%s_VERSION=%s", transformed, tagRevision))
 	cmd.Env = append(cmd.Env, fmt.Sprintf("TEST_%s_PACKAGE_VERSION=%s", transformed, pkgVer))
 	cmd.Stdout = os.Stdout
@@ -132,14 +132,10 @@ TEST_%[3]s_PACKAGE_VERSION=%[5]s-%[6]s.%[7]s
 		return err
 	}
 
-	h, err := pi.Hash(archive.HashOptions{
-		Pkg:    true,
-		Distro: true,
-		Arch:   true,
-	})
-	if err != nil {
-		return err
-	}
+	// h, err := pi.Hash()
+	// if err != nil {
+	// 	return err
+	// }
 
 	return nil
 }
