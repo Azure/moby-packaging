@@ -138,6 +138,9 @@ stages:
             - download: current
               artifact: bundles
               patterns: "$(artifact.pattern)"
+            - download: current
+              artifact: specs
+              patterns: "$(artifact.pattern)"
             - script: |
                 set -exu
 
@@ -145,7 +148,7 @@ stages:
                 spec_file="${SPEC_DIR}/${filename}"
 
                 # runs the tests
-                go run ./cmd/run_tests --spec-file="$filename" --bundle-dir="$BUNDLE_DIR"
+                go run ./cmd/run_tests --spec-file="$spec_file" --bundle-dir="$BUNDLE_DIR"
 
                 mkdir -p "$OUT_DIR"
                 find tests/.test -type f -exec cp {} "$OUT_DIR" \;
