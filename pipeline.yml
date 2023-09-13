@@ -212,7 +212,7 @@ stages:
               specs_file="${INPUTDIR}/${specs_basename}"
 
               # uploads signed files to prod bucket, removes unsigned / failed uploads, writes output to stdout
-              go run ./cmd/pop upload \
+              go run ./cmd/upload \
                 --signed-dir="$SIGNED_DIR" \
                 --specs-file="$specs_file"
             env:

@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"crypto/sha256"
-	"encoding/base64"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -12,7 +11,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/moby-packaging/pkg/archive"
-	"github.com/Azure/moby-packaging/pkg/queue"
 )
 
 const (
@@ -22,70 +20,24 @@ const (
 	sha256Key = "sha256"
 )
 
-func main() {
-	if err := run(); err != nil {
-		fmt.Fprintf(os.Stderr, "##vso[task.logissue type=error;]%s\n", err)
-		os.Exit(1)
-	}
-}
-
-type Envelope struct {
-	Content         string `json:"content"`
-	DequeueCount    int    `json:"dequeueCount"`
-	ExpirationTime  string `json:"expirationTime"`
-	ID              string `json:"id"`
-	InsertionTime   string `json:"insertionTime"`
-	PopReceipt      string `json:"popReceipt"`
-	TimeNextVisible string `json:"timeNextVisible"`
-}
-
-func (e *Envelope) GetMessageContent() (queue.Message, error) {
-	b, err := base64.StdEncoding.DecodeString(e.Content)
-	if err != nil {
-		return queue.Message{}, err
-	}
-
-	var msg queue.Message
-	if err := json.Unmarshal(b, &msg); err != nil {
-		return queue.Message{}, err
-	}
-
-	return msg, nil
-}
-
 type uploadArgs struct {
 	signedDir string
 	specsFile string
 }
 
-func run() error {
-	if len(os.Args) < 2 {
-		return fmt.Errorf("available arguments are get-messages, download, upload, and delete")
-	}
-
+func main() {
 	upArgs := uploadArgs{}
-	var messagesFile string
+	flag.StringVar(&upArgs.signedDir, "signed-dir", "", "directory containing signed files to upload")
+	flag.StringVar(&upArgs.specsFile, "specs-file", "", "file containing build specs of files to upload")
+	flag.Parse()
 
-	fs := flag.NewFlagSet("", flag.ExitOnError)
-	fs.StringVar(&upArgs.signedDir, "signed-dir", "", "directory containing signed files to upload")
-	fs.StringVar(&messagesFile, "specs-file", "", "file containing build specs of files to upload")
-	fs.Parse(os.Args[2:])
-
-	upArgs.specsFile = messagesFile
-
-	switch os.Args[1] {
-	case "upload":
-		if err := runUpload(upArgs); err != nil {
-			return err
-		}
-	default:
-		return fmt.Errorf("available arguments are download, upload, and delete")
+	if err := do(upArgs); err != nil {
+		fmt.Fprintf(os.Stderr, "##vso[task.logissue type=error;]%s\n", err)
+		os.Exit(1)
 	}
-
-	return nil
 }
 
-func runUpload(args uploadArgs) error {
+func do(args uploadArgs) error {
 	if args.specsFile == "" {
 		return fmt.Errorf("you must provide a spec file")
 	}
@@ -161,14 +113,14 @@ func runUpload(args uploadArgs) error {
 		}
 	}
 
+	for _, f := range failed {
+		fmt.Fprintf(os.Stderr, "##vso[task.logissue type=error;]%s %s-%s for %s/%s failed to upload\n", f.Pkg, f.Tag, f.Revision, f.Distro, f.Arch)
+	}
+
 	// After completion, print the downloaded array to stdout as JSON
 	s, err := json.MarshalIndent(&successful, "", "    ")
 	if err != nil {
 		return err
-	}
-
-	for _, f := range failed {
-		fmt.Fprintf(os.Stderr, "##vso[task.logissue type=error;]%s %s-%s for %s/%s failed to upload\n", f.Pkg, f.Tag, f.Revision, f.Distro, f.Arch)
 	}
 
 	fmt.Println(string(s))
