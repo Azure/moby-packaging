@@ -43,19 +43,23 @@ stages:
         timeoutInMinutes: 5
         steps:
           - bash: |
-              set -exu
+              set -ex
 
-              install -D /dev/null "$SPECS_FILE"
+              specs_basename="$(go run ./cmd/hash --project="$PACKAGE_NAME" --tag="$TAG" --revision="$REVISION")"
+              specs_file="${INPUTDIR}/${specs_basename}"
+              install -D /dev/null "$specs_file"
 
-              cat > "$SPECS_FILE" <<EOF
+              cat > "$specs_file" <<EOF
               ${{ convertToJson(parameters.specs) }}
               EOF
 
-              cat "$SPECS_FILE"
-              go run ./cmd/validate/ "$PACKAGE_NAME" < "$SPECS_FILE"
+              cat "$specs_file"
+              go run ./cmd/validate/ "$PACKAGE_NAME" < "$specs_file"
             displayName: Validate Input Data Format
             env:
-              SPECS_FILE: "$(Pipeline.Workspace)/input/specs.json"
+              TAG: "${{ parameters.tag }}"
+              INPUTDIR: "$(Pipeline.Workspace)/input"
+              REVISION: "${{ parameters.revision }}"
           - task: PublishBuildArtifacts@1
             inputs:
               pathToPublish: "$(Pipeline.Workspace)/input"
@@ -94,7 +98,7 @@ stages:
 
                 mkdir -p "$SPEC_DIR"
 
-                filename="$(go run ./cmd/hash --project="$NAME", --distro="$DISTRO" --arch="$ARCH")"
+                filename="$(echo '${{ convertToJson(spec) }}' | go run ./cmd/path basename --spec-file=/dev/stdin)"
                 spec_file="${SPEC_DIR}/${filename}"
                 install -D /dev/null "$spec_file"
 
@@ -108,7 +112,6 @@ stages:
               displayName: Build package
               env:
                 SPEC_DIR: "$(Pipeline.Workspace)/specs"
-                NAME: "${{ spec.package }}"
                 DISTRO: "${{ spec.distro }}"
                 ARCH: "${{ spec.arch }}"
             - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
@@ -150,13 +153,13 @@ stages:
             - script: |
                 set -exu
 
-                filename="$(go run ./cmd/hash --project="$NAME", --distro="$DISTRO" --arch="$ARCH")"
+                filename="$(echo '${{ convertToJson(spec) }}' | go run ./cmd/path basename --spec-file=/dev/stdin)"
                 spec_file="${SPEC_DIR}/${filename}"
 
                 # runs the tests
                 go run ./cmd/run_tests --spec-file="$spec_file" --bundle-dir="$BUNDLE_DIR"
 
-                out_dir="${RESULTS_DIR}/${filename}"
+                out_dir="$(go run ./cmd/path dir --spec-file="$spec_file" --bundle-dir="$RESULTS_DIR")"
                 mkdir -p "$out_dir"
                 find tests/.test -type f -exec cp {} "$out_dir" \;
               displayName: Integration Test
@@ -212,13 +215,18 @@ stages:
           - bash: |
               set -euo pipefail
 
+              specs_basename="$(go run ./cmd/hash --project="$PACKAGE_NAME" --tag="$TAG" --revision="$REVISION")"
+              specs_file="${INPUT_DIR}/${specs_basename}"
+
               # uploads signed files to prod bucket, removes unsigned / failed uploads, writes output to stdout
               go run ./cmd/pop upload \
                 --signed-dir="$SIGNED_DIR" \
-                --specs-file="$SPECS_FILE"
+                --specs-file="$specs_file"
             env:
-              SPECS_FILE: "$(Pipeline.Workspace)/input/specs.json"
+              INPUT_DIR: "$(Pipeline.Workspace)/input"
               SIGNED_DIR: "$(Pipeline.Workspace)/signed"
+              TAG: "${{ parameters.tag }}"
+              REVISION: "${{ parameters.revision }}"
             displayName: Upload Signed Packages to Prod Storage
             name: uploadPackages
       - job: Update_Latest

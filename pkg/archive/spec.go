@@ -60,6 +60,23 @@ type Spec struct {
 	Revision string `json:"revision"`
 }
 
+func (spec *Spec) StoragePath() (string, error) {
+	pkg := spec.Pkg
+	pkgOS := spec.OS()
+	version := fmt.Sprintf("%s+azure", spec.Tag)
+	distro := spec.Distro
+	sanitizedArch := strings.ReplaceAll(spec.Arch, "/", "_")
+
+	base, err := spec.Basename()
+	if err != nil {
+		return "", err
+	}
+
+	storagePath := fmt.Sprintf("%s/%s/%s/%s_%s/%s", pkg, version, distro, pkgOS, sanitizedArch, base)
+
+	return storagePath, nil
+}
+
 func (s *Spec) Hash() (string, error) {
 	v := reflect.ValueOf(s)
 	w := v.Elem()
@@ -171,8 +188,4 @@ func (s *Spec) OS() string {
 	}
 
 	return "linux"
-}
-
-func (s *Spec) SanitizedArch() string {
-	return strings.ReplaceAll(s.Arch, "/", "_")
 }

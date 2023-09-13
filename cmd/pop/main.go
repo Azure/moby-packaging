@@ -8,8 +8,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"path/filepath"
-	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
@@ -112,6 +110,12 @@ func runUpload(args uploadArgs) error {
 		return err
 	}
 
+	serviceURL := fmt.Sprintf("https://%s.blob.core.windows.net", prodAccountName)
+	client, err := azblob.NewClient(serviceURL, cred, nil)
+	if err != nil {
+		return err
+	}
+
 	failed := make([]archive.Spec, 0, len(allSpecs))
 	successful := make([]archive.Spec, 0, len(allSpecs))
 	errs := make([]error, 0, len(allSpecs))
@@ -121,26 +125,18 @@ func runUpload(args uploadArgs) error {
 		errs = append(errs, e)
 	}
 
-	serviceURL := fmt.Sprintf("https://%s.blob.core.windows.net", prodAccountName)
-	client, err := azblob.NewClient(serviceURL, cred, nil)
-	if err != nil {
-		return err
-	}
-
 	for _, spec := range allSpecs {
-		pkgOS := spec.OS()
 		signedPkgPath, err := spec.FullPath(args.signedDir)
 		if err != nil {
 			fail(err, spec)
 			continue
 		}
 
-		pkg := spec.Pkg
-		version := fmt.Sprintf("%s+azure", spec.Tag)
-		distro := spec.Distro
-		sanitizedArch := strings.ReplaceAll(spec.Arch, "/", "_")
-		base := filepath.Base(signedPkgPath)
-		storagePath := fmt.Sprintf("%s/%s/%s/%s_%s/%s", pkg, version, distro, pkgOS, sanitizedArch, base)
+		storagePath, err := spec.StoragePath()
+		if err != nil {
+			fail(err, spec)
+			continue
+		}
 
 		b, err := os.ReadFile(signedPkgPath)
 		if err != nil {

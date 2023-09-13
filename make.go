@@ -8,7 +8,6 @@ import (
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"strings"
 
 	"dagger.io/dagger"
@@ -50,87 +49,10 @@ func main() {
 		os.Exit(3)
 	}
 
-	artifactDir := spec.Dir(*outDir)
-	if _, err := out.Export(ctx, artifactDir); err != nil {
+	if _, err := out.Export(ctx, spec.Dir(*outDir)); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(4)
 	}
-
-	// artifact, err := findArtifact(artifactDir)
-	// if err != nil {
-	// 	fmt.Fprintln(os.Stderr, err)
-	// 	os.Exit(5)
-	// }
-
-	// absPath, err := filepath.Abs(filepath.Dir(artifact))
-	// if err != nil {
-	// 	fmt.Fprintln(os.Stderr, err)
-	// 	os.Exit(6)
-	// }
-
-	// pi := archive.PipelineInstructions{
-	// 	Spec:                *spec,
-	// 	SpecPath:            *buildSpec,
-	// 	Basename:            filepath.Base(artifact),
-	// 	OriginalArtifactDir: filepath.Dir(absPath),
-	// 	// the following information will be filled in later as artifacts
-	// 	// propagate through the pipeline.
-	// 	SignedArtifactDir: "",
-	// 	TestResultsPath:   "",
-	// 	SignedSha256Sum:   "",
-	// }
-
-	// if err := writeInstructions(&pi, *outDir); err != nil {
-	// 	fmt.Fprintln(os.Stderr, err)
-	// 	os.Exit(7)
-	// }
-}
-
-func writeInstructions(pi *archive.PipelineInstructions, outDir string) error {
-	instructionDir := filepath.Join(outDir, "instructions")
-	if err := os.MkdirAll(instructionDir, 0o700); err != nil {
-		return err
-	}
-
-	base := fmt.Sprintf("%s-%s-%s.json", pi.Pkg, pi.Distro, pi.SanitizedArch())
-	b, err := json.Marshal(pi)
-	if err != nil {
-		return err
-	}
-
-	instructionPath := filepath.Join(instructionDir, base)
-	return os.WriteFile(instructionPath, b, 0o600)
-}
-
-func findArtifact(artifactDir string) (string, error) {
-	var err error
-	globs := []string{"*.deb", "*.rpm", "*.zip"}
-	matches := []string{}
-	for _, glob := range globs {
-		m, err := filepath.Glob(filepath.Join(artifactDir, glob))
-		if err != nil {
-			continue
-		}
-
-		matches = append(matches, m...)
-	}
-
-	artifact := ""
-	err = nil
-	switch len(matches) {
-	case 0:
-		err = fmt.Errorf("no output artifact found")
-	case 1:
-		artifact = matches[0]
-	default:
-		err = fmt.Errorf("multiple artifact files found, aborting")
-	}
-
-	if err != nil {
-		return "", err
-	}
-
-	return artifact, nil
 }
 
 func readBuildSpec(filename string) (*archive.Spec, error) {

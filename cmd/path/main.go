@@ -2,39 +2,36 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"os"
 
 	"github.com/Azure/moby-packaging/pkg/archive"
-	"github.com/pborman/getopt/v2"
 )
 
 type args struct {
 	bundleDir string
 	specFile  string
-	cmd       string
 }
 
-var (
-	a = args{}
-)
-
-func init() {
-	getopt.FlagLong(&a.bundleDir, "bundle-dir", 'b', "base directory of bundled files")
-	getopt.FlagLong(&a.specFile, "spec-file", 's', "spec file to calculate path")
-}
 func main() {
+	a := args{}
 
-	fmt.Println("args:", getopt.Args())
+	if len(os.Args) < 2 {
+		panic("first arg must be 'dir', 'full-path', or 'basename'")
+	}
 
-	if err := do("dir", a); err != nil {
+	fullPath := flag.NewFlagSet("path", flag.ExitOnError)
+	fullPath.StringVar(&a.bundleDir, "bundle-dir", "", "base directory of bundled files")
+	fullPath.StringVar(&a.specFile, "spec-file", "", "path of spec file")
+	fullPath.Parse(os.Args[2:])
+
+	if err := do(os.Args[1], a); err != nil {
 		panic(err)
 	}
 }
 
 func do(cmd string, a args) error {
-	fmt.Println("cmd:", cmd)
-	fmt.Println("spec file:", a.specFile)
 	b, err := os.ReadFile(a.specFile)
 	if err != nil {
 		return err
@@ -47,7 +44,7 @@ func do(cmd string, a args) error {
 
 	var p string
 	switch cmd {
-	case "", "dir":
+	case "dir":
 		p = s.Dir(a.bundleDir)
 	case "full-path":
 		var err error
@@ -61,6 +58,8 @@ func do(cmd string, a args) error {
 		if err != nil {
 			return err
 		}
+	default:
+		return fmt.Errorf("command not recognized")
 	}
 
 	fmt.Printf("%s", p)
