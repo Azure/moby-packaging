@@ -1,19 +1,25 @@
-name: INPUT_DIR
+parameters:
+  - name: str
+    displayName: INPUT_<str>
+    type: string
+    default: ''
+
+name: INPUT_${{ parameters.str }}
 
 variables:
   amd.pool: staging-pool-amd64-mariner-2
 
 stages:
-  - stage: INPUT_DIR
+  - stage: INPUT_${{ parameters.str }}
     jobs:
-      - job: INPUT_DIR
+      - job: INPUT_${{ parameters.str }}
         pool: $(amd.pool)
         timeoutInMinutes: 5
         steps:
           - bash: |
               set -exu
 
-              echo "$INPUT_DIR"
+              echo "$INPUT_${{ parameters.str }}"
             displayName: Validate Input Data Format
             env:
-              INPUT_DIR: "hello, world!"
+              INPUT_${{ parameters.str }}: "hello, world!"
