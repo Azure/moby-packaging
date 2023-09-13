@@ -129,7 +129,8 @@ func runUpload(args uploadArgs) error {
 
 	for _, spec := range allSpecs {
 		pkgOS := spec.OS()
-		osArchDir := fmt.Sprintf("%s_%s", pkgOS, spec.Arch)
+		sanitizedArch := strings.ReplaceAll(spec.Arch, "/", "_")
+		osArchDir := fmt.Sprintf("%s_%s", pkgOS, sanitizedArch)
 		signedPkgDir := filepath.Join(args.signedDir, spec.Distro, osArchDir)
 		signedPkgGlob := filepath.Join(signedPkgDir, "*")
 
@@ -140,6 +141,7 @@ func runUpload(args uploadArgs) error {
 		}
 
 		if len(files) != 1 {
+			err := fmt.Errorf("Zero or multiple files found matching glob: '%s'", signedPkgGlob)
 			fail(err, spec)
 			continue
 		}
@@ -149,7 +151,6 @@ func runUpload(args uploadArgs) error {
 		pkg := spec.Pkg
 		version := fmt.Sprintf("%s+azure", spec.Tag)
 		distro := spec.Distro
-		sanitizedArch := strings.ReplaceAll(spec.Arch, "/", "_")
 		storagePath := fmt.Sprintf("%s/%s/%s/%s_%s/%s", pkg, version, distro, pkgOS, sanitizedArch, base)
 
 		b, err := os.ReadFile(signedPkgPath)
