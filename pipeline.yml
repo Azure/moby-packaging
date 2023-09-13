@@ -43,11 +43,11 @@ stages:
         timeoutInMinutes: 5
         steps:
           - bash: |
-              set -ex
+              set -exu
 
               specs_basename="$(go run ./cmd/hash --project="$PACKAGE_NAME" --tag="$TAG" --revision="$REVISION")"
               specs_file="${INPUTDIR}/${specs_basename}"
-              install -D /dev/null "$specs_file"
+              mkdir -p "$(dirname "$specs_file")"
 
               cat > "$specs_file" <<EOF
               ${{ convertToJson(parameters.specs) }}
@@ -206,17 +206,17 @@ stages:
           - download: current
             artifact: input
           - bash: |
-              set -euo pipefail
+              set -exu
 
               specs_basename="$(go run ./cmd/hash --project="$PACKAGE_NAME" --tag="$TAG" --revision="$REVISION")"
-              specs_file="${INPUT_DIR}/${specs_basename}"
+              specs_file="${INPUTDIR}/${specs_basename}"
 
               # uploads signed files to prod bucket, removes unsigned / failed uploads, writes output to stdout
               go run ./cmd/pop upload \
                 --signed-dir="$SIGNED_DIR" \
                 --specs-file="$specs_file"
             env:
-              INPUT_DIR: "$(Pipeline.Workspace)/input"
+              INPUTDIR: "$(Pipeline.Workspace)/input"
               SIGNED_DIR: "$(Pipeline.Workspace)/signed"
               TAG: "${{ parameters.tag }}"
               REVISION: "${{ parameters.revision }}"
