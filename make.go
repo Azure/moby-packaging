@@ -50,15 +50,7 @@ func main() {
 		os.Exit(3)
 	}
 
-	targetOS := "linux"
-	if spec.Distro == "windows" {
-		targetOS = "windows"
-	}
-
-	sanitizedArch := strings.ReplaceAll(spec.Arch, "/", "_")
-	subDir := fmt.Sprintf("%s_%s", targetOS, sanitizedArch)
-
-	artifactDir := filepath.Join(*outDir, spec.Distro, subDir)
+	artifactDir := spec.Dir(*outDir)
 	if _, err := out.Export(ctx, artifactDir); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(4)

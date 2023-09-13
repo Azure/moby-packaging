@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"github.com/Azure/moby-packaging/pkg/archive"
-	"github.com/mitchellh/hashstructure"
 )
 
 func main() {
@@ -18,11 +17,11 @@ func main() {
 	flag.StringVar(&s.Revision, "revision", "", "revision")
 	flag.Parse()
 
-	n, err := hashstructure.Hash(&s, nil)
+	h, err := s.Hash()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 
-	fmt.Printf("%x", n)
+	fmt.Printf("%s", h)
 }

@@ -18,6 +18,19 @@ const (
 )
 
 var (
+	extensionMap = map[string]string{
+		"bookworm": "deb",
+		"bullseye": "deb",
+		"buster":   "deb",
+		"focal":    "deb",
+		"jammy":    "deb",
+		"rhel9":    "rpm",
+		"rhel8":    "rpm",
+		"centos7":  "rpm",
+		"mariner2": "rpm",
+		"windows":  "zip",
+	}
+
 	osMap = map[string]string{
 		"bookworm": "debian",
 		"bullseye": "debian",
@@ -28,6 +41,7 @@ var (
 		"rhel8":    "el8",
 		"centos7":  "el7",
 		"mariner2": "cm2",
+		"windows":  "windows",
 	}
 
 	versionMap = map[string]string{
