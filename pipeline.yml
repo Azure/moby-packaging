@@ -163,10 +163,6 @@ stages:
                 ARCH: "${{ spec.arch }}"
                 RESULTS_DIR: "$(Pipeline.Workspace)/testresults"
             - task: PublishBuildArtifacts@1
-              inputs:
-                pathToPublish: "$(Pipeline.Workspace)/bundles"
-                artifactName: bundles
-            - task: PublishBuildArtifacts@1
               condition: always()
               inputs:
                 pathToPublish: "$(Pipeline.Workspace)/testresults"
