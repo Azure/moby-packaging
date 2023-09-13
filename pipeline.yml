@@ -1,10 +1,12 @@
+name: INPUT_DIR
+
 variables:
   amd.pool: staging-pool-amd64-mariner-2
 
 stages:
-  - stage: Validate
+  - stage: INPUT_DIR
     jobs:
-      - job: ValidateDataFormat
+      - job: INPUT_DIR
         pool: $(amd.pool)
         timeoutInMinutes: 5
         steps:
