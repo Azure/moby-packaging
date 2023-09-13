@@ -82,25 +82,12 @@ stages:
           timeoutInMinutes: 240
           steps:
             - bash: |
-                os=linux
-
-                if [ "$DISTRO" = "windows" ]; then
-                  os=windows
-                fi
-
-                echo "##vso[task.setvariable variable=pkg.os]$os"
-              name: determineOS
-              displayName: Determine OS
-              env:
-                DISTRO: ${{ spec.distro }}
-            - bash: |
                 set -exu
 
                 mkdir -p "$SPEC_DIR"
 
                 filename="$(echo '${{ convertToJson(spec) }}' | go run ./cmd/path basename --spec-file=/dev/stdin)"
                 spec_file="${SPEC_DIR}/${filename}"
-                install -D /dev/null "$spec_file"
 
                 cat > "$spec_file" <<EOF
                 ${{ convertToJson(spec) }}
@@ -157,11 +144,17 @@ stages:
                 spec_file="${SPEC_DIR}/${filename}"
 
                 # runs the tests
+
+                set +x
                 go run ./cmd/run_tests --spec-file="$spec_file" --bundle-dir="$BUNDLE_DIR"
+                rc="$?"
+                set -x
 
                 out_dir="$(go run ./cmd/path dir --spec-file="$spec_file" --bundle-dir="$RESULTS_DIR")"
                 mkdir -p "$out_dir"
                 find tests/.test -type f -exec cp {} "$out_dir" \;
+
+                exit "$rc"
               displayName: Integration Test
               env:
                 SPEC_DIR: "$(Pipeline.Workspace)/specs"
