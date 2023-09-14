@@ -25,17 +25,17 @@ func (t *Target) AptInstall(pkgs ...string) *Target {
 }
 
 type Target struct {
-	c                *dagger.Container
-	name             string
-	platform         dagger.Platform
-	client           *dagger.Client
-	targetAttributes TargetAttributes
+	c        *dagger.Container
+	name     string
+	platform dagger.Platform
+	client   *dagger.Client
+	pkgKind  string
 
 	buildPlatform dagger.Platform
 }
 
 func (t *Target) update(c *dagger.Container) *Target {
-	return &Target{c: c, name: t.name, platform: t.platform, client: t.client, targetAttributes: t.targetAttributes}
+	return &Target{c: c, name: t.name, platform: t.platform, client: t.client, pkgKind: t.pkgKind}
 }
 
 func MirrorPrefix() string {
@@ -178,7 +178,7 @@ func (t *Target) WithExec(args []string, opts ...dagger.ContainerWithExecOpts) *
 }
 
 func (t *Target) PkgKind() string {
-	return t.targetAttributes.PkgKind
+	return t.pkgKind
 }
 
 func (t *Target) applyPatchesCommand() []string {
@@ -240,7 +240,7 @@ func (t *Target) Packager(projectName, distro string) Packager {
 	case "win":
 		return archive.NewWinPackager(&a, MirrorPrefix())
 	default:
-		panic("unknown pkgKind: " + t.targetAttributes.PkgKind)
+		panic("unknown pkgKind: " + t.pkgKind)
 	}
 }
 

@@ -24,8 +24,7 @@ func Focal(ctx context.Context, client *dagger.Client, platform dagger.Platform)
 		return nil, err
 	}
 
-	attributes := StaticTargetAttributes["focal"]
-	t := &Target{client: client, c: c, platform: platform, name: "focal", targetAttributes: attributes, buildPlatform: buildPlatform}
+	t := &Target{client: client, c: c, platform: platform, name: "focal", pkgKind: "deb", buildPlatform: buildPlatform}
 	t, err = t.WithPlatformEnvs().InstallGo(ctx)
 	if err != nil {
 		return nil, err

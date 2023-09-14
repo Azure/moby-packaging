@@ -24,8 +24,7 @@ func Buster(ctx context.Context, client *dagger.Client, platform dagger.Platform
 		return nil, err
 	}
 
-	attributes := StaticTargetAttributes["buster"]
-	t := &Target{client: client, c: c, platform: platform, name: "buster", targetAttributes: attributes, buildPlatform: buildPlatform}
+	t := &Target{client: client, c: c, platform: platform, name: "buster", pkgKind: "deb", buildPlatform: buildPlatform}
 	t, err = t.WithPlatformEnvs().InstallGo(ctx)
 	if err != nil {
 		return nil, err

@@ -19,8 +19,7 @@ func Mariner2(ctx context.Context, client *dagger.Client, platform dagger.Platfo
 		return nil, err
 	}
 
-	attributes := StaticTargetAttributes["mariner2"]
-	t := &Target{client: client, c: c, platform: platform, name: "mariner2", targetAttributes: attributes, buildPlatform: buildPlatform}
+	t := &Target{client: client, c: c, platform: platform, name: "mariner2", pkgKind: "rpm", buildPlatform: buildPlatform}
 	t, err = t.WithPlatformEnvs().InstallGo(ctx)
 	if err != nil {
 		return nil, err

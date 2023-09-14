@@ -28,8 +28,7 @@ func Rhel8(ctx context.Context, client *dagger.Client, platform dagger.Platform)
 		return nil, err
 	}
 
-	attributes := StaticTargetAttributes["rhel8"]
-	t := &Target{client: client, c: c, platform: platform, name: "rhel8", targetAttributes: attributes, buildPlatform: buildPlatform}
+	t := &Target{client: client, c: c, platform: platform, name: "rhel8", pkgKind: "rpm", buildPlatform: buildPlatform}
 	t, err = t.WithPlatformEnvs().InstallGo(ctx)
 	if err != nil {
 		return nil, err
