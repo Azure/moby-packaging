@@ -101,6 +101,12 @@ func (s *Spec) Hash() (string, error) {
 	return retStr, nil
 }
 
+// Our pipelines have historically used opinionated filesystem layouts to place
+// artifacts in a consistent location. This method will determine the directory
+// structure for all path components except the basename of the artifact
+// produced by this build spec definition. Because the base directory can be
+// different depending on the situation, it is supplied as an argument. Use "."
+// as the rootDir in order to use a relative path.
 func (s *Spec) Dir(rootDir string) string {
 	pkgOS := s.OS()
 	sanitizedArch := strings.ReplaceAll(s.Arch, "/", "_")
@@ -110,6 +116,10 @@ func (s *Spec) Dir(rootDir string) string {
 	return artifactDir
 }
 
+// There are semantic rules on the naming of packages for both debian- and rpm-
+// based repositories. This method will generate the basename of the package
+// name, according to those semantic rules, based on the information in the
+// build spec.
 func (s *Spec) Basename() (string, error) {
 	o, ok := OSMap[s.Distro]
 	if !ok {
@@ -158,6 +168,8 @@ func (s *Spec) Basename() (string, error) {
 	return str, nil
 }
 
+// This method is provided for convenience, simply combinging `.Dir()` and
+// `.Basename()`. See the documentation for those methods for more information.
 func (s *Spec) FullPath(rootDir string) (string, error) {
 	f, err := s.Basename()
 	if err != nil {
