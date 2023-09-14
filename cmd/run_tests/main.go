@@ -88,7 +88,12 @@ TEST_%[3]s_PACKAGE_VERSION=%[5]s-%[6]s.%[7]s
 		)
 	}
 
-	cmd := exec.Command("/usr/bin/make", "test", fmt.Sprintf("OUTPUT=%s", args.BundleDirPath))
+	runMake, err := exec.LookPath(makebin)
+	if err != nil {
+		return err
+	}
+
+	cmd := exec.Command(runMake, "test", fmt.Sprintf("OUTPUT=%s", args.BundleDirPath))
 	cmd.Env = append(cmd.Env, fmt.Sprintf("DISTRO=%s", s.Distro))
 	cmd.Env = append(cmd.Env, fmt.Sprintf("TARGETARCH=%s", s.Arch))
 	cmd.Env = append(cmd.Env, "INCLUDE_TESTING=0")
