@@ -24,7 +24,8 @@ func Bullseye(ctx context.Context, client *dagger.Client, platform dagger.Platfo
 		return nil, err
 	}
 
-	t := &Target{client: client, c: c, platform: platform, name: "bullseye", pkgKind: "deb", buildPlatform: buildPlatform}
+	attributes := StaticTargetAttributes["bullseye"]
+	t := &Target{client: client, c: c, platform: platform, name: "bullseye", targetAttributes: attributes, buildPlatform: buildPlatform}
 	t, err = t.WithPlatformEnvs().InstallGo(ctx)
 	if err != nil {
 		return nil, err

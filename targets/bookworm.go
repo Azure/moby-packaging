@@ -24,7 +24,8 @@ func Bookworm(ctx context.Context, client *dagger.Client, platform dagger.Platfo
 		return nil, err
 	}
 
-	t := &Target{client: client, c: c, platform: platform, name: "bookworm", pkgKind: "deb", buildPlatform: buildPlatform}
+	attributes := StaticTargetAttributes["bookworm"]
+	t := &Target{client: client, c: c, platform: platform, name: "bookworm", targetAttributes: attributes, buildPlatform: buildPlatform}
 	t, err = t.WithPlatformEnvs().InstallGo(ctx)
 	if err != nil {
 		return nil, err

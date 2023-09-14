@@ -6,48 +6,12 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
+
+	"github.com/Azure/moby-packaging/targets"
 )
 
 var (
 	alphanumeric = regexp.MustCompile(`[^a-zA-Z0-9]+`)
-
-	ExtensionMap = map[string]string{
-		"bookworm": "deb",
-		"bullseye": "deb",
-		"buster":   "deb",
-		"focal":    "deb",
-		"jammy":    "deb",
-		"rhel9":    "rpm",
-		"rhel8":    "rpm",
-		"centos7":  "rpm",
-		"mariner2": "rpm",
-		"windows":  "zip",
-	}
-
-	OSMap = map[string]string{
-		"bookworm": "debian",
-		"bullseye": "debian",
-		"buster":   "debian",
-		"focal":    "ubuntu",
-		"jammy":    "ubuntu",
-		"rhel9":    "el9",
-		"rhel8":    "el8",
-		"centos7":  "el7",
-		"mariner2": "cm2",
-		"windows":  "windows",
-	}
-
-	VersionMap = map[string]string{
-		"bookworm": "12",
-		"bullseye": "11",
-		"buster":   "10",
-		"focal":    "20.04",
-		"jammy":    "22.04",
-		"rhel9":    "el9",
-		"rhel8":    "el8",
-		"centos7":  "el7",
-		"mariner2": "cm2",
-	}
 )
 
 type Spec struct {
@@ -111,13 +75,15 @@ func (s *Spec) Dir(rootDir string) string {
 }
 
 func (s *Spec) Basename() (string, error) {
-	o, ok := OSMap[s.Distro]
+	n, ok := targets.StaticTargetAttributes[s.Distro]
 	if !ok {
 		return "", fmt.Errorf("Distro not understood: '%s'", s.Distro)
 	}
 
-	extension := ExtensionMap[s.Distro]
-	version := VersionMap[s.Distro]
+	o := n.OsComponent
+
+	extension := n.Extension
+	version := n.VersionComponent
 	sanitizedArch := strings.ReplaceAll(s.Arch, "/", "")
 	str := ""
 

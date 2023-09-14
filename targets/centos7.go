@@ -21,7 +21,8 @@ func Centos7(ctx context.Context, client *dagger.Client, platform dagger.Platfor
 		return nil, err
 	}
 
-	t := &Target{client: client, c: c, platform: platform, name: "centos7", pkgKind: "rpm", buildPlatform: buildPlatform}
+	attributes := StaticTargetAttributes["centos7"]
+	t := &Target{client: client, c: c, platform: platform, name: "centos7", targetAttributes: attributes, buildPlatform: buildPlatform}
 	t, err = t.WithPlatformEnvs().InstallGo(ctx)
 	if err != nil {
 		return nil, err
