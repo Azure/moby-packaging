@@ -34,19 +34,23 @@ name: ${{ replace(parameters.build_id, '__not_supplied', '$(Date:yyyyMMdd).$(Rev
 variables:
   amd.pool: staging-pool-amd64-mariner-2
   package.name: "${{ parameters.package_name }}"
+  build.tag: "${{ parameters.tag }}"
+  build.revision: "${{ parameters.revision }}"
 
 stages:
   - stage: Validate
     jobs:
       - job: ValidateDataFormat
+        variables:
+          specs.input.dir: "$(Pipeline.Workspace)/input"
         pool: $(amd.pool)
         timeoutInMinutes: 5
         steps:
           - bash: |
               set -exu
 
-              specs_basename="$(go run ./cmd/hash --project="$PACKAGE_NAME" --tag="$TAG" --revision="$REVISION")"
-              specs_file="${INPUTDIR}/${specs_basename}"
+              specs_basename="$(go run ./cmd/hash --project="$PACKAGE_NAME" --tag="$BUILD_TAG" --revision="$BUILD_REVISION")"
+              specs_file="${SPECS_INPUT_DIR}/${specs_basename}"
               mkdir -p "$(dirname "$specs_file")"
 
               cat > "$specs_file" <<EOF
@@ -54,12 +58,8 @@ stages:
               EOF
 
               cat "$specs_file"
-              go run ./cmd/validate/ "$PACKAGE_NAME" < "$specs_file"
+              go run ./cmd/validate/ --project="$PACKAGE_NAME" --tag="$BUILD_TAG" --revision="$BUILD_REVISION" < "$specs_file"
             displayName: Validate Input Data Format
-            env:
-              TAG: "${{ parameters.tag }}"
-              INPUTDIR: "$(Pipeline.Workspace)/input"
-              REVISION: "${{ parameters.revision }}"
           - task: PublishBuildArtifacts@1
             inputs:
               pathToPublish: "$(Pipeline.Workspace)/input"
@@ -74,6 +74,9 @@ stages:
                   ${{ replace(spec.tag, '.', '_') }}"
           variables:
             bundle.dir: "$(Pipeline.Workspace)/bundles"
+            spec.dir: "$(Pipeline.Workspace)/specs"
+            distro: "${{ spec.distro }}"
+            arch: "${{ spec.arch }}"
             ${{ if contains(spec.arch, 'arm') }}:
               build.pool: staging-pool-arm64-mariner-2
             ${{ else }}:
@@ -88,19 +91,11 @@ stages:
 
                 filename="$(echo '${{ convertToJson(spec) }}' | go run ./cmd/path basename --spec-file=/dev/stdin)"
                 spec_file="${SPEC_DIR}/${filename}"
+                echo '${{ convertToJson(spec) }}' | tee "$spec_file"
 
-                cat > "$spec_file" <<EOF
-                ${{ convertToJson(spec) }}
-                EOF
-
-                cat "$spec_file"
                 go run . --build-spec="$spec_file" --output="$BUNDLE_DIR"
               name: buildPackage
               displayName: Build package
-              env:
-                SPEC_DIR: "$(Pipeline.Workspace)/specs"
-                DISTRO: "${{ spec.distro }}"
-                ARCH: "${{ spec.arch }}"
             - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
               displayName: Generate SBOM
               inputs:
@@ -126,6 +121,10 @@ stages:
           pool: $(build.pool)
           variables:
             bundle.dir: "$(Pipeline.Workspace)/bundles"
+            spec.dir: "$(Pipeline.Workspace)/specs"
+            distro: "${{ spec.distro }}"
+            arch: "${{ spec.arch }}"
+            results.dir: "$(Pipeline.Workspace)/testresults"
             artifact.pattern: "**/${{ spec.distro }}/linux_${{ replace(spec.arch, '/', '_') }}/*@(-spec.json|.deb|.rpm)"
             ${{ if contains(spec.arch, 'arm') }}:
               build.pool: staging-pool-arm64-mariner-2
@@ -135,8 +134,6 @@ stages:
             - download: current
               artifact: bundles
               patterns: "$(artifact.pattern)"
-            - download: current
-              artifact: specs
             - script: |
                 set -exu
 
@@ -144,7 +141,6 @@ stages:
                 spec_file="${SPEC_DIR}/${filename}"
 
                 # runs the tests
-
                 set +x
                 go run ./cmd/run_tests --spec-file="$spec_file" --bundle-dir="$BUNDLE_DIR"
                 rc="$?"
@@ -156,12 +152,6 @@ stages:
 
                 exit "$rc"
               displayName: Integration Test
-              env:
-                SPEC_DIR: "$(Pipeline.Workspace)/specs"
-                NAME: "${{ spec.package }}"
-                DISTRO: "${{ spec.distro }}"
-                ARCH: "${{ spec.arch }}"
-                RESULTS_DIR: "$(Pipeline.Workspace)/testresults"
             - task: PublishBuildArtifacts@1
               condition: always()
               inputs:
@@ -171,6 +161,8 @@ stages:
     dependsOn: ["Test"]
     jobs:
       - job: Sign_Packages
+        variables:
+          signed.dir: "$(Pipeline.Workspace)/signed"
         pool: production-pool-amd64-mariner-2
         steps:
           - download: current
@@ -179,8 +171,6 @@ stages:
               set -exu
               cp -r $(Pipeline.Workspace)/bundles "$SIGNED_DIR"
             displayName: Copy files to sign
-            env:
-              SIGNED_DIR: "$(Pipeline.Workspace)/signed"
           - task: UseDotNet@2
             displayName: Install .NET Core SDK
             inputs:
@@ -195,6 +185,9 @@ stages:
               artifactName: signed
       - job: Upload_Packages
         dependsOn: ["Sign_Packages"]
+        variables:
+          specs.input.dir: "$(Pipeline.Workspace)/input"
+          signed.dir: "$(Pipeline.Workspace)/signed"
         pool: production-pool-amd64-mariner-2
         steps:
           - download: current
@@ -204,18 +197,13 @@ stages:
           - bash: |
               set -exu
 
-              specs_basename="$(go run ./cmd/hash --project="$PACKAGE_NAME" --tag="$TAG" --revision="$REVISION")"
-              specs_file="${INPUTDIR}/${specs_basename}"
+              specs_basename="$(go run ./cmd/hash --project="$PACKAGE_NAME" --tag="$BUILD_TAG" --revision="$BUILD_REVISION")"
+              specs_file="${SPECS_INPUT_DIR}/${specs_basename}"
 
               # uploads signed files to prod bucket, removes unsigned / failed uploads, writes output to stdout
               go run ./cmd/upload \
                 --signed-dir="$SIGNED_DIR" \
                 --specs-file="$specs_file"
-            env:
-              INPUTDIR: "$(Pipeline.Workspace)/input"
-              SIGNED_DIR: "$(Pipeline.Workspace)/signed"
-              TAG: "${{ parameters.tag }}"
-              REVISION: "${{ parameters.revision }}"
             displayName: Upload Signed Packages to Prod Storage
             name: uploadPackages
       - job: Update_Latest
