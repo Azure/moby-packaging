@@ -62,7 +62,7 @@ stages:
             displayName: Validate Input Data Format
           - task: PublishBuildArtifacts@1
             inputs:
-              pathToPublish: "$(Pipeline.Workspace)/input"
+              pathToPublish: "$(specs.input.dir)"
               artifactName: input
   - stage: Build
     jobs:
@@ -99,14 +99,14 @@ stages:
             - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
               displayName: Generate SBOM
               inputs:
-                BuildDropPath: $(Pipeline.Workspace)/bundles/${{ parameters.distro }}
+                BuildDropPath: "$(bundle.dir)/${{ parameters.distro }}"
             - task: PublishBuildArtifacts@1
               inputs:
-                pathToPublish: "$(Pipeline.Workspace)/bundles"
+                pathToPublish: "$(bundle.dir)"
                 artifactName: bundles
             - task: PublishBuildArtifacts@1
               inputs:
-                pathToPublish: "$(Pipeline.Workspace)/specs"
+                pathToPublish: "$(spec.dir)"
                 artifactName: specs
   - stage: Test
     dependsOn: ["Build"]
@@ -157,13 +157,14 @@ stages:
             - task: PublishBuildArtifacts@1
               condition: always()
               inputs:
-                pathToPublish: "$(Pipeline.Workspace)/testresults"
+                pathToPublish: "$(results.dir)"
                 artifactName: testresults
   - stage: SignAndPublish
     dependsOn: ["Test"]
     jobs:
       - job: Sign_Packages
         variables:
+          bundle.dir: "$(Pipeline.Workspace)/bundles"
           signed.dir: "$(Pipeline.Workspace)/signed"
         pool: production-pool-amd64-mariner-2
         steps:
@@ -171,7 +172,7 @@ stages:
             artifact: bundles
           - bash: |
               set -exu
-              cp -r $(Pipeline.Workspace)/bundles "$SIGNED_DIR"
+              cp -r "$BUNDLE_DIR" "$SIGNED_DIR"
             displayName: Copy files to sign
           - task: UseDotNet@2
             displayName: Install .NET Core SDK
@@ -180,10 +181,10 @@ stages:
               version: 2.2.207
           - template: templates/sign.steps.yml
             parameters:
-              rootDir: "$(Pipeline.Workspace)/signed"
+              rootDir: "$(signed.dir)"
           - task: PublishBuildArtifacts@1
             inputs:
-              pathToPublish: "$(Pipeline.Workspace)/signed"
+              pathToPublish: "$(signed.dir)"
               artifactName: signed
       - job: Upload_Packages
         dependsOn: ["Sign_Packages"]
