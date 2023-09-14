@@ -51,6 +51,12 @@ func validate(args allArgs) error {
 		return err
 	}
 
+	if len(specs) == 0 {
+		return nil
+	}
+
+	lastCommit := specs[0].Commit
+	lastRepo := specs[0].Repo
 	for i := range specs {
 		if project := specs[i].Pkg; project != args.pkg {
 			return fmt.Errorf("package name does not match: was '%s', should be '%s'", args.pkg, project)
@@ -63,6 +69,17 @@ func validate(args allArgs) error {
 		if revision := specs[i].Revision; revision != args.revision {
 			return fmt.Errorf("package revision does not match: was '%s', should be '%s'", revision, args.revision)
 		}
+
+		if commit := specs[i].Commit; commit != lastCommit {
+			return fmt.Errorf("all builds should have the same commit hash: '%s' vs '%s'", commit, lastCommit)
+		}
+
+		if repo := specs[i].Repo; repo != lastRepo {
+			return fmt.Errorf("all builds should have the same repo: '%s' vs '%s'", repo, lastCommit)
+		}
+
+		lastCommit = specs[i].Commit
+		lastRepo = specs[i].Repo
 
 		v := reflect.ValueOf(&specs[i]).Elem()
 		for i := 0; i < v.NumField(); i++ {
