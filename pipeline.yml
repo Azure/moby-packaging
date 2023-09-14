@@ -133,6 +133,8 @@ stages:
           steps:
             - download: current
               artifact: bundles
+            - download: current
+              artifact: specs
               patterns: "$(artifact.pattern)"
             - script: |
                 set -exu
