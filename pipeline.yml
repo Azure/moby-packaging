@@ -133,14 +133,16 @@ stages:
           steps:
             - download: current
               artifact: bundles
+              patterns: "$(artifact.pattern)"
             - download: current
               artifact: specs
-              patterns: "$(artifact.pattern)"
             - script: |
                 set -exu
 
                 filename="$(echo '${{ convertToJson(spec) }}' | go run ./cmd/path basename --spec-file=/dev/stdin)"
                 spec_file="${SPEC_DIR}/${filename}"
+
+                [ -f "$spec_file" ]
 
                 # runs the tests
                 set +x
