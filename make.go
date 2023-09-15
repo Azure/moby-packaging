@@ -8,7 +8,6 @@ import (
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"strings"
 
 	"dagger.io/dagger"
@@ -50,15 +49,7 @@ func main() {
 		os.Exit(3)
 	}
 
-	targetOS := "linux"
-	if spec.Distro == "windows" {
-		targetOS = "windows"
-	}
-
-	sanitizedArch := strings.ReplaceAll(spec.Arch, "/", "_")
-	subDir := fmt.Sprintf("%s_%s", targetOS, sanitizedArch)
-
-	if _, err := out.Export(ctx, filepath.Join(*outDir, spec.Distro, subDir)); err != nil {
+	if _, err := out.Export(ctx, spec.Dir(*outDir)); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(4)
 	}
