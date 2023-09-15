@@ -59,6 +59,8 @@ type Spec struct {
 	Revision string `json:"revision"`
 }
 
+// This function calculates the storage path for a package in the prod storage
+// container.
 func (spec *Spec) StoragePath() (string, error) {
 	pkg := spec.Pkg
 	pkgOS := spec.OS()
