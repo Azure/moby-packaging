@@ -3,13 +3,12 @@ package archive
 import (
 	"fmt"
 	"path/filepath"
-	"reflect"
 	"regexp"
 	"strings"
 )
 
 var (
-	alphanumeric = regexp.MustCompile(`[^a-zA-Z0-9]+`)
+	nonAlnum = regexp.MustCompile(`[^a-zA-Z0-9]+`)
 
 	ExtensionMap = map[string]string{
 		"bookworm": "deb",
@@ -54,8 +53,8 @@ type Spec struct {
 	Pkg      string `json:"package"`
 	Distro   string `json:"distro"`
 	Arch     string `json:"arch"`
-	Repo     string `json:"repo" hash:"ignore"`
-	Commit   string `json:"commit" hash:"ignore"`
+	Repo     string `json:"repo"`
+	Commit   string `json:"commit"`
 	Tag      string `json:"tag"`
 	Revision string `json:"revision"`
 }
@@ -79,26 +78,16 @@ func (spec *Spec) StoragePath() (string, error) {
 
 // This logic is arbitrary, but the output must be reproducible. This is used
 // to generate filenames for artifacts.
-func (s *Spec) Hash() (string, error) {
-	v := reflect.ValueOf(s)
-	w := v.Elem()
+func (s *Spec) NameTagRevision() string {
+	pkg := s.Pkg
+	tag := s.Tag
+	rev := s.Revision
 
-	ret := make([]string, 0, w.NumField())
-	for i := 0; i < w.NumField(); i++ {
-		fieldTag := w.Type().Field(i).Tag
-
-		str := w.Field(i).String()
-		if fieldTag.Get("hash") == "ignore" || str == "" {
-			continue
-		}
-
-		str = alphanumeric.ReplaceAllString(str, "_")
-		ret = append(ret, str)
+	for _, ptr := range []*string{&pkg, &tag, &rev} {
+		*ptr = nonAlnum.ReplaceAllString(*ptr, "_")
 	}
 
-	retStr := strings.Join(ret, ".")
-
-	return retStr, nil
+	return fmt.Sprintf("%s.%s.%s", pkg, tag, rev)
 }
 
 // Our pipelines have historically used opinionated filesystem layouts to place
