@@ -4,7 +4,6 @@ go 1.19
 
 require (
 	dagger.io/dagger v0.8.4
-	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.7.1
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.3.1
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.1.0
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azqueue v1.0.0
@@ -14,6 +13,7 @@ require (
 
 require (
 	github.com/99designs/gqlgen v0.17.31 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.7.2 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.3.0 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.1.1 // indirect
 	github.com/Khan/genqlient v0.6.0 // indirect
