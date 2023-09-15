@@ -21,10 +21,13 @@ func main() {
 		panic("first arg must be 'dir', 'full-path', or 'basename'")
 	}
 
-	fullPath := flag.NewFlagSet("path", flag.ExitOnError)
-	fullPath.StringVar(&a.bundleDir, "bundle-dir", "", "base directory of bundled files")
-	fullPath.StringVar(&a.specFile, "spec-file", "", "path of spec file")
-	fullPath.Parse(os.Args[2:])
+	globFlags := flag.NewFlagSet("global", flag.ExitOnError)
+	pathFlag := flag.NewFlagSet("./cmd/path", flag.ExitOnError)
+	pathFlag.StringVar(&a.specFile, "spec-file", "", "path of spec file")
+	pathFlag.StringVar(&a.bundleDir, "bundle-dir", "", "base directory of bundled files")
+	globFlags.Usage = pathFlag.Usage
+	pathFlag.Parse(os.Args[2:])
+	globFlags.Parse(os.Args[1:])
 
 	if err := do(os.Args[1], a); err != nil {
 		panic(err)
@@ -32,6 +35,10 @@ func main() {
 }
 
 func do(cmd string, a args) error {
+	if a.specFile == "" {
+		return fmt.Errorf("all subcommands require the --spec-file argument")
+	}
+
 	b, err := os.ReadFile(a.specFile)
 	if err != nil {
 		return err

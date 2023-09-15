@@ -10,10 +10,8 @@ import (
 func main() {
 	s := archive.Spec{}
 	flag.StringVar(&s.Pkg, "project", "", "name of the project")
-	flag.StringVar(&s.Distro, "distro", "", "distro of artifact")
-	flag.StringVar(&s.Arch, "arch", "", "arch of artifact")
-	flag.StringVar(&s.Tag, "tag", "", "tag of artifact")
 	flag.StringVar(&s.Revision, "revision", "", "revision")
+	flag.StringVar(&s.Tag, "tag", "", "tag of artifact")
 	flag.Parse()
 
 	h := s.NameTagRevision()
