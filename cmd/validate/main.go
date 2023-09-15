@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -38,9 +37,11 @@ func main() {
 }
 
 func validate(args allArgs) error {
-	r := bufio.NewReader(os.Stdin)
+	if args.pkg == "" || args.tag == "" || args.revision == "" {
+		return fmt.Errorf("all arguments are required: project, tag, and revision")
+	}
 
-	j, err := r.ReadBytes(byte(0))
+	j, err := io.ReadAll(os.Stdin)
 	if err != nil && err != io.EOF {
 		return fmt.Errorf("error: %s\n", err)
 	}
