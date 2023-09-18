@@ -141,29 +141,29 @@ func (d *DebPackager) installScript(script *InstallScript, c *dagger.Container) 
 
 	var templateStr, filename, flag string
 	switch script.When {
-	case PkgActionPostInstall, PkgActionUpgrade:
+	case PkgActionPostInstall:
 		filename = filenamePostInstall
 		flag = flagPostInstall
 		templateStr = `
-if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
-  {{ replace .Script "\n" "\n  " }}
-fi
+{{ replace .Script "\n" "\n  " }}
+            `
+	case PkgActionUpgrade:
+		filename = filenamePostUpgrade
+		flag = flagUpgrade
+		templateStr = `
+{{ replace .Script "\n" "\n  " }}
             `
 	case PkgActionPreRemoval:
 		filename = filenamePreRm
 		flag = flagPreRm
 		templateStr = `
-if [ "$1" = remove ]; then
-  {{ replace .Script "\n" "\n  " }}
-fi
+{{ replace .Script "\n" "\n  " }}
             `
 	case PkgActionPostRemoval:
 		filename = filenamePostRm
 		flag = flagPostRm
 		templateStr = `
-if [ "$1" = "purge" ]; then
-  {{ replace .Script "\n" "\n  " }}
-fi
+{{ replace .Script "\n" "\n  " }}
             `
 	default:
 		panic("unrecognized package action: " + fmt.Sprintf("%d", script.When))
