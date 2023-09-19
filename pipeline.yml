@@ -162,7 +162,6 @@ stages:
                 pathToPublish: "$(results.dir)"
                 artifactName: testresults
   - stage: SignAndPublish
-    dependsOn: ["Test"]
     jobs:
       - job: Sign_Packages
         variables:
