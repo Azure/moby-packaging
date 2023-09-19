@@ -263,3 +263,23 @@ stages:
             env:
               AZURE_STORAGE_ACCOUNT: ${{ parameters.prod_storage_account_name }}
               STORAGE_CONTAINER: ${{ parameters.index_container }}
+      - job: Publish_PMC
+        dependsOn: ["Update_Latest"]
+        pool: production-pool-amd64-mariner-2
+        steps:
+          - task: TriggerBuild@4
+            displayName: Trigger PMC Sync
+            inputs:
+              definitionIsInCurrentTeamProject: true
+              buildDefinition: 'pmc-sync'
+              queueBuildForUserThatTriggeredBuild: true
+              useSameSourceVersion: true
+              useSameBranch: true
+              waitForQueuedBuildsToFinish: true
+              waitForQueuedBuildsToFinishRefreshTime: '60'
+              failTaskIfBuildsNotSuccessful: true
+              templateParameters: 'package: ${{ parameters.package_name }}, version_branch: ${{ parameters.tag }}'
+              authenticationMethod: 'OAuth Token'
+              enableBuildInQueueCondition:  false
+              includeCurrentBuildDefinition: false
+              blockingBuildsList: 'pmc-sync'
