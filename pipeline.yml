@@ -145,10 +145,10 @@ stages:
                 [ -f "$spec_file" ]
 
                 # runs the tests
-                set +x
+                set +e
                 go run ./cmd/run_tests --spec-file="$spec_file" --bundle-dir="$BUNDLE_DIR"
                 rc="$?"
-                set -x
+                set -e
 
                 out_dir="$(go run ./cmd/path dir --spec-file="$spec_file" --bundle-dir="$RESULTS_DIR")"
                 mkdir -p "$out_dir"
