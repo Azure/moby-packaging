@@ -28,8 +28,7 @@ func Rhel8(ctx context.Context, client *dagger.Client, platform dagger.Platform,
 		return nil, err
 	}
 
-	t := &Target{client: client, c: c, platform: platform, name: "rhel8", pkgKind: "rpm", buildPlatform: buildPlatform}
-	t.goVersion = goVersion
+	t := &Target{client: client, c: c, platform: platform, name: "rhel8", pkgKind: "rpm", buildPlatform: buildPlatform, goVersion: goVersion}
 
 	t, err = t.WithPlatformEnvs().InstallGo(ctx, goVersion)
 	if err != nil {

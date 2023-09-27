@@ -24,8 +24,7 @@ func Buster(ctx context.Context, client *dagger.Client, platform dagger.Platform
 		return nil, err
 	}
 
-	t := &Target{client: client, c: c, platform: platform, name: "buster", pkgKind: "deb", buildPlatform: buildPlatform}
-	t.goVersion = goVersion
+	t := &Target{client: client, c: c, platform: platform, name: "buster", pkgKind: "deb", buildPlatform: buildPlatform, goVersion: goVersion}
 
 	t, err = t.WithPlatformEnvs().InstallGo(ctx, goVersion)
 	if err != nil {

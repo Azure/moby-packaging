@@ -39,5 +39,7 @@ func (t *Target) InstallGo(ctx context.Context, goVersion string) (*Target, erro
 	if err != nil {
 		return nil, err
 	}
+
+	t.goVersion = goVersion
 	return t.update(c), nil
 }

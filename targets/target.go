@@ -39,7 +39,9 @@ type Target struct {
 }
 
 func (t *Target) update(c *dagger.Container) *Target {
-	return &Target{c: c, name: t.name, platform: t.platform, client: t.client, pkgKind: t.pkgKind}
+	tgt := *t
+	tgt.c = c
+	return &tgt
 }
 
 func MirrorPrefix() string {

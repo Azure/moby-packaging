@@ -24,8 +24,7 @@ func Bullseye(ctx context.Context, client *dagger.Client, platform dagger.Platfo
 		return nil, err
 	}
 
-	t := &Target{client: client, c: c, platform: platform, name: "bullseye", pkgKind: "deb", buildPlatform: buildPlatform}
-	t.goVersion = goVersion
+	t := &Target{client: client, c: c, platform: platform, name: "bullseye", pkgKind: "deb", buildPlatform: buildPlatform, goVersion: goVersion}
 
 	t, err = t.WithPlatformEnvs().InstallGo(ctx, goVersion)
 	if err != nil {
