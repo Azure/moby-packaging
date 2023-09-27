@@ -12,7 +12,7 @@ var (
 	WindowsRef = path.Join(MirrorPrefix(), "buildpack-deps:bullseye")
 )
 
-func Windows(ctx context.Context, client *dagger.Client, platform dagger.Platform) (*Target, error) {
+func Windows(ctx context.Context, client *dagger.Client, platform dagger.Platform, goVersion string) (*Target, error) {
 	client = client.Pipeline("windows/" + string(platform))
 
 	buildPlatform, err := client.DefaultPlatform(ctx)
@@ -25,7 +25,9 @@ func Windows(ctx context.Context, client *dagger.Client, platform dagger.Platfor
 	c = c.WithEnvVariable("GOOS", "windows")
 
 	t := &Target{client: client, c: c, platform: platform, name: "windows", pkgKind: "win", buildPlatform: buildPlatform}
-	t, err = t.WithPlatformEnvs().InstallGo(ctx)
+	t.goVersion = goVersion
+
+	t, err = t.WithPlatformEnvs().InstallGo(ctx, goVersion)
 	if err != nil {
 		return nil, err
 	}

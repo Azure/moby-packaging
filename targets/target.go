@@ -2,6 +2,7 @@ package targets
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"strings"
 
@@ -12,12 +13,14 @@ import (
 	shim "github.com/Azure/moby-packaging/moby-containerd-shim-systemd"
 	engine "github.com/Azure/moby-packaging/moby-engine"
 	runc "github.com/Azure/moby-packaging/moby-runc"
-	mobytini "github.com/Azure/moby-packaging/moby-tini"
+	tini "github.com/Azure/moby-packaging/moby-tini"
 	"github.com/Azure/moby-packaging/pkg/apt"
 	"github.com/Azure/moby-packaging/pkg/archive"
 
 	"dagger.io/dagger"
 )
+
+type GoVersionFunc = func(*archive.Spec) string
 
 func (t *Target) AptInstall(pkgs ...string) *Target {
 	c := apt.Install(t.c, t.client.CacheVolume(t.name+"-apt-cache"), t.client.CacheVolume(t.name+"-apt-lib-cache"), pkgs...)
@@ -25,11 +28,12 @@ func (t *Target) AptInstall(pkgs ...string) *Target {
 }
 
 type Target struct {
-	c        *dagger.Container
-	name     string
-	platform dagger.Platform
-	client   *dagger.Client
-	pkgKind  string
+	c         *dagger.Container
+	name      string
+	platform  dagger.Platform
+	client    *dagger.Client
+	pkgKind   string
+	goVersion string
 
 	buildPlatform dagger.Platform
 }
@@ -46,7 +50,7 @@ func MirrorPrefix() string {
 	return prefix
 }
 
-type MakeTargetFunc func(context.Context, *dagger.Client, dagger.Platform) (*Target, error)
+type MakeTargetFunc func(context.Context, *dagger.Client, dagger.Platform, string) (*Target, error)
 
 var targets = map[string]MakeTargetFunc{
 	"jammy":    Jammy,
@@ -62,12 +66,12 @@ var targets = map[string]MakeTargetFunc{
 	"mariner2": Mariner2,
 }
 
-func GetTarget(ctx context.Context, distro string, client *dagger.Client, platform dagger.Platform) (*Target, error) {
+func GetTarget(ctx context.Context, distro string, client *dagger.Client, platform dagger.Platform, goVersion string) (*Target, error) {
 	f, ok := targets[distro]
 	if !ok {
 		panic("unknown distro: " + distro)
 	}
-	return f(ctx, client, platform)
+	return f(ctx, client, platform, goVersion)
 }
 
 var (
@@ -167,6 +171,17 @@ var (
 		"which",
 		"yum-utils",
 	}
+
+	GetGoVersionForPackage = map[string]GoVersionFunc{
+		"moby-buildx":                  buildx.GoVersion,
+		"moby-cli":                     cli.GoVersion,
+		"moby-compose":                 compose.GoVersion,
+		"moby-containerd":              containerd.GoVersion,
+		"moby-containerd-shim-systemd": shim.GoVersion,
+		"moby-engine":                  engine.GoVersion,
+		"moby-runc":                    runc.GoVersion,
+		"moby-tini":                    tini.GoVersion,
+	}
 )
 
 func (t *Target) Container() *dagger.Container {
@@ -211,9 +226,10 @@ func (t *Target) goMD2Man() *dagger.File {
 	ref := "v2.0.2"
 	outfile := "/build/bin/go-md2man"
 	srcDir := t.client.Git(repo, dagger.GitOpts{KeepGitDir: true}).Commit(ref).Tree()
+	goRef := fmt.Sprintf("%s:%s", GoRepo, t.goVersion)
 
 	c := t.client.Container().
-		From(GoRef).
+		From(goRef).
 		WithDirectory("/build", srcDir).
 		WithWorkdir("/build").
 		WithEnvVariable("CGO_ENABLED", "0").
@@ -235,7 +251,7 @@ func (t *Target) Packager(projectName, distro string) Packager {
 		"moby-runc":                    runc.Archives,
 		"moby-compose":                 compose.Archives,
 		"moby-buildx":                  buildx.Archives,
-		"moby-tini":                    mobytini.Archives,
+		"moby-tini":                    tini.Archives,
 	}
 
 	as := mappings[projectName]

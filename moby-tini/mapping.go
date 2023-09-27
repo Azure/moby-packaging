@@ -1,4 +1,4 @@
-package mobyinit
+package tini
 
 import "github.com/Azure/moby-packaging/pkg/archive"
 
