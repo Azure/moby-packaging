@@ -194,6 +194,18 @@ func (t *Target) applyPatchesCommand() []string {
 	}
 }
 
+// Winres is used during windows builds (as part of the project build scripts) to "manifest" binaries.
+// This is required for windows to properly identify the binaries.
+func (t *Target) Winres() *dagger.File {
+	return t.client.Container().
+		From(GoRef).
+		WithEnvVariable("GOBIN", "/build").
+		WithEnvVariable("CGO_ENABLED", "0").
+		WithEnvVariable("GO111MODULE", "on").
+		WithExec([]string{"go", "install", "github.com/tc-hib/go-winres@v0.3.0"}).
+		File("/build/go-winres")
+}
+
 func (t *Target) goMD2Man() *dagger.File {
 	repo := "https://github.com/cpuguy83/go-md2man.git"
 	ref := "v2.0.2"
@@ -273,6 +285,7 @@ func (t *Target) Make(project *archive.Spec) *dagger.Directory {
 		WithDirectory("/build/src", source).
 		WithWorkdir("/build").
 		WithMountedFile("/usr/bin/go-md2man", md2man).
+		WithMountedFile("/usr/bin/go-winres", t.Winres()).
 		WithEnvVariable("TARGET_DISTRO", project.Distro).
 		WithEnvVariable("REVISION", project.Revision).
 		WithEnvVariable("VERSION", project.Tag).
