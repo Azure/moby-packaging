@@ -14,7 +14,7 @@ var (
 	JammyAptLibCacheKey = "jammy-apt-lib-cache"
 )
 
-func Jammy(ctx context.Context, client *dagger.Client, platform dagger.Platform) (*Target, error) {
+func Jammy(ctx context.Context, client *dagger.Client, platform dagger.Platform, goVersion string) (*Target, error) {
 	client = client.Pipeline("jammy/" + string(platform))
 	c := client.Container(dagger.ContainerOpts{Platform: platform}).From(JammyRef)
 	c = apt.Install(c, client.CacheVolume(JammyAptCacheKey), client.CacheVolume(JammyAptLibCacheKey), BaseDebPackages...)
@@ -24,8 +24,9 @@ func Jammy(ctx context.Context, client *dagger.Client, platform dagger.Platform)
 		return nil, err
 	}
 
-	t := &Target{client: client, c: c, platform: platform, name: "jammy", pkgKind: "deb", buildPlatform: buildPlatform}
-	t, err = t.WithPlatformEnvs().InstallGo(ctx)
+	t := &Target{client: client, c: c, platform: platform, name: "jammy", pkgKind: "deb", buildPlatform: buildPlatform, goVersion: goVersion}
+
+	t, err = t.WithPlatformEnvs().InstallGo(ctx, goVersion)
 	if err != nil {
 		return nil, err
 	}

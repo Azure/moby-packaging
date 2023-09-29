@@ -14,7 +14,7 @@ var (
 	BookwormAptLibCacheKey = "bookworm-apt-lib-cache"
 )
 
-func Bookworm(ctx context.Context, client *dagger.Client, platform dagger.Platform) (*Target, error) {
+func Bookworm(ctx context.Context, client *dagger.Client, platform dagger.Platform, goVersion string) (*Target, error) {
 	client = client.Pipeline("bookworm/" + string(platform))
 	c := client.Container(dagger.ContainerOpts{Platform: platform}).From(BookwormRef)
 	c = apt.Install(c, client.CacheVolume(BookwormAptCacheKey), client.CacheVolume(BookwormAptLibCacheKey), BaseDebPackages...)
@@ -24,8 +24,9 @@ func Bookworm(ctx context.Context, client *dagger.Client, platform dagger.Platfo
 		return nil, err
 	}
 
-	t := &Target{client: client, c: c, platform: platform, name: "bookworm", pkgKind: "deb", buildPlatform: buildPlatform}
-	t, err = t.WithPlatformEnvs().InstallGo(ctx)
+	t := &Target{client: client, c: c, platform: platform, name: "bookworm", pkgKind: "deb", buildPlatform: buildPlatform, goVersion: goVersion}
+
+	t, err = t.WithPlatformEnvs().InstallGo(ctx, goVersion)
 	if err != nil {
 		return nil, err
 	}

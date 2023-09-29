@@ -14,7 +14,7 @@ var (
 	FocalAptLibCacheKey = "focal-apt-lib-cache"
 )
 
-func Focal(ctx context.Context, client *dagger.Client, platform dagger.Platform) (*Target, error) {
+func Focal(ctx context.Context, client *dagger.Client, platform dagger.Platform, goVersion string) (*Target, error) {
 	client = client.Pipeline("focal/" + string(platform))
 	c := client.Container(dagger.ContainerOpts{Platform: platform}).From(FocalRef)
 	c = apt.Install(c, client.CacheVolume(FocalAptCacheKey), client.CacheVolume(FocalAptLibCacheKey), BaseDebPackages...)
@@ -24,8 +24,8 @@ func Focal(ctx context.Context, client *dagger.Client, platform dagger.Platform)
 		return nil, err
 	}
 
-	t := &Target{client: client, c: c, platform: platform, name: "focal", pkgKind: "deb", buildPlatform: buildPlatform}
-	t, err = t.WithPlatformEnvs().InstallGo(ctx)
+	t := &Target{client: client, c: c, platform: platform, name: "focal", pkgKind: "deb", buildPlatform: buildPlatform, goVersion: goVersion}
+	t, err = t.WithPlatformEnvs().InstallGo(ctx, goVersion)
 	if err != nil {
 		return nil, err
 	}

@@ -9,7 +9,7 @@ import (
 
 const Mariner2Ref = "mcr.microsoft.com/cbl-mariner/base/core:2.0"
 
-func Mariner2(ctx context.Context, client *dagger.Client, platform dagger.Platform) (*Target, error) {
+func Mariner2(ctx context.Context, client *dagger.Client, platform dagger.Platform, goVersion string) (*Target, error) {
 	client = client.Pipeline("mariner2/" + string(platform))
 	c := client.Container(dagger.ContainerOpts{Platform: platform}).From(Mariner2Ref)
 	c = tdnf.Install(c, BaseMarinerPackages...)
@@ -19,8 +19,9 @@ func Mariner2(ctx context.Context, client *dagger.Client, platform dagger.Platfo
 		return nil, err
 	}
 
-	t := &Target{client: client, c: c, platform: platform, name: "mariner2", pkgKind: "rpm", buildPlatform: buildPlatform}
-	t, err = t.WithPlatformEnvs().InstallGo(ctx)
+	t := &Target{client: client, c: c, platform: platform, name: "mariner2", pkgKind: "rpm", buildPlatform: buildPlatform, goVersion: goVersion}
+
+	t, err = t.WithPlatformEnvs().InstallGo(ctx, goVersion)
 	if err != nil {
 		return nil, err
 	}

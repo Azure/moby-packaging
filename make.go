@@ -93,7 +93,13 @@ func do(ctx context.Context, client *dagger.Client, cfg *archive.Spec) (*dagger.
 	}
 	platform := dagger.Platform(fmt.Sprintf("%s/%s", targetOs, cfg.Arch))
 
-	target, err := targets.GetTarget(ctx, cfg.Distro, client, platform)
+	getGoVersion, ok := targets.GetGoVersionForPackage[cfg.Pkg]
+	if !ok {
+		return nil, fmt.Errorf("unknown package: %q", cfg.Pkg)
+	}
+	goVersion := getGoVersion(cfg)
+
+	target, err := targets.GetTarget(ctx, cfg.Distro, client, platform, goVersion)
 	if err != nil {
 		return nil, err
 	}
