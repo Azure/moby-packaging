@@ -273,8 +273,9 @@ stages:
               definitionIsInCurrentTeamProject: true
               buildDefinition: 'pmc-sync'
               queueBuildForUserThatTriggeredBuild: true
-              useSameSourceVersion: true
-              useSameBranch: true
+              useSameSourceVersion: false
+              useSameBranch: false
+              branchToUse: 'master'
               waitForQueuedBuildsToFinish: true
               waitForQueuedBuildsToFinishRefreshTime: '60'
               failTaskIfBuildsNotSuccessful: true
