@@ -214,8 +214,9 @@ func (t *Target) applyPatchesCommand() []string {
 // Winres is used during windows builds (as part of the project build scripts) to "manifest" binaries.
 // This is required for windows to properly identify the binaries.
 func (t *Target) Winres() *dagger.File {
+	goRef := fmt.Sprintf("%s:%s", GoRepo, t.goVersion)
 	return t.client.Container().
-		From(GoRef).
+		From(goRef).
 		WithEnvVariable("GOBIN", "/build").
 		WithEnvVariable("CGO_ENABLED", "0").
 		WithEnvVariable("GO111MODULE", "on").
