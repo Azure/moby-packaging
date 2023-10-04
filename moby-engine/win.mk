@@ -20,8 +20,6 @@ $(GOPATH)/src/github.com/docker/docker:
 bundles/binary-daemon/dockerd.exe: $(GOPATH)/src/github.com/docker/docker
 	set -e; \
 	cd src && \
-	QUILT_PATCHES="$(PWD)/patches" quilt push -a || let ec=$$?; \
-	[ ! $$ec -eq 0 ] && [ ! $$ec -eq 2 ] && exit $$ec; \
 	PKG_CONFIG_PATH="$(pkg-config --variable pc_path pkg-config)"; \
 	for i in $(find /usr/lib -name 'pkgconfig'); do PKG_CONFIG_PATH="${PKG_CONFIG_PATH}:$i"; done; \
 	export PKG_CONFIG_PATH; \
