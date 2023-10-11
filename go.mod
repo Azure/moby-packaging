@@ -3,7 +3,7 @@ module github.com/Azure/moby-packaging
 go 1.19
 
 require (
-	dagger.io/dagger v0.8.4
+	dagger.io/dagger v0.8.8
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.3.1
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.1.0
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azqueue v1.0.0
@@ -21,7 +21,6 @@ require (
 	github.com/adrg/xdg v0.4.0 // indirect
 	github.com/golang-jwt/jwt/v5 v5.0.0 // indirect
 	github.com/google/uuid v1.3.0 // indirect
-	github.com/iancoleman/strcase v0.3.0 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8 // indirect
