@@ -5,7 +5,7 @@ go 1.19
 require (
 	dagger.io/dagger v0.8.8
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.3.1
-	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.1.0
+	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azqueue v1.0.0
 	github.com/Masterminds/semver/v3 v3.2.1
 	golang.org/x/sync v0.3.0
