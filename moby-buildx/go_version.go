@@ -6,5 +6,5 @@ import (
 )
 
 func GoVersion(_ *archive.Spec) string {
-	return goversion.DefaultVersion
+	return goversion.OneTwentyOne
 }
