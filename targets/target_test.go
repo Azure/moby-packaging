@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"dagger.io/dagger"
+	"github.com/Azure/moby-packaging/pkg/goversion"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -32,7 +33,7 @@ func TestApt(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	c, err := Jammy(ctx, client, platform)
+	c, err := Jammy(ctx, client, platform, goversion.DefaultVersion)
 	if err != nil {
 		t.Fatal(err)
 	}
