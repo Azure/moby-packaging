@@ -11,6 +11,7 @@ var (
 	nonAlnum = regexp.MustCompile(`[^a-zA-Z0-9]+`)
 
 	ExtensionMap = map[string]string{
+		"bionic":   "deb",
 		"bookworm": "deb",
 		"bullseye": "deb",
 		"buster":   "deb",
@@ -27,6 +28,7 @@ var (
 		"bookworm": "debian",
 		"bullseye": "debian",
 		"buster":   "debian",
+		"bionic":   "ubuntu",
 		"focal":    "ubuntu",
 		"jammy":    "ubuntu",
 		"rhel9":    "el9",
@@ -40,6 +42,7 @@ var (
 		"bookworm": "12",
 		"bullseye": "11",
 		"buster":   "10",
+		"bionic":   "18.04",
 		"focal":    "20.04",
 		"jammy":    "22.04",
 		"rhel9":    "el9",
