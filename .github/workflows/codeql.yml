@@ -60,6 +60,7 @@ jobs:
         uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
           go-version: 1.21
+          check-latest: true
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@e6a47e25652c5dbefe5b65d3b8e8dab0e9364b21 # v2.16.0
         with:
