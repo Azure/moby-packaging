@@ -46,7 +46,7 @@ var (
 			{Source: "/build/systemd/docker.socket", Dest: "/lib/systemd/system/docker.socket"},
 			{Source: "/build/src/contrib/nuke-graph-directory.sh", Dest: "/usr/share/moby-engine/contrib/nuke-graph-directory.sh"},
 			{Source: "/build/src/contrib/check-config.sh", Dest: "/usr/share/moby-engine/contrib/check-config.sh"},
-			{Source: "/build/bundles/dynbinary-daemon/dockerd", Dest: "/usr/bin/dockerd"},
+			{Source: "/build/src/bundles/dynbinary-daemon/dockerd", Dest: "/usr/bin/dockerd"},
 			{Source: "/build/src/libnetwork/docker-proxy", Dest: "/usr/bin/docker-proxy"},
 			{Source: "/build/src/contrib/udev/80-docker.rules", Dest: "/lib/udev/rules.d/80-moby-engine.rules"},
 			{Source: "", Dest: "/etc/docker", IsDir: true},
@@ -56,7 +56,7 @@ var (
 		Systemd: []archive.Systemd{
 			{Source: "/build/systemd/docker.service", Dest: "/lib/systemd/system/docker.service"},
 		},
-		Binaries:    []string{"/build/bundles/dynbinary-daemon/dockerd", "/build/src/libnetwork/docker-proxy"},
+		Binaries:    []string{"/build/src/bundles/dynbinary-daemon/dockerd", "/build/src/libnetwork/docker-proxy"},
 		WinBinaries: []string{"/build/src/bundles/binary-daemon/dockerd.exe"},
 		Description: `Docker container platform (engine package)
   Moby is an open-source project created by Docker to enable and accelerate software containerization.`,

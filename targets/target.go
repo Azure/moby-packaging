@@ -6,14 +6,14 @@ import (
 	"os"
 	"strings"
 
-	buildx "github.com/Azure/moby-packaging/moby-buildx"
-	cli "github.com/Azure/moby-packaging/moby-cli"
-	compose "github.com/Azure/moby-packaging/moby-compose"
-	containerd "github.com/Azure/moby-packaging/moby-containerd"
-	shim "github.com/Azure/moby-packaging/moby-containerd-shim-systemd"
-	engine "github.com/Azure/moby-packaging/moby-engine"
-	runc "github.com/Azure/moby-packaging/moby-runc"
-	tini "github.com/Azure/moby-packaging/moby-tini"
+	buildx "github.com/Azure/moby-packaging/packages/moby-buildx"
+	cli "github.com/Azure/moby-packaging/packages/moby-cli"
+	compose "github.com/Azure/moby-packaging/packages/moby-compose"
+	containerd "github.com/Azure/moby-packaging/packages/moby-containerd"
+	shim "github.com/Azure/moby-packaging/packages/moby-containerd-shim-systemd"
+	engine "github.com/Azure/moby-packaging/packages/moby-engine"
+	runc "github.com/Azure/moby-packaging/packages/moby-runc"
+	tini "github.com/Azure/moby-packaging/packages/moby-tini"
 	"github.com/Azure/moby-packaging/pkg/apt"
 	"github.com/Azure/moby-packaging/pkg/archive"
 
@@ -290,9 +290,7 @@ func (t *Target) getCommitTime(projectName string, sourceDir *dagger.Directory) 
 	return strings.TrimSpace(commitTime)
 }
 
-func (t *Target) Make(project *archive.Spec) *dagger.Directory {
-	projectDir := t.client.Host().Directory(project.Pkg)
-	hackDir := t.client.Host().Directory("hack/cross")
+func (t *Target) Make(project *archive.Spec, projectDir, hackCrossDir *dagger.Directory) *dagger.Directory {
 	md2man := t.goMD2Man()
 
 	source := t.getSource(project)
@@ -300,7 +298,7 @@ func (t *Target) Make(project *archive.Spec) *dagger.Directory {
 
 	build := t.c.Pipeline(project.Pkg).
 		WithDirectory("/build", projectDir).
-		WithDirectory("/build/hack/cross", hackDir).
+		WithDirectory("/build/hack/cross", hackCrossDir).
 		WithDirectory("/build/src", source).
 		WithWorkdir("/build").
 		WithMountedFile("/usr/bin/go-md2man", md2man).
