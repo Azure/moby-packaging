@@ -6,7 +6,7 @@ export GO111MODULE := off
 export GOGC := off
 export CGO_ENABLED := 1
 
-deb: $(GOPATH)/src/github.com/docker/docker bundles/dynbinary-daemon/dockerd libnetwork/docker-proxy
+deb: $(GOPATH)/src/github.com/docker/docker src/bundles/dynbinary-daemon/dockerd libnetwork/docker-proxy
 
 $(GOPATH)/src/github.com/docker/docker:
 	mkdir -p $(@D)
@@ -17,5 +17,6 @@ libnetwork/docker-proxy: # (from libnetwork)
 		-o libnetwork/docker-proxy \
 		./cmd/docker-proxy
 
-bundles/dynbinary-daemon/dockerd: # engine
+src/bundles/dynbinary-daemon/dockerd: # engine
+	cd $(GOPATH)/src/github.com/docker/docker && \
 	DOCKER_GITCOMMIT=$(COMMIT) VERSION=$(VERSION)-$(REVISION) PRODUCT=docker hack/make.sh dynbinary
