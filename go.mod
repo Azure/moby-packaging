@@ -2,7 +2,7 @@ module github.com/Azure/moby-packaging
 
 go 1.21
 
-toolchain go1.21.3
+toolchain go1.21.8
 
 require (
 	dagger.io/dagger v0.9.11
