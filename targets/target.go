@@ -245,31 +245,45 @@ type Packager interface {
 	Package(*dagger.Client, *dagger.Container, *archive.Spec) *dagger.Directory
 }
 
-func (t *Target) Packager(projectName, distro string) Packager {
-	mappings := map[string]map[string]archive.Archive{
-		"moby-engine":                  engine.Archives,
-		"moby-cli":                     cli.Archives,
-		"moby-containerd":              containerd.Archives,
-		"moby-containerd-shim-systemd": shim.Archives,
-		"moby-runc":                    runc.Archives,
-		"moby-compose":                 compose.Archives,
-		"moby-buildx":                  buildx.Archives,
-		"moby-tini":                    tini.Archives,
+func (t *Target) Packager(projectName, distro, version string) (Packager, error) {
+	var mappings map[string]archive.Archive
+	switch projectName {
+	case "moby-engine":
+		mappings = engine.Archives
+	case "moby-cli":
+		mappings = cli.Archives
+	case "moby-containerd":
+		ls, err := containerd.Archives(version)
+		if err != nil {
+			return nil, err
+		}
+		mappings = ls
+	case "moby-containerd-shim-systemd":
+		mappings = shim.Archives
+	case "moby-runc":
+		mappings = runc.Archives
+	case "moby-compose":
+		mappings = compose.Archives
+	case "moby-buildx":
+		mappings = buildx.Archives
+	case "moby-tini":
+		mappings = tini.Archives
+	default:
+		return nil, fmt.Errorf("unsupported project: %s", projectName)
 	}
 
-	as := mappings[projectName]
-	a, ok := as[distro]
+	a, ok := mappings[distro]
 	if !ok {
-		panic("unknown distro: " + distro)
+		return nil, fmt.Errorf("unsupported distro: %s", distro)
 	}
 
 	switch t.PkgKind() {
 	case "deb":
-		return archive.NewDebPackager(&a, MirrorPrefix())
+		return archive.NewDebPackager(&a, MirrorPrefix()), nil
 	case "rpm":
-		return archive.NewRPMPackager(&a, MirrorPrefix())
+		return archive.NewRPMPackager(&a, MirrorPrefix()), nil
 	case "win":
-		return archive.NewWinPackager(&a, MirrorPrefix())
+		return archive.NewWinPackager(&a, MirrorPrefix()), nil
 	default:
 		panic("unknown pkgKind: " + t.pkgKind)
 	}
@@ -290,7 +304,7 @@ func (t *Target) getCommitTime(projectName string, sourceDir *dagger.Directory) 
 	return strings.TrimSpace(commitTime)
 }
 
-func (t *Target) Make(project *archive.Spec, projectDir, hackCrossDir *dagger.Directory) *dagger.Directory {
+func (t *Target) Make(project *archive.Spec, projectDir, hackCrossDir *dagger.Directory) (*dagger.Directory, error) {
 	md2man := t.goMD2Man()
 
 	source := t.getSource(project)
@@ -310,13 +324,12 @@ func (t *Target) Make(project *archive.Spec, projectDir, hackCrossDir *dagger.Di
 		WithEnvVariable("SOURCE_DATE_EPOCH", commitTime).
 		WithExec(t.applyPatchesCommand()).
 		WithExec([]string{"/usr/bin/make", t.PkgKind()})
-		// WithExec([]string{"mkdir", "/out"}).
-		// WithExec([]string{"tar", "-cvzf", "/out/test.tar.gz", "/build"})
 
-	//return build.Directory("/out")
-
-	packager := t.Packager(project.Pkg, project.Distro)
-	return packager.Package(t.client, build, project)
+	packager, err := t.Packager(project.Pkg, project.Distro, project.Tag)
+	if err != nil {
+		return nil, err
+	}
+	return packager.Package(t.client, build, project), nil
 }
 
 func WithPlatformEnvs(c *dagger.Container, build, target dagger.Platform) *dagger.Container {
