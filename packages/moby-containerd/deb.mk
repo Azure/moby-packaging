@@ -1,10 +1,10 @@
 #!/usr/bin/make -f
 
 # circumvent a few problematic (for Debian) Go features inspired by dh-golang
-export GOPROXY := direct
 export GO111MODULE := on
 export GOFLAGS := -trimpath
 export GOGC := off
+
 .PHONY: deb _binaries _man
 
 SHELL := $(shell which bash)
