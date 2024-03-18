@@ -103,6 +103,5 @@ func do(ctx context.Context, client *dagger.Client, cfg *archive.Spec) (*dagger.
 	if err != nil {
 		return nil, err
 	}
-	out := target.Make(cfg, packageDir(client, cfg.Pkg), hackCrossDir(client))
-	return out, nil
+	return target.Make(cfg, packageDir(client, cfg.Pkg), hackCrossDir(client))
 }
