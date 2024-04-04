@@ -13,12 +13,12 @@ var (
 		"bullseye": DebArchive_1_X,
 		"bionic":   DebArchive_1_X,
 		"focal":    DebArchive_1_X,
+		"jammy":    DebArchive_1_X,
 		"centos7":  RPMArchive_1_X,
 		"rhel8":    RPMArchive_1_X,
 		"rhel9":    RPMArchive_1_X,
-		"windows":  BaseArchive_1_X,
-		"jammy":    RPMArchive_1_X,
 		"mariner2": MarinerArchive_1_X,
+		"windows":  BaseArchive_1_X,
 	}
 
 	BaseArchive_1_X = archive.Archive{
