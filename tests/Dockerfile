@@ -10,6 +10,7 @@ ARG BOOKWORM_IMG=${MIRROR}buildpack-deps:bookworm
 ARG BIONIC_IMG=${MIRROR}buildpack-deps:bionic
 ARG FOCAL_IMG=${MIRROR}buildpack-deps:focal
 ARG JAMMY_IMG=${MIRROR}buildpack-deps:jammy
+ARG NOBLE_IMG=${MIRROR}buildpack-deps:noble
 
 ARG INCLUDE_TESTING=0
 ARG INCLUDE_STAGING=0
@@ -181,6 +182,23 @@ RUN if [ "${INCLUDE_TESTING}" = "1" ]; then \
     cd /opt/bats && ./install.sh /usr/local
 RUN ln -s /lib/systemd/systemd /sbin/init
 
+FROM ${NOBLE_IMG} AS noble
+RUN apt-get update && apt-get install -y systemd curl ca-certificates aptly
+RUN \
+    curl -SLf https://packages.microsoft.com/config/ubuntu/24.04/packages-microsoft-prod.deb > /tmp/ms.deb && \
+    dpkg -i /tmp/ms.deb && \
+    rm /tmp/ms.deb
+ARG INCLUDE_TESTING
+COPY entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+STOPSIGNAL SIGRTMIN+3
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+COPY --from=bats / /opt/bats
+RUN if [ "${INCLUDE_TESTING}" = "1" ]; then \
+    echo "deb [arch=amd64,arm64,armhf] https://packages.microsoft.com/ubuntu/24.04/prod testing main" >> /etc/apt/sources.list.d/microsoft-testing.list; \
+    fi; \
+    cd /opt/bats && ./install.sh /usr/local
+RUN ln -s /lib/systemd/systemd /sbin/init
+
 FROM ${CENTOS7_IMG} AS centos7-jq
 WORKDIR /jq
 ARG BUILDPLATFORM
@@ -320,6 +338,13 @@ COPY --from=bats-support /root/bats /opt/moby/test_helper/bats-support
 COPY --from=bats-assert /root/bats /opt/moby/test_helper/bats-assert
 
 FROM jammy AS jammy-test
+RUN apt-get update && apt-get install -y jq
+COPY deb/install.sh /opt/moby/
+COPY test.sh /opt/moby/
+COPY --from=bats-support /root/bats /opt/moby/test_helper/bats-support
+COPY --from=bats-assert /root/bats /opt/moby/test_helper/bats-assert
+
+FROM noble AS noble-test
 RUN apt-get update && apt-get install -y jq
 COPY deb/install.sh /opt/moby/
 COPY test.sh /opt/moby/

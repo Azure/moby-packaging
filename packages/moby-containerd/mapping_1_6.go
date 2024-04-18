@@ -14,6 +14,7 @@ var (
 		"bionic":   DebArchive_1_X,
 		"focal":    DebArchive_1_X,
 		"jammy":    DebArchive_1_X,
+		"noble":    DebArchive_1_X,
 		"centos7":  RPMArchive_1_X,
 		"rhel8":    RPMArchive_1_X,
 		"rhel9":    RPMArchive_1_X,
