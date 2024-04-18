@@ -15,6 +15,7 @@ var (
 		"windows":  BaseArchive,
 		"jammy":    DebArchive,
 		"mariner2": MarinerArchive,
+		"noble":    DebArchive,
 	}
 
 	BaseArchive = archive.Archive{

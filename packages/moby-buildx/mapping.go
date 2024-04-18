@@ -14,6 +14,7 @@ var (
 		"rhel9":    RPMArchive,
 		"windows":  BaseArchive,
 		"jammy":    DebArchive,
+		"noble":    DebArchive,
 		"mariner2": MarinerArchive,
 	}
 

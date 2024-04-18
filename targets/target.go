@@ -56,6 +56,7 @@ type MakeTargetFunc func(context.Context, *dagger.Client, dagger.Platform, strin
 
 var targets = map[string]MakeTargetFunc{
 	"jammy":    Jammy,
+	"noble":    Noble,
 	"buster":   Buster,
 	"bionic":   Bionic,
 	"bullseye": Bullseye,

@@ -52,6 +52,7 @@ var (
 		"impish":  "ubuntu21.10",
 		"jammy":   "ubuntu22.04",
 		"kinetic": "ubuntu22.10",
+		"noble":   "ubuntu24.04",
 		"lunar":   "ubuntu23.04",
 
 		"buster":   "debian10",
