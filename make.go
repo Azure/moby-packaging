@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"flag"
 	"fmt"
 	_ "net/http/pprof"
@@ -14,7 +13,6 @@ import (
 	"dagger.io/dagger"
 	"github.com/Azure/moby-packaging/pkg/archive"
 	"github.com/Azure/moby-packaging/targets"
-	"golang.org/x/sync/errgroup"
 	"golang.org/x/sys/unix"
 )
 
@@ -24,16 +22,10 @@ func main() {
 
 	flag.Parse()
 
-	var specs []*archive.Spec
-
-	if spec, err := readBuildSpec(*buildSpec); err != nil {
-		var err2 error
-		if specs, err2 = readBuildSpecMulti(*buildSpec); err2 != nil {
-			fmt.Fprintln(os.Stderr, "Could not parse build spec as either single or multi-spec:", errors.Join(err, err2))
-			os.Exit(1)
-		}
-	} else {
-		specs = append(specs, spec)
+	spec, err := readBuildSpec(*buildSpec)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "could not read or parse build spec file")
+		os.Exit(1)
 	}
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, unix.SIGTERM)
@@ -51,41 +43,16 @@ func main() {
 		client.Close()
 	}()
 
-	grp, ctx := errgroup.WithContext(ctx)
-	for _, spec := range specs {
-		spec := spec
-		grp.Go(func() error {
-			out, err := do(ctx, client, spec)
-			if err != nil {
-				return err
-			}
-			_, err = out.Export(ctx, *outDir)
-			return err
-		})
-	}
-
-	if err := grp.Wait(); err != nil {
+	out, err := do(ctx, client, spec)
+	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(3)
 	}
-}
 
-func readBuildSpecMulti(filename string) ([]*archive.Spec, error) {
-	if filename == "" {
-		return nil, fmt.Errorf("no build spec file specified")
+	if _, err := out.Export(ctx, spec.Dir(*outDir)); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(4)
 	}
-
-	b, err := os.ReadFile(filename)
-	if err != nil {
-		return nil, err
-	}
-
-	var spec []*archive.Spec
-	if err := json.Unmarshal(b, &spec); err != nil {
-		return nil, err
-	}
-
-	return spec, nil
 }
 
 func readBuildSpec(filename string) (*archive.Spec, error) {
@@ -136,6 +103,5 @@ func do(ctx context.Context, client *dagger.Client, cfg *archive.Spec) (*dagger.
 	if err != nil {
 		return nil, err
 	}
-
 	return target.Make(cfg, packageDir(client, cfg.Pkg), hackCrossDir(client))
 }
