@@ -5,7 +5,7 @@ go 1.21
 toolchain go1.21.8
 
 require (
-	dagger.io/dagger v0.11.1
+	dagger.io/dagger v0.11.2
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.5.1
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.3.1
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azqueue v1.0.0
