@@ -3,8 +3,7 @@ rpm: runc man/man8
 
 runc:
 	cd src && \
-	echo $(VERSION)-$(REVISION) > VERSION && \
-	$(MAKE) runc BUILDTAGS='seccomp'
+	$(MAKE) runc BUILDTAGS='seccomp' VERSION="${VERSION}-${REVISION}"
 
 man/man8:
 	cd src && \
