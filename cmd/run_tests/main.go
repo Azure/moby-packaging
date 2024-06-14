@@ -59,6 +59,8 @@ func runTest(args Args) error {
 		return fmt.Errorf("unrecognized distro: %s", pkgOs)
 	}
 
+	fmt.Fprintf(os.Stderr, "%+v\n%s", s, pv)
+
 	fmt.Printf(`
 DISTRO=%[1]s
 TARGETARCH=%[2]s
