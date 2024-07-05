@@ -2,6 +2,6 @@ package goversion
 
 const (
 	DefaultVersion = OneTwentyOne
-	OneTwentyOne   = "1.21.11"
-	OneTwentyTwo   = "1.22.4"
+	OneTwentyOne   = "1.21.12"
+	OneTwentyTwo   = "1.22.5"
 )
