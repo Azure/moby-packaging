@@ -53,7 +53,6 @@ img: $(TESTDIR)/$(DISTRO)/imageid
 bionic jammy focal bullseye buster bookworm noble: $(wildcard deb/*)
 rpm: rpm-fix-arch.sh
 centos8 rhel8 rhel9: $(wildcard centos8/*) rpm
-centos7: $(wildcard centos7/*) rpm
 mariner2: $(wildcard mariner2/*) rpm
 
 $(TESTDIR)/mariner2/imageid: mariner2/install.sh mariner2/download-pcks.sh

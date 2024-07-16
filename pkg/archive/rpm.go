@@ -14,7 +14,6 @@ var (
 	nothing empty
 
 	rpmDistroMap = map[string]string{
-		"centos7":  "el7",
 		"rhel8":    "el8",
 		"rhel9":    "el9",
 		"mariner2": "cm2",
