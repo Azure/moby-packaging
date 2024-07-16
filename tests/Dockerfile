@@ -1,7 +1,6 @@
 ARG MIRROR=mcr.microsoft.com/mirror/docker/library/
 
 ARG MARINER2_IMG=mcr.microsoft.com/cbl-mariner/base/core:2.0
-ARG CENTOS7_IMG=${MIRROR}centos:7
 ARG RHEL8_IMG=${MIRROR}almalinux:8
 ARG RHEL9_IMG=${MIRROR}almalinux:9
 ARG BUSTER_IMG=${MIRROR}buildpack-deps:buster
@@ -198,41 +197,6 @@ RUN if [ "${INCLUDE_TESTING}" = "1" ]; then \
     fi; \
     cd /opt/bats && ./install.sh /usr/local
 RUN ln -s /lib/systemd/systemd /sbin/init
-
-FROM ${CENTOS7_IMG} AS centos7-jq
-WORKDIR /jq
-ARG BUILDPLATFORM
-ARG TARGETPLATFORM
-ARG TARGETARCH
-ARG TARGETVARIANT
-RUN yum install -y epel-release
-RUN yum install --downloadonly --downloaddir=. jq
-
-FROM ${CENTOS7_IMG} AS centos7
-ARG BUILDPLATFORM
-ARG TARGETPLATFORM
-ARG TARGETARCH
-ARG TARGETVARIANT
-RUN yum install -y systemd ca-certificates
-RUN yum install -y https://packages.microsoft.com/config/centos/7/packages-microsoft-prod.rpm
-ARG INCLUDE_TESTING
-COPY entrypoint.sh /usr/local/bin/docker-entrypoint.sh
-STOPSIGNAL SIGRTMIN+3
-ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
-COPY --from=bats / /opt/bats
-COPY --from=centos7-jq /jq /opt/jq
-RUN cd /opt/jq && yum install -y ./*.rpm
-RUN if [ "${INCLUDE_TESTING}" = "1" ]; then \
-    yum-config-manager --add-repo https://packages.microsoft.com/yumrepos/microsoft-centos7-testing-prod || exit 1; \
-    fi; \
-    cd /opt/bats && ./install.sh /usr/local
-
-FROM centos7 AS centos7-test
-RUN yum install -y jq createrepo
-COPY centos7/install.sh /opt/moby/
-COPY test.sh /opt/moby/
-COPY --from=bats-support /root/bats /opt/moby/test_helper/bats-support
-COPY --from=bats-assert /root/bats /opt/moby/test_helper/bats-assert
 
 FROM ${MARINER2_IMG} AS mariner2
 ARG BUILDPLATFORM

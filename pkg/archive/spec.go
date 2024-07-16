@@ -20,7 +20,6 @@ var (
 		"noble":    "deb",
 		"rhel9":    "rpm",
 		"rhel8":    "rpm",
-		"centos7":  "rpm",
 		"mariner2": "rpm",
 		"windows":  "zip",
 	}
@@ -35,7 +34,6 @@ var (
 		"noble":    "ubuntu",
 		"rhel9":    "el9",
 		"rhel8":    "el8",
-		"centos7":  "el7",
 		"mariner2": "cm2",
 		"windows":  "windows",
 	}
@@ -50,7 +48,6 @@ var (
 		"noble":    "24.04",
 		"rhel9":    "el9",
 		"rhel8":    "el8",
-		"centos7":  "el7",
 		"mariner2": "cm2",
 	}
 )

@@ -64,7 +64,6 @@ var targets = map[string]MakeTargetFunc{
 	"focal":    Focal,
 	"rhel8":    Rhel8,
 	"rhel9":    Rhel9,
-	"centos7":  Centos7,
 	"windows":  Windows,
 	"mariner2": Mariner2,
 }
