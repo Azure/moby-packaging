@@ -26,7 +26,7 @@ func GoVersion(s *archive.Spec) string {
 	}
 
 	if v.Compare(t) >= 0 { // if v >= t
-		return goversion.OneTwentyOne
+		return goversion.OneTwentyThree
 	}
 
 	return goversion.DefaultVersion
