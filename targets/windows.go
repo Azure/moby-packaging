@@ -13,8 +13,6 @@ var (
 )
 
 func Windows(ctx context.Context, client *dagger.Client, platform dagger.Platform, goVersion string) (*Target, error) {
-	client = client.Pipeline("windows/" + string(platform))
-
 	buildPlatform, err := client.DefaultPlatform(ctx)
 	if err != nil {
 		return nil, err

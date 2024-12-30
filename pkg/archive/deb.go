@@ -183,7 +183,7 @@ func (d *DebPackager) installScript(script *InstallScript, c *dagger.Container) 
 		panic(err)
 	}
 
-	c = c.WithNewFile(filename, dagger.ContainerWithNewFileOpts{Contents: buf.String()})
+	c = c.WithNewFile(filename, buf.String())
 	newArgs = append(newArgs, flag, filename)
 	return c, newArgs
 }
@@ -204,7 +204,7 @@ func (d *DebPackager) withControlFile(c *dagger.Container, version string, proje
 	}
 
 	return c.
-		WithNewFile("/build/debian/control", dagger.ContainerWithNewFileOpts{Contents: buf.String()}).
+		WithNewFile("/build/debian/control", buf.String()).
 		WithEnvVariable("PROJECT_NAME", project.Pkg).
 		WithEnvVariable("VERSION", version).
 		WithEnvVariable("DISTRO", project.Distro).

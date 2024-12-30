@@ -15,7 +15,6 @@ var (
 )
 
 func Noble(ctx context.Context, client *dagger.Client, platform dagger.Platform, goVersion string) (*Target, error) {
-	client = client.Pipeline("noble/" + string(platform))
 	c := client.Container(dagger.ContainerOpts{Platform: platform}).From(NobleRef)
 	c = apt.Install(c, client.CacheVolume(NobleAptCacheKey), client.CacheVolume(NobleAptLibCacheKey), BaseDebPackages...)
 
