@@ -15,7 +15,6 @@ var (
 )
 
 func Bookworm(ctx context.Context, client *dagger.Client, platform dagger.Platform, goVersion string) (*Target, error) {
-	client = client.Pipeline("bookworm/" + string(platform))
 	c := client.Container(dagger.ContainerOpts{Platform: platform}).From(BookwormRef)
 	c = apt.Install(c, client.CacheVolume(BookwormAptCacheKey), client.CacheVolume(BookwormAptLibCacheKey), BaseDebPackages...)
 

@@ -15,7 +15,6 @@ var (
 )
 
 func Buster(ctx context.Context, client *dagger.Client, platform dagger.Platform, goVersion string) (*Target, error) {
-	client = client.Pipeline("buster/" + string(platform))
 	c := client.Container(dagger.ContainerOpts{Platform: platform}).From(BusterRef)
 	c = apt.Install(c, client.CacheVolume(BusterAptCacheKey), client.CacheVolume(BusterAptLibCacheKey), BaseDebPackages...)
 

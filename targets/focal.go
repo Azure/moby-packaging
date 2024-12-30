@@ -15,7 +15,6 @@ var (
 )
 
 func Focal(ctx context.Context, client *dagger.Client, platform dagger.Platform, goVersion string) (*Target, error) {
-	client = client.Pipeline("focal/" + string(platform))
 	c := client.Container(dagger.ContainerOpts{Platform: platform}).From(FocalRef)
 	c = apt.Install(c, client.CacheVolume(FocalAptCacheKey), client.CacheVolume(FocalAptLibCacheKey), BaseDebPackages...)
 

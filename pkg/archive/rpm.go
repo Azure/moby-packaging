@@ -171,7 +171,7 @@ fi
 		panic(err)
 	}
 
-	c = c.WithNewFile(filename, dagger.ContainerWithNewFileOpts{Contents: buf.String()})
+	c = c.WithNewFile(filename, buf.String())
 	newArgs = append(newArgs, flag, filename)
 	return c, newArgs
 }

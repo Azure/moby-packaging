@@ -17,9 +17,8 @@ func FetchRef(client *dagger.Client, repo, commit string) *dagger.GitRef {
 }
 
 func (t *Target) getSource(project *archive.Spec) *dagger.Directory {
-	client := t.client.Pipeline(project.Pkg + "-src")
-	gitRef := FetchRef(client, project.Repo, project.Commit)
-	dir := fetchExternalSource(client, gitRef, project)
+	gitRef := FetchRef(t.client, project.Repo, project.Commit)
+	dir := fetchExternalSource(t.client, gitRef, project)
 
 	return dir
 }

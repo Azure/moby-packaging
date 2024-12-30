@@ -12,7 +12,6 @@ var (
 )
 
 func Rhel9(ctx context.Context, client *dagger.Client, platform dagger.Platform, goVersion string) (*Target, error) {
-	client = client.Pipeline("rhel9/" + string(platform))
 	c := client.Container(dagger.ContainerOpts{Platform: platform}).From(Rhel9Ref).
 		WithExec([]string{"bash", "-ec", `
         yum -y install dnf-plugins-core

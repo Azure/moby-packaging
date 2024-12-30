@@ -24,13 +24,13 @@ func Install(c *dagger.Container, aptCache, aptLibCache *dagger.CacheVolume, pkg
 
 	if aptCache != nil {
 		c = c.WithMountedCache("/var/cache/apt", aptCache, dagger.ContainerWithMountedCacheOpts{
-			Sharing: dagger.Locked,
+			Sharing: dagger.CacheSharingModeLocked,
 		})
 
 	}
 	if aptLibCache != nil {
 		c = c.WithMountedCache("/var/lib/apt", aptLibCache, dagger.ContainerWithMountedCacheOpts{
-			Sharing: dagger.Locked,
+			Sharing: dagger.CacheSharingModeLocked,
 		})
 	}
 

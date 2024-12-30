@@ -290,7 +290,7 @@ func (t *Target) Packager(projectName, distro, version string) (Packager, error)
 }
 
 func (t *Target) getCommitTime(projectName string, sourceDir *dagger.Directory) string {
-	commitTime, err := t.c.Pipeline(projectName+"/commit-time").
+	commitTime, err := t.c.
 		WithMountedDirectory("/build/src", sourceDir).
 		WithWorkdir("/build/src").
 		WithExec([]string{"bash", "-ec", `date -u --date=$(git show -s --format=%cI HEAD) +%s > /tmp/COMMITTIME`}).
@@ -310,7 +310,7 @@ func (t *Target) Make(project *archive.Spec, projectDir, hackCrossDir *dagger.Di
 	source := t.getSource(project)
 	commitTime := t.getCommitTime(project.Pkg, source)
 
-	build := t.c.Pipeline(project.Pkg).
+	build := t.c.
 		WithDirectory("/build", projectDir).
 		WithDirectory("/build/hack/cross", hackCrossDir).
 		WithDirectory("/build/src", source).
