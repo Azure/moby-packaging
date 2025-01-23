@@ -24,18 +24,14 @@ prepare_local_apt() {
         return
     fi
 
-    aptly repo create unstable
-    aptly repo add unstable "${dir}"
-    aptly publish repo -distribution=moby-local-testing -skip-signing unstable
-    aptly serve -listen=127.0.0.1:8080 &
 
-    echo "waiting for apt server to be ready"
-    while true; do
-        curl 127.0.0.1:8080 >/dev/null 2>&1 && break
-        sleep 1
-    done
+    (
+      cd "${dir}"
+      apt-ftparchive packages . >Packages
+      apt-ftparchive release . >Release
+    )
 
-    echo "deb [trusted=yes arch=amd64,armhf,arm64] http://localhost:8080/ moby-local-testing main" >/etc/apt/sources.list.d/local.list
+    echo "deb [trusted=yes arch=amd64,armhf,arm64] copy:${dir}/ / " >/etc/apt/sources.list.d/local.list
 }
 
 install() {
@@ -75,7 +71,6 @@ install)
 "")
     prepare_local_apt
     install
-    pkill -9 aptly || true
     init
     ;;
 *)

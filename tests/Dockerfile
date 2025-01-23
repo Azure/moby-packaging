@@ -15,14 +15,6 @@ ARG INCLUDE_TESTING=0
 ARG INCLUDE_STAGING=0
 
 
-# For jammy which uses zstd compressed packages, but aptly from the distro packages does not.
-FROM mcr.microsoft.com/oss/go/microsoft/golang:1.19.12 AS aptly
-ENV GOCACHE=/root/.gobuild GOPROXY=direct GOGC=off CGO_ENABLED=0
-RUN \
-    --mount=type=cache,target=/go/pkg/mod \
-    --mount=type=cache,target=/root/.gobuild \
-    go install github.com/aptly-dev/aptly@0a1798869a3c37b269f8f34fef41095233cd8750
-
 FROM ${MIRROR}buildpack-deps:bullseye AS git
 
 FROM git AS bats-core
@@ -36,7 +28,7 @@ RUN git clone ${REPO} . && \
     git checkout ${COMMIT} && \
     git archive HEAD | tar -C /root/bats -xvf -
 
-FROM git as bats-support
+FROM git AS bats-support
 RUN mkdir -p /root/bats
 WORKDIR /root/src
 ARG BATS_SUPPORT_REPO=https://github.com/bats-core/bats-support.git
@@ -47,7 +39,7 @@ RUN git clone ${REPO} . && \
     git checkout ${COMMIT} && \
     git archive HEAD | tar -C  /root/bats -xvf -
 
-FROM git as bats-assert
+FROM git AS bats-assert
 RUN mkdir -p /root/bats
 WORKDIR /root/src
 ARG BATS_ASSERT_REPO=https://github.com/bats-core/bats-assert.git
@@ -61,28 +53,8 @@ RUN git clone ${REPO} . && \
 FROM scratch AS bats
 COPY --from=bats-core /root/bats/ /
 
-FROM ${BUSTER_IMG} AS buster
-RUN apt-get update && apt-get install -y systemd curl ca-certificates aptly && c_rehash
-RUN \
-    curl -SLf https://packages.microsoft.com/config/debian/10/packages-microsoft-prod.deb > /tmp/ms.deb && \
-    dpkg -i /tmp/ms.deb && \
-    rm /tmp/ms.deb
-COPY entrypoint.sh /usr/local/bin/docker-entrypoint.sh
-STOPSIGNAL SIGRTMIN+3
-ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
-COPY --from=bats / /opt/bats
-ARG INCLUDE_TESTING
-ARG INCLUDE_STAGING
-RUN if [ "${INCLUDE_TESTING}" = "1" ]; then \
-    echo "deb [arch=amd64,arm64,armhf,arm64,armhf] https://packages.microsoft.com/debian/10/prod testing main" >> /etc/apt/sources.list.d/microsoft-testing.list; \
-    fi; \
-    if [ "${INCLUDE_STAGING}" = "1" ]; then \
-    echo "deb [arch=amd64,arm64,armhf,arm64,armhf] https://packages.microsoft.com/repos/iotedge-buster buster main" >> /etc/apt/sources.list.d/microsoft-testing.list; \
-    fi; \
-    cd /opt/bats && ./install.sh /usr/local
-
 FROM ${BULLSEYE_IMG} AS bullseye
-RUN apt-get update && apt-get install -y systemd curl ca-certificates aptly && c_rehash
+RUN apt-get update && apt-get install -y systemd curl ca-certificates apt-utils && c_rehash
 RUN \
     curl -SLf https://packages.microsoft.com/config/debian/11/packages-microsoft-prod.deb > /tmp/ms.deb && \
     dpkg -i /tmp/ms.deb && \
@@ -104,7 +76,7 @@ RUN if [ "${INCLUDE_TESTING}" = "1" ]; then \
 RUN ln -s /lib/systemd/systemd /sbin/init
 
 FROM ${BOOKWORM_IMG} AS bookworm
-RUN apt-get update && apt-get install -y systemd curl ca-certificates aptly && c_rehash
+RUN apt-get update && apt-get install -y systemd curl ca-certificates apt-utils && c_rehash
 RUN \
     curl -SLf https://packages.microsoft.com/config/debian/12/packages-microsoft-prod.deb > /tmp/ms.deb && \
     dpkg -i /tmp/ms.deb && \
@@ -127,7 +99,7 @@ RUN ln -s /lib/systemd/systemd /sbin/init
 
 
 FROM ${BIONIC_IMG} AS bionic
-RUN apt-get update && apt-get install -y systemd curl ca-certificates aptly
+RUN apt-get update && apt-get install -y systemd curl ca-certificates apt-utils
 RUN \
     curl -SLf https://packages.microsoft.com/config/ubuntu/18.04/multiarch/packages-microsoft-prod.deb > /tmp/ms.deb && \
     dpkg -i /tmp/ms.deb && \
@@ -147,7 +119,7 @@ RUN if [ "${INCLUDE_TESTING}" = "1" ]; then \
     cd /opt/bats && ./install.sh /usr/local
 
 FROM ${FOCAL_IMG} AS focal
-RUN apt-get update && apt-get install -y systemd curl ca-certificates aptly
+RUN apt-get update && apt-get install -y systemd curl ca-certificates apt-utils
 RUN \
     curl -SLf https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb > /tmp/ms.deb && \
     dpkg -i /tmp/ms.deb && \
@@ -164,8 +136,7 @@ RUN if [ "${INCLUDE_TESTING}" = "1" ]; then \
 RUN ln -s /lib/systemd/systemd /sbin/init
 
 FROM ${JAMMY_IMG} AS jammy
-RUN apt-get update && apt-get install -y systemd curl ca-certificates
-COPY --link --from=aptly /go/bin/aptly /usr/local/bin/
+RUN apt-get update && apt-get install -y systemd curl ca-certificates apt-utils
 RUN \
     curl -SLf https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb > /tmp/ms.deb && \
     dpkg -i /tmp/ms.deb && \
@@ -182,7 +153,7 @@ RUN if [ "${INCLUDE_TESTING}" = "1" ]; then \
 RUN ln -s /lib/systemd/systemd /sbin/init
 
 FROM ${NOBLE_IMG} AS noble
-RUN apt-get update && apt-get install -y systemd curl ca-certificates aptly
+RUN apt-get update && apt-get install -y systemd curl ca-certificates apt-utils
 RUN \
     curl -SLf https://packages.microsoft.com/config/ubuntu/24.04/packages-microsoft-prod.deb > /tmp/ms.deb && \
     dpkg -i /tmp/ms.deb && \
