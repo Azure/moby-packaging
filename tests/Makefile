@@ -105,8 +105,8 @@ $(TESTDIR)/$(DISTRO)/installed: $(TESTDIR)/$(DISTRO)/cid $(LOCAL_PKG_DIR)
 else
 $(TESTDIR)/$(DISTRO)/installed: $(TESTDIR)/$(DISTRO)/cid
 endif
-	id="$$(cat $<)"
-	docker start $${id}
+	id="$$(cat $<)"; \
+	docker start $${id}; \
 	docker exec \
 		$(DOCKER_ENV) \
 		$${id} /opt/moby/install.sh /var/pkg
