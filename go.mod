@@ -1,6 +1,7 @@
 module github.com/Azure/moby-packaging
 
 go 1.22.7
+toolchain go1.23.7
 
 require (
 	dagger.io/dagger v0.15.1
@@ -9,7 +10,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azqueue v1.0.0
 	github.com/Masterminds/semver/v3 v3.3.1
 	golang.org/x/sync v0.10.0
-	golang.org/x/sys v0.28.0
+	golang.org/x/sys v0.31.0
 )
 
 require (
