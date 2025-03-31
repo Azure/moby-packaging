@@ -1,5 +1,5 @@
-dagger.io/dagger v0.16.3 h1:4726x/B1PidwjokiU0LkUyhV3nzl7QtrVsmr0Dx01qo=
-dagger.io/dagger v0.16.3/go.mod h1:ZfKiSrU188LGafDfVDFbu9ouZu/1snboBDXej6NEoqg=
+dagger.io/dagger v0.17.2 h1:/kspNWXEYvYy/MD6wu1LwYiQeZjp4Hv+53t4qIoi8SE=
+dagger.io/dagger v0.17.2/go.mod h1:WkSnr5u632S+QhCOYAcgzEaeEB8kUfLarnJOpBym2hY=
 github.com/99designs/gqlgen v0.17.68 h1:vH6jTShCv7sgz1ejXEDNqho7KWlA4ZwSWzVsxyhypAM=
 github.com/99designs/gqlgen v0.17.68/go.mod h1:fvCiqQAu2VLhKXez2xFvLmE47QgAPf/KTPN5XQ4rsHQ=
 github.com/Azure/azure-sdk-for-go/sdk/azcore v1.17.0 h1:g0EZJwz7xkXQiZAI5xi9f3WWFYBlX1CPTrR+NDToRkQ=

@@ -2,10 +2,10 @@ module github.com/Azure/moby-packaging
 
 go 1.23.0
 
-toolchain go1.23.2
+toolchain go1.24.1
 
 require (
-	dagger.io/dagger v0.16.3
+	dagger.io/dagger v0.17.2
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.8.2
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.5.0
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azqueue v1.0.0
