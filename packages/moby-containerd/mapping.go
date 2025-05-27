@@ -34,10 +34,11 @@ func Archives(version string) (map[string]archive.Archive, error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid version: %s: %w", version, err)
 	}
-	switch fmt.Sprintf("%d.%d", v.Major(), v.Minor()) {
-	case "1.6", "1.7":
+
+	switch v.Major() {
+	case 1:
 		return Archives_1_X, nil
-	case "2.0":
+	case 2:
 		return Archives_2_0, nil
 	default:
 		return nil, fmt.Errorf("unsupported version: %s", version)
