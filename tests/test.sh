@@ -9,23 +9,23 @@ if [ -n "${TARGETARCH}" ]; then
 fi
 
 @test "test docker run hello world" {
-    run timeout --kill-after=60s 30s docker run ${TEST_PLATFORM} --rm hello-world
-    assert_output --partial "This message shows that your installation appears to be working correctly"
+    run timeout --kill-after=60s 30s docker run ${TEST_PLATFORM} --rm mcr.microsoft.com/azurelinux/base/core:3.0 echo hello from azl
+    assert_output --partial "hello from azl"
 
     # Make sure --init works which has an extra binary
-    run timeout --kill-after=60s 30s docker run --init --rm ${TEST_PLATFORM} docker.io/library/hello-world:latest
-    assert_output --partial "This message shows that your installation appears to be working correctly"
+    run timeout --kill-after=60s 30s docker run --init --rm ${TEST_PLATFORM} mcr.microsoft.com/azurelinux/base/core:3.0 echo hello from azl
+    assert_output --partial "hello from azl"
 }
 
 @test "test containerd run hello world" {
-    timeout --kill-after=60s 40s ctr image pull ${TEST_PLATFORM} docker.io/library/hello-world:latest
-    run timeout --kill-after=60s 40s ctr run ${TEST_PLATFORM} --rm docker.io/library/hello-world:latest test
-    assert_output --partial "This message shows that your installation appears to be working correctly"
+    timeout --kill-after=60s 40s ctr image pull ${TEST_PLATFORM} mcr.microsoft.com/azurelinux/base/core:3.0
+    run timeout --kill-after=60s 40s ctr run ${TEST_PLATFORM} --rm mcr.microsoft.com/azurelinux/base/core:3.0 test echo hello from azl
+    assert_output --partial "hello from azl"
 }
 
 @test "test buildx build" {
     timeout --kill-after=60s 30s docker buildx build ${TEST_PLATFORM} - <<-EOF
-        FROM busybox
+        FROM mcr.microsoft.com/azurelinux/base/core:3.0
         RUN echo hello world
 EOF
 }
