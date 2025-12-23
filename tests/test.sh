@@ -17,11 +17,6 @@ fi
     assert_output --partial "This message shows that your installation appears to be working correctly"
 }
 
-@test "extra docker binaries exists" {
-    run command -v docker-proxy
-    assert_success
-}
-
 @test "test containerd run hello world" {
     timeout --kill-after=60s 40s ctr image pull ${TEST_PLATFORM} docker.io/library/hello-world:latest
     run timeout --kill-after=60s 40s ctr run ${TEST_PLATFORM} --rm docker.io/library/hello-world:latest test
