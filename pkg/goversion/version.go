@@ -2,5 +2,5 @@ package goversion
 
 const (
 	DefaultVersion = OneTwentyFour
-	OneTwentyFour  = "1.24.9"
+	OneTwentyFour  = "1.24.13"
 )
